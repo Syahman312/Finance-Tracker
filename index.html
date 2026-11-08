@@ -87,6 +87,14 @@ localStorage.setItem(K,JSON.stringify(S));setStatus('Synced '+new Date().toLocal
 catch(e){setStatus('Sync failed — tap Settings › Sync');console.warn(e)}busy=false;render()}
 async function connect(){try{await auth();await sync()}catch(e){setStatus(e.message)}}
 const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
+async function trash(ids){for(const id of ids.filter(Boolean)){try{await api(`${D}/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}catch(e){if(!/^404/.test(e.message))throw e}}}
+const fid=s=>s.fid||((s.link||'').match(/\/d\/([^\/?]+)/)||[])[1];
+async function delTx(id){const t=S.tx.find(x=>x.id==id);if(!t||!confirm('Delete this entry? Its receipts will also move to the Google Drive trash.'))return;
+try{if((t.att||[]).length){setStatus('Deleting from Drive…');await trash(t.att.map(a=>a.id))}}catch(e){return setStatus('Drive delete failed: '+e.message)}
+rm('tx',id);closeM()}
+async function delStm(id){const s=S.stm.find(x=>x.id==id);if(!s||!confirm('Delete this statement? The file will also move to the Google Drive trash.'))return;
+try{setStatus('Deleting from Drive…');await trash([fid(s)])}catch(e){return setStatus('Drive delete failed: '+e.message)}
+rm('stm',id)}
 
 /* ---------- views ---------- */
 const go=k=>{tab=k;render();scrollTo(0,0)};
@@ -110,7 +118,7 @@ return`<div class="two"><select onchange="fa=this.value;render()"><option value=
 ${rows.map(({t,run})=>{const k=cat(t.cat);return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${esc(t.desc)} ${t.att&&t.att.length?'📎'+t.att.length:''}<td>${k.i} ${esc(k.name)}<td>${esc(acc(t.acc).name)}<td class="n ${t.amt<0?'r':'g'}">${money(t.amt)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="6"><small>No transactions yet — tap +</small>'}</table></div>`}
 function stv(){return`<h4>Upload bank statement</h4><div class="card"><div class="two"><select id="s_acc">${opts(S.accs,'',a=>esc(a.name))}</select><input id="s_mon" type="month" value="${ym}"></div>
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button></div>
-<h4>Statements</h4>${[...S.stm].sort((a,b)=>b.month.localeCompare(a.month)).map(s=>`<div class="card fl"><a href="${esc(s.link)}" target="_blank" rel="noopener">📄 ${esc(s.name)}</a><small>${esc(acc(s.acc).name)} · ${s.month}</small><a onclick="if(confirm('Remove from list? (file stays in Drive)'))rm('stm','${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
+<h4>Statements</h4>${[...S.stm].sort((a,b)=>b.month.localeCompare(a.month)).map(s=>`<div class="card fl"><a href="${esc(s.link)}" target="_blank" rel="noopener">📄 ${esc(s.name)}</a><small>${esc(acc(s.acc).name)} · ${s.month}</small><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
 function sett(){const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<h4>Google Drive sync</h4><div class="card"><small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())">
 <small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect &amp; sync now</button></div>
@@ -123,27 +131,27 @@ return`<h4>Google Drive sync</h4><div class="card"><small>OAuth Client ID</small
 <h4>Backup</h4><div class="card"><button class="s" onclick="exp()">Export JSON</button><input type="file" accept=".json" onchange="imp(this.files[0])"></div>`}
 
 /* ---------- transaction form ---------- */
-function edit(id){const t=S.tx.find(x=>x.id==id);cur=t?structuredClone(t):{id:'',date:today(),desc:'',amt:0,cat:(S.cats[0]||{}).id,acc:fa||(S.accs[0]||{}).id,note:'',att:[]};cur.att=cur.att||[];
+function edit(id){const t=S.tx.find(x=>x.id==id);cur=t?structuredClone(t):{id:'',date:today(),desc:'',amt:0,cat:(S.cats[0]||{}).id,acc:fa||(S.accs[0]||{}).id,note:'',att:[]};cur.att=cur.att||[];cur.rem=[];
 $('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3><div class="two"><select id="f_type"><option value="e">Expense</option><option value="i" ${cur.amt>0?'selected':''}>Income</option></select>
 <input id="f_amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" value="${Math.abs(cur.amt)||''}"></div>
 <input id="f_date" type="date" value="${cur.date}"><input id="f_desc" placeholder="Description / payee" value="${esc(cur.desc)}">
 <div class="two"><select id="f_cat">${opts(S.cats,cur.cat,k=>k.i+' '+esc(k.name))}</select><select id="f_acc">${opts(S.accs,cur.acc,a=>esc(a.name))}</select></div>
 <input id="f_note" placeholder="Note" value="${esc(cur.note)}">
-${cur.att.map(a=>`<div class="fl"><a href="${esc(a.link)}" target="_blank" rel="noopener">📎 ${esc(a.name)}</a><a onclick="cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
+${cur.att.map(a=>`<div class="fl"><a href="${esc(a.link)}" target="_blank" rel="noopener">📎 ${esc(a.name)}</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
 <small>Attach receipts (PDF or image) — saved to Google Drive</small><input id="f_files" type="file" multiple accept="image/*,application/pdf">
-<button onclick="saveTx('${cur.id}')">Save</button>${t?`<button class="d" onclick="if(confirm('Delete? Drive files stay.')){rm('tx','${cur.id}');closeM()}">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
+<button onclick="saveTx('${cur.id}')">Save</button>${t?`<button class="d" onclick="delTx('${cur.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
 $('#m').className='modal show'}
 const closeM=()=>{$('#m').className='modal'};
 async function saveTx(id){const g=x=>$('#f_'+x).value,a=Math.abs(parseFloat(g('amt')))||0;
 if(!a)return setStatus('Enter an amount');
-const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a:a,cat:g('cat'),acc:g('acc'),note:g('note')},files=[...$('#f_files').files];
+const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a:a,cat:g('cat'),acc:g('acc'),note:g('note')},files=[...$('#f_files').files],rem=cur.rem||[];delete t.rem;
 if(files.length){try{setStatus('Uploading…');const f=await path(S.cfg.root,'Receipts',t.date.slice(0,7));
 for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,30)}_${x.name}`));t.att.push({id:r.id,name:x.name,link:r.webViewLink})}}
 catch(e){return setStatus('Upload failed: '+e.message)}}
-put('tx',t);closeM()}
+if(rem.length){try{await trash(rem)}catch(e){}}put('tx',t);closeM()}
 async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,mon=$('#s_mon').value;if(!files.length||!a||!mon)return setStatus('Pick account, month and file');
 try{setStatus('Uploading…');const f=await path(S.cfg.root,'Statements',safe(acc(a).name),mon.slice(0,4));
-for(const x of files){const r=await upload(x,f,safe(`${mon}_${x.name}`));S.stm.push({id:uid(),u:now(),acc:a,month:mon,name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
+for(const x of files){const r=await upload(x,f,safe(`${mon}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a,month:mon,name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
 catch(e){setStatus('Upload failed: '+e.message)}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='ledger-backup.json';a.click()}
 async function imp(f){if(!f)return;try{merge(JSON.parse(await f.text()));save()}catch(e){setStatus('Bad file')}}
