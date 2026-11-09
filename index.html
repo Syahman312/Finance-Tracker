@@ -37,6 +37,7 @@ input[type=color]{padding:2px;height:40px}small{color:var(--mut)}a{color:var(--a
 .seg{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.seg a{padding:6px 12px;border-radius:16px;background:var(--card);color:var(--mut);white-space:nowrap;cursor:pointer;font-size:13px}.seg a.on{background:var(--acc);color:#fff}
 details{background:var(--card);border-radius:12px;margin:8px 0}summary{padding:14px;cursor:pointer;font-weight:600}details>div{padding:0 12px 12px}
 .g3{display:grid;grid-template-columns:44px 1fr 36px;gap:6px;align-items:center}.g3b{display:grid;grid-template-columns:1fr 1fr 46px;gap:6px}.acr{border-bottom:1px solid #8883;padding:6px 0}nav a small{font-size:10px}
+html[data-t=dark]{color-scheme:dark}html[data-t=light]{color-scheme:light}input[type=date]{min-height:42px}
 </style></head><body>
 <div id="app"></div><div id="m" class="modal"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -48,22 +49,35 @@ let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
 S=S||{cfg:{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark',root:'Finance Tracker',u:0},
 cats:[['c1','Food','🍜','#f59e0b'],['c2','Transport','🚗','#3b82f6'],['c3','Bills','💡','#a855f7'],['c4','Shopping','🛍️','#ec4899'],['c5','Health','🏥','#ef4444'],['c6','Salary','💰','#22c55e'],['c7','Other','📦','#94a3b8']].map(([id,name,i,color])=>({id,name,i,color,u:0})),
 accs:[['a1','Cash','#22c55e'],['a2','Bank','#4f8cff']].map(([id,name,color])=>({id,name,color,t:id=='a1'?'cash':'bank',open:0,u:0})),tx:[],stm:[],del:{}};
-S.bills=S.bills||[];S.buds=S.buds||[];
+S.bills=S.bills||[];S.buds=S.buds||[];S.govr=S.govr||[];S.fixed=S.fixed||[];
 S.shops=S.shops||[['s1','Shell','🐚'],['s2','Petronas','⛽'],['s3',"Lotus's",'🛒'],['s4','Shopee','🧡'],['s5','Grab','🚖'],['s6','Starbucks','☕']].map(([id,name,i])=>({id,name,i,color:'#94a3b8',u:0}));
 [['c8','Fuel','⛽','#f97316'],['c9','Car service','🔧','#14b8a6']].forEach(([id,name,i,color])=>{if(!S.cats.some(c=>c.id==id)&&!(S.del||{})[id])S.cats.push({id,name,i,color,u:0})});
 let rt='pl',op={},rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
 const acc=id=>S.accs.find(a=>a.id==id)||{name:'?',color:'#888',open:0};
-const cat=id=>S.cats.find(c=>c.id==id)||{name:'Uncategorised',i:'❓',color:'#888'};
+const cat=id=>id=='_dep'?{name:'Depreciation',i:'📉',color:'#94a3b8'}:S.cats.find(c=>c.id==id)||{name:'Uncategorised',i:'❓',color:'#888'};
 const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>(isL(a)?-(a.open||0):(a.open||0))+TX().reduce((s,t)=>s+(!d||t.date<=d?dl(t,a.id):0),0);
 const money=n=>(n<0?'-':'')+S.cfg.cur+' '+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const opts=(l,sel,f)=>l.map(x=>`<option value="${x.id}" ${x.id==sel?'selected':''}>${f(x)}</option>`).join('');
 const setStatus=m=>{status=m;const e=$('#stat');if(e)e.textContent=m};
 const lg=x=>x.logo?`<img src="${x.logo}" style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle">`:esc(x.i||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉'}[x.t]||'🏦');
 let GT=[];
-const gt=()=>{let G=[];try{G=JSON.parse(localStorage.getItem('ledger.g')||'[]')}catch(e){}const car={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});
-return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petrol|refuel/i.test(i.kind),what=f?[i.brand,i.place].filter(Boolean).join(' '):[].concat(i.item||i.name||'').join(', ');
-return{id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:i.rid?[{id:i.rid,name:'Garage receipt',link:'https://drive.google.com/file/d/'+i.rid+'/view'}]:[]}})};
-const TX=()=>S.tx.concat(GT);
+const gfiles=i=>{const o=[],seen={},okid=v=>typeof v=='string'&&/^[\w-]{25,60}$/.test(v),add=(id,name)=>{if(id&&!seen[id]){seen[id]=1;o.push({id,name:name||'Garage receipt',link:'https://drive.google.com/file/d/'+id+'/view'})}};
+const walk=(v,k)=>{if(v==null)return;if(typeof v=='string'){const m=v.match(/\/d\/([\w-]{20,})/)||v.match(/[?&]id=([\w-]{20,})/);if(m)add(m[1]);else if(/^(rid|fid|rids|fids|receipt|receipts|file|files|pdf|photo|photos|img|att)$/i.test(k||'')&&okid(v))add(v)}
+else if(Array.isArray(v))v.forEach(x=>walk(x,k));else if(typeof v=='object'){const id=v.fid||v.rid||v.id;if(okid(id))add(id,v.name||v.fname);Object.entries(v).forEach(([a,b])=>walk(b,a))}};
+Object.entries(i).forEach(([k,v])=>{if(k!='id'&&k!='car')walk(v,k)});return o};
+const gt=()=>{let G=[];try{G=JSON.parse(localStorage.getItem('ledger.g')||'[]')}catch(e){}const car={},ovm={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});(S.govr||[]).forEach(o=>ovm[o.id]=o);
+return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petrol|refuel/i.test(i.kind),what=f?[i.brand,i.place].filter(Boolean).join(' '):[].concat(i.item||i.name||'').map(x=>typeof x=='object'?(x.name||x.item||''):x).filter(Boolean).join(', ');
+const b={id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:gfiles(i)},o=ovm[b.id];
+return o?(o.h?null:{...b,...o.f,ov:1}):b}).filter(Boolean)};
+const FT=()=>S.fixed.filter(a=>a.acc).map(a=>({id:'f:'+a.id,f:1,set:'asset',u:0,date:a.date,desc:'Purchase: '+a.name,amt:-a.cost,cat:'',acc:a.acc,shop:'',note:'',att:[]}));
+const TX=()=>S.tx.concat(GT,FT());
+function evalF(e,v){try{if(!/^[\w\s+\-*/().,%^]*$/.test(e))return 0;const ok=['cost','res','life','rate','n','nbv','min','max','round','abs'];if((e.match(/[A-Za-z_]\w*/g)||[]).some(x=>!ok.includes(x)))return 0;
+const r=Function('cost','res','life','rate','n','nbv','min','max','round','abs','"use strict";return ('+e.replace(/\^/g,'**')+')')(v.cost,v.res,v.life,v.rate,v.n,v.nbv,Math.min,Math.max,Math.round,Math.abs);return isFinite(r)?r:0}catch(x){return 0}}
+function annual(a,n,nbv){if(a.m=='rb')return nbv*(a.rate||0)/100;if(a.m=='cu')return evalF(a.expr||'0',{cost:a.cost,res:a.res||0,life:a.life||1,rate:a.rate||0,n,nbv});return(a.cost-(a.res||0))/(a.life||1)}
+function dsched(a,months){const o=[];let ac=0,ya=0;for(let m=0;m<months;m++){if(m%12==0)ya=Math.max(0,annual(a,m/12+1,a.cost-ac));const c=Math.min(ya/12,Math.max(0,a.cost-(a.res||0)-ac));ac+=c;o.push(ac)}return o}
+function accDep(a,d){if(!a.cost||!a.date)return 0;let m=600;if(d){if(d<a.date)return 0;m=(+d.slice(0,4)-+a.date.slice(0,4))*12+(+d.slice(5,7)-+a.date.slice(5,7))+1}m=Math.min(m,600);return m>0?dsched(a,m)[m-1]:0}
+const dayB=f=>{const d=new Date(f+'T00:00:00');d.setDate(d.getDate()-1);return d.toLocaleDateString('en-CA')};
+const depIn=(f,t)=>S.fixed.reduce((s,a)=>s+accDep(a,t)-(f?accDep(a,dayB(f)):0),0);
 const AT={cash:'Cash',bank:'Bank',ewallet:'E-wallet',card:'Credit card',loan:'Loan'},isL=a=>a.t=='card'||a.t=='loan';
 const dl=(t,id)=>t.tr?(t.acc==id?-t.amt:0)+(t.to==id?t.amt:0):(t.acc==id?t.amt:0);
 const inR=(d,f,t)=>(!f||d>=f)&&(!t||d<=t),sum2=o=>Object.values(o).reduce((a,b)=>a+b,0);
@@ -71,7 +85,7 @@ const paid=(b,d)=>TX().filter(x=>x.set==b.id&&(!d||x.date<=d)).reduce((s,x)=>s+M
 const det=(k,t,b)=>`<details ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary>${t}</summary><div>${b}</div></details>`;
 function PL(f,t){const inc={},exp={};
 TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;const m=x.amt>0?inc:exp;m[x.cat]=(m[x.cat]||0)+Math.abs(x.amt)});
-S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});return{inc,exp}}
+S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp}}
 
 /* ---------- storage & merge ---------- */
 function save(){localStorage.setItem(K,JSON.stringify(S));render();clearTimeout(timer);timer=setTimeout(sync,1500)}
@@ -80,7 +94,7 @@ function rm(k,id){S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
 function cfg(f,v){S.cfg[f]=v;S.cfg.u=now();save()}
 function merge(r){const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
-for(const k of['tx','stm','cats','accs','shops','bills','buds']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
+for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
 
 /* ---------- Google Drive ---------- */
@@ -126,6 +140,12 @@ const fid=s=>s.fid||((s.link||'').match(/\/d\/([^\/?]+)/)||[])[1];
 async function delTx(id){const t=S.tx.find(x=>x.id==id);if(!t||!confirm('Delete this entry? Its receipts will also move to the Google Drive trash.'))return;
 try{if((t.att||[]).length){setStatus('Deleting from Drive…');await trash(t.att.map(a=>a.id))}}catch(e){return setStatus('Drive delete failed: '+e.message)}
 rm('tx',id);closeM()}
+function gReset(id){rm('govr',id);closeM()}
+function gHide(id){if(!confirm('Hide this from Ledger? It stays in Garage.'))return;put('govr',{id,f:{},h:1});closeM()}
+function gRestore(){S.govr.filter(o=>o.h).forEach(o=>rm('govr',o.id))}
+async function renStm(id){const s=S.stm.find(x=>x.id==id),n=prompt('Rename statement',s.name);if(!n||n==s.name)return;
+try{if(localStorage.getItem(ON))await api(`${D}/${fid(s)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})})}catch(e){setStatus('Renamed in the app only')}
+s.name=n;put('stm',s)}
 async function delStm(id){const s=S.stm.find(x=>x.id==id);if(!s||!confirm('Delete this statement? The file will also move to the Google Drive trash.'))return;
 try{setStatus('Deleting from Drive…');await trash([fid(s)])}catch(e){return setStatus('Drive delete failed: '+e.message)}
 rm('stm',id)}
@@ -150,30 +170,49 @@ const rows=TX().filter(t=>(!fa||t.acc==fa||t.to==fa)&&(!q||(t.desc+t.note).toLow
 .map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}}).reverse().slice(0,300);
 return`<div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()"></div>
 <div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
-${rows.map(({t,run})=>{const k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name}:t.set?{i:'💵',name:'Bill payment'}:cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc),v=t.tr&&fa?dl(t,fa):t.amt;
-return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?'🔗 ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions yet — tap +</small>'}</table></div>`}
+${rows.map(({t,run})=>{const k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name}:t.f?{i:'🏗️',name:'Fixed asset'}:t.set?{i:'💵',name:'Bill payment'}:cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc),v=t.tr&&fa?dl(t,fa):t.amt;
+return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions yet — tap +</small>'}</table></div>`}
 function stv(){const l=String(new Date(+ym.slice(0,4),+ym.slice(5),0).getDate()).padStart(2,'0');
 return`<h4>Upload bank statement</h4><div class="card"><select id="s_acc">${opts(S.accs,'',a=>esc(a.name))}</select>
 <div class="two"><div><small>Statement from</small><input id="s_from" type="date" value="${ym}-01"></div><div><small>to</small><input id="s_to" type="date" value="${ym}-${l}"></div></div>
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button></div>
-<h4>Statements</h4>${[...S.stm].sort((a,b)=>(b.from||b.month).localeCompare(a.from||a.month)).map(s=>`<div class="card fl"><a onclick="pv('${fid(s)}')">📄 ${esc(s.name)}</a><a href="${esc(s.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(s.acc).name)} · ${s.from?s.from+' → '+s.to:s.month}</small><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
+<h4>Statements</h4>${[...S.stm].sort((a,b)=>(b.from||b.month).localeCompare(a.from||a.month)).map(s=>`<div class="card fl"><a onclick="pv('${fid(s)}')">📄 ${esc(s.name)}</a><a href="${esc(s.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(s.acc).name)} · ${s.from?s.from+' → '+s.to:s.month}</small><a onclick="renStm('${s.id}')">✏️</a><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
 function pr(k){const y=new Date().getFullYear(),m=new Date().getMonth(),f=d=>d.toLocaleDateString('en-CA');
 if(k=='m'){rf=f(new Date(y,m,1));rto=f(new Date(y,m+1,0))}else if(k=='y'){rf=y+'-01-01';rto=y+'-12-31'}else{rf='';rto=''}render()}
-function rpt(){const tabs=[['pl','Profit & Loss'],['bs','Balance sheet'],['ar','Receivables'],['ap','Payables']];
+function rpt(){const tabs=[['pl','Profit & Loss'],['bs','Balance sheet'],['ar','Receivables'],['ap','Payables'],['fa','Fixed assets']];
 const per=rt=='pl'?`<div class="two"><div><small>From</small><input type="date" value="${rf}" onchange="rf=this.value;render()"></div><div><small>To</small><input type="date" value="${rto}" onchange="rto=this.value;render()"></div></div><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">All time</a></div>`:rt=='bs'?`<small>As at</small><input type="date" value="${rto}" onchange="rto=this.value;render()"><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">Today</a></div>`:'';
-return`<div class="seg">${tabs.map(([k,l])=>`<a class="${rt==k?'on':''}" onclick="rt='${k}';render()">${l}</a>`).join('')}</div>${per}${rt=='pl'?plv():rt=='bs'?bsv():bills(rt)}`}
+return`<div class="seg">${tabs.map(([k,l])=>`<a class="${rt==k?'on':''}" onclick="rt='${k}';render()">${l}</a>`).join('')}</div>${per}${rt=='pl'?plv():rt=='bs'?bsv():rt=='fa'?fav():bills(rt)}`}
 function plv(){const{inc,exp}=PL(rf,rto),ti=sum2(inc),te=sum2(exp),rows=m=>Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const k=cat(c);return`<tr><td>${k.i} ${esc(k.name)}<td class="n">${money(v)}`}).join('')||'<tr><td colspan="2"><small>None</small>';
 return`<div class="tw"><table><tr><th colspan="2">Statement of Profit or Loss</th></tr><tr><th colspan="2">Income</th></tr>${rows(inc)}<tr><td><b>Total income</b><td class="n"><b>${money(ti)}</b>
 <tr><th colspan="2">Expenses</th></tr>${rows(exp)}<tr><td><b>Total expenses</b><td class="n"><b>${money(te)}</b>
 <tr><td><b>Net profit / (loss)</b><td class="n ${ti-te<0?'r':'g'}"><b>${money(ti-te)}</b></table></div><small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses.</small>`}
-function bsv(){const d=rto,ac=S.accs.map(a=>({a,v:bal(a,d)})),A=ac.filter(x=>!isL(x.a)),L=ac.filter(x=>isL(x.a)),
+function bsv(){const d=rto,dd=d||today(),ac=S.accs.map(a=>({a,v:bal(a,d)})),A=ac.filter(x=>!isL(x.a)),L=ac.filter(x=>isL(x.a)),
 ar=S.bills.filter(b=>b.k=='ar'&&inR(b.date,'',d)).reduce((s,b)=>s+out(b,d),0),ap=S.bills.filter(b=>b.k=='ap'&&inR(b.date,'',d)).reduce((s,b)=>s+out(b,d),0),
-ta=A.reduce((s,x)=>s+x.v,0)+ar,tl=-L.reduce((s,x)=>s+x.v,0)+ap,open=S.accs.reduce((s,a)=>s+(isL(a)?-(a.open||0):(a.open||0)),0),P=PL('',d),pf=sum2(P.inc)-sum2(P.exp),diff=ta-tl-open-pf,
+fx=S.fixed.filter(x=>x.date<=dd).map(x=>({x,v:x.cost-accDep(x,dd)})),tf=fx.reduce((s,y)=>s+y.v,0),
+ta=A.reduce((s,x)=>s+x.v,0)+ar+tf,tl=-L.reduce((s,x)=>s+x.v,0)+ap,open=S.accs.reduce((s,a)=>s+(isL(a)?-(a.open||0):(a.open||0)),0)+S.fixed.filter(x=>!x.acc&&x.date<=dd).reduce((s,x)=>s+x.cost,0),P=PL('',d),pf=sum2(P.inc)-sum2(P.exp),diff=ta-tl-open-pf,
 r=(n,v)=>`<tr><td>${n}<td class="n">${money(v)}`;
-return`<div class="tw"><table><tr><th colspan="2">Statement of Financial Position</th></tr><tr><th colspan="2">Assets</th></tr>${A.map(x=>r(lg(x.a)+' '+esc(x.a.name),x.v)).join('')}${r('Trade receivables',ar)}<tr><td><b>Total assets</b><td class="n"><b>${money(ta)}</b>
+return`<div class="tw"><table><tr><th colspan="2">Statement of Financial Position</th></tr><tr><th colspan="2">Assets</th></tr>${fx.map(y=>r('🏗️ '+esc(y.x.name)+' (net book value)',y.v)).join('')}${A.map(x=>r(lg(x.a)+' '+esc(x.a.name),x.v)).join('')}${r('Trade receivables',ar)}<tr><td><b>Total assets</b><td class="n"><b>${money(ta)}</b>
 <tr><th colspan="2">Liabilities</th></tr>${L.map(x=>r(lg(x.a)+' '+esc(x.a.name),-x.v)).join('')}${r('Trade payables',ap)}<tr><td><b>Total liabilities</b><td class="n"><b>${money(tl)}</b>
 <tr><td><b>Net assets</b><td class="n"><b>${money(ta-tl)}</b><tr><th colspan="2">Equity</th></tr>${r('Opening capital',open)}${r('Retained profit / (loss)',pf)}<tr><td><b>Total equity</b><td class="n"><b>${money(open+pf)}</b></table></div>
 ${Math.abs(diff)>0.005?`<small class="r">⚠ Does not balance by ${money(diff)} — check for deleted accounts.</small>`:'<small>Balanced ✔ Assets − liabilities = equity.</small>'}`}
+function fav(){const t=today(),r=S.fixed.map(x=>({x,ad:accDep(x,t)})),c=r.reduce((s,y)=>s+y.x.cost,0),d=r.reduce((s,y)=>s+y.ad,0);
+return`<div class="row3"><div class="card">Cost<h3>${money(c)}</h3></div><div class="card">Acc. depreciation<h3>${money(d)}</h3></div><div class="card">Net book value<h3>${money(c-d)}</h3></div></div>
+<button onclick="faEd('')">+ Add fixed asset</button><div class="tw"><table><tr><th>Asset<th>Bought<th>Method<th class="n">Cost<th class="n">Acc. dep.<th class="n">NBV</tr>${r.map(y=>`<tr onclick="faEd('${y.x.id}')"><td>🏗️ ${esc(y.x.name)}<td>${y.x.date}<td>${({sl:'Straight-line',rb:'Reducing '+y.x.rate+'%',cu:'Custom'})[y.x.m]||''}<td class="n">${money(y.x.cost)}<td class="n">${money(y.ad)}<td class="n">${money(y.x.cost-y.ad)}`).join('')||'<tr><td colspan="6"><small>No fixed assets yet</small>'}</table></div>
+<small>Depreciation is charged monthly from the purchase month and shows in the Profit &amp; Loss. Tap an asset to change its method or formula any time.</small>`}
+function faEd(id){const a=S.fixed.find(x=>x.id==id)||{id:'',name:'',date:today(),cost:0,res:0,life:5,m:'sl',rate:20,expr:'(cost-res)/life',acc:''};let sc='';
+if(a.id){const ny=Math.min(Math.ceil(a.life||1),15),ms=dsched(a,ny*12);sc=`<h4>Depreciation schedule</h4><div class="tw"><table><tr><th>Year<th class="n">Opening NBV<th class="n">Charge<th class="n">Closing NBV</tr>${Array.from({length:ny},(_,y)=>{const e=ms[12*y+11],s0=y?ms[12*y-1]:0;return`<tr><td>${y+1}<td class="n">${money(a.cost-s0)}<td class="n">${money(e-s0)}<td class="n">${money(a.cost-e)}`}).join('')}</table></div>`}
+$('#m').innerHTML=`<div><h3>${a.id?'Edit':'New'} fixed asset</h3><input id="fa_n" placeholder="Asset name (e.g. Laptop, Car)" value="${esc(a.name)}">
+<div class="two"><div><small>Purchase date</small><input id="fa_d" type="date" value="${a.date}"></div><div><small>Cost</small><input id="fa_c" type="number" step="0.01" inputmode="decimal" value="${a.cost||''}"></div></div>
+<div class="two"><div><small>Residual value</small><input id="fa_r" type="number" step="0.01" value="${a.res||0}"></div><div><small>Useful life (years)</small><input id="fa_l" type="number" step="0.5" value="${a.life}"></div></div>
+<small>Paid from</small><select id="fa_a"><option value="">Already owned (opening)</option>${opts(S.accs,a.acc,x=>esc(x.name))}</select>
+<small>Depreciation method</small><select id="fa_m" onchange="tgf()"><option value="sl" ${a.m=='sl'?'selected':''}>Straight-line</option><option value="rb" ${a.m=='rb'?'selected':''}>Reducing balance</option><option value="cu" ${a.m=='cu'?'selected':''}>Custom formula</option></select>
+<div id="fa_rb"><small>Rate % per year (reducing balance)</small><input id="fa_p" type="number" step="0.1" value="${a.rate||0}"></div>
+<div id="fa_cu"><small>Yearly depreciation formula</small><input id="fa_e" value="${esc(a.expr||'')}"><small>Variables: cost, res, life, rate, n (year number), nbv (opening net book value). Functions: min, max, round, abs. Examples: (cost-res)/life · nbv*rate/100 · max(nbv*0.4,(cost-res)/life)</small></div>
+<button onclick="saveFa('${a.id}')">Save</button>${a.id?`<button class="d" onclick="delFa('${a.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button>${sc}</div>`;$('#m').className='modal show';tgf()}
+function tgf(){const m=$('#fa_m').value;$('#fa_rb').style.display=m=='rb'?'':'none';$('#fa_cu').style.display=m=='cu'?'':'none'}
+function saveFa(id){const g=x=>$('#fa_'+x).value,c=parseFloat(g('c'))||0,l=parseFloat(g('l'))||0;if(!g('n')||!c||!l)return setStatus('Enter name, cost and life');
+put('fixed',{id:id||uid(),name:g('n'),date:g('d'),cost:c,res:parseFloat(g('r'))||0,life:l,m:g('m'),rate:parseFloat(g('p'))||0,expr:g('e'),acc:g('a')});closeM()}
+function delFa(id){if(confirm('Delete this fixed asset?')){rm('fixed',id);closeM()}}
 function bills(k){const t=today(),o=S.bills.filter(b=>b.k==k).sort((a,b)=>(a.due||'9').localeCompare(b.due||'9')).map(b=>({b,o:out(b)})),tot=o.reduce((s,x)=>s+x.o,0),od=o.filter(x=>x.o>0.005&&x.b.due&&x.b.due<t).reduce((s,x)=>s+x.o,0);
 return`<div class="row3"><div class="card">Outstanding<h3>${money(tot)}</h3></div><div class="card">Overdue<h3 class="${od?'r':''}">${money(od)}</h3></div><div class="card">${k=='ar'?'Customers':'Suppliers'}<h3>${new Set(o.filter(x=>x.o>0.005).map(x=>x.b.party)).size}</h3></div></div>
 <button onclick="billEd('','${k}')">+ Add ${k=='ar'?'receivable (invoice you issued)':'payable (bill you owe)'}</button>
@@ -208,14 +247,14 @@ return det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</smal
 <div class="g3b"><select onchange="upd('accs','${a.id}','t',this.value)">${Object.entries(AT).map(([k,v])=>`<option value="${k}" ${(a.t||'bank')==k?'selected':''}>${v}</option>`).join('')}</select><input type="number" step="0.01" value="${a.open||0}" onchange="upd('accs','${a.id}','open',parseFloat(this.value)||0)"><input type="color" value="${a.color}" onchange="upd('accs','${a.id}','color',this.value)"></div></div>`).join('')
 +`<button class="s" onclick="put('accs',{id:uid(),name:'New account',t:'bank',color:'#4f8cff',open:0})">+ Add account</button><small>Tap the icon for a logo. Type · opening balance (for credit cards and loans, enter the amount you owe) · colour</small>`)
 +det('sh',`🛒 Shops &amp; brands (${S.shops.length})`,S.shops.map(x=>`<div class="row5"><label class="lgl">${lg(x)}<input type="file" accept="image/*" hidden onchange="logoUp('shops','${x.id}',this.files[0])"></label><input value="${esc(x.name)}" onchange="upd('shops','${x.id}','name',this.value)"><input value="${esc(x.i||'')}" placeholder="emoji" onchange="upd('shops','${x.id}','i',this.value)"><input type="color" value="${x.color||'#94a3b8'}" onchange="upd('shops','${x.id}','color',this.value)"><button class="d" onclick="rm('shops','${x.id}')">×</button></div>`).join('')+`<button class="s" onclick="put('shops',{id:uid(),name:'New shop',i:'🏷️',color:'#94a3b8'})">+ Add shop</button>`)
-+det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${opts(S.cats,S.cfg.gFuel||'c8',k=>k.i+' '+esc(k.name))}</select><select onchange="cfg('gSvc',this.value)">${opts(S.cats,S.cfg.gSvc||'c9',k=>k.i+' '+esc(k.name))}</select></div><small>Fuel category · service category</small>`)
++det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${opts(S.cats,S.cfg.gFuel||'c8',k=>k.i+' '+esc(k.name))}</select><select onchange="cfg('gSvc',this.value)">${opts(S.cats,S.cfg.gSvc||'c9',k=>k.i+' '+esc(k.name))}</select></div><small>Fuel category · service category</small><small>Tap a 🔗 entry in the Register to edit it here without changing Garage.</small>${S.govr.some(o=>o.h)?`<button class="s" onclick="gRestore()">Restore ${S.govr.filter(o=>o.h).length} hidden</button>`:''}`)
 +det('bk','💾 Backup',`<button class="s" onclick="exp()">Export JSON</button><input type="file" accept=".json" onchange="imp(this.files[0])">`)}
 
 /* ---------- transaction form ---------- */
 function edit(id){const t=TX().find(x=>x.id==id);
-if(t&&t.g){$('#m').innerHTML=`<div><h3>🔗 From Garage</h3><p>${esc(t.desc)}</p><p>${t.date} · <b class="r">${money(t.amt)}</b></p>${t.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(a.link)}" target="_blank" rel="noopener">↗</a></div>`).join('')}<small>Edit or delete this in Garage — it updates here automatically.</small><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show';return}
+if(t&&t.f){faEd(t.id.slice(2));return}
 cur=t?structuredClone(t):{id:'',date:today(),desc:'',amt:0,cat:(S.cats[0]||{}).id,acc:fa||(S.accs[0]||{}).id,note:'',att:[]};cur.att=cur.att||[];cur.rem=[];
-$('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3><div class="two"><select id="f_type" onchange="tg()"><option value="e">Expense</option><option value="i" ${cur.amt>0&&!cur.tr?'selected':''}>Income</option><option value="t" ${cur.tr?'selected':''}>Transfer / repayment</option></select>
+$('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3>${t&&t.g?'<small>🔗 From Garage — changes here only affect Ledger, not Garage.</small>':''}<div class="two"><select id="f_type" onchange="tg()"><option value="e">Expense</option><option value="i" ${cur.amt>0&&!cur.tr?'selected':''}>Income</option><option value="t" ${cur.tr?'selected':''}>Transfer / repayment</option></select>
 <input id="f_amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" value="${Math.abs(cur.amt)||''}"></div>
 <input id="f_date" type="date" value="${cur.date}"><input id="f_desc" placeholder="Description / payee" value="${esc(cur.desc)}">
 <div id="f_c"><select id="f_cat">${opts(S.cats,cur.cat,k=>k.i+' '+esc(k.name))}</select></div><div class="two"><select id="f_acc">${opts(S.accs,cur.acc,a=>esc(a.name))}</select><select id="f_to">${opts(S.accs,cur.to,a=>'→ '+esc(a.name))}</select></div>
@@ -223,7 +262,7 @@ $('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3><div class="two"><
 <input id="f_note" placeholder="Note" value="${esc(cur.note)}">
 ${cur.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(a.link)}" target="_blank" rel="noopener">↗</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
 <small>Attach receipts (PDF or image) — saved to Google Drive</small><input id="f_files" type="file" multiple accept="image/*,application/pdf">
-<button onclick="saveTx('${cur.id}')">Save</button>${t?`<button class="d" onclick="delTx('${cur.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
+<button onclick="saveTx('${cur.id}')">Save</button>${t&&t.g?`<button class="s" onclick="gReset('${cur.id}')">Reset to Garage</button><button class="d" onclick="gHide('${cur.id}')">Hide from Ledger</button>`:t?`<button class="d" onclick="delTx('${cur.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
 $('#m').className='modal show';tg()}
 function tg(){const t=$('#f_type').value=='t';$('#f_to').style.display=t?'':'none';$('#f_c').style.display=t?'none':'';$('#f_shop').style.display=t?'none':''}
 const closeM=()=>{$('#m').className='modal'};
@@ -233,6 +272,7 @@ const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a
 if(files.length){try{setStatus('Uploading…');const f=await path(S.cfg.root,'Receipts',t.date.slice(0,7));
 for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,30)}_${x.name}`));t.att.push({id:r.id,name:x.name,link:r.webViewLink})}}
 catch(e){return setStatus('Upload failed: '+e.message)}}
+if(t.g){put('govr',{id:t.id,h:0,f:{date:t.date,desc:t.desc,amt:t.amt,cat:t.cat,acc:t.acc,shop:t.shop,note:t.note,att:t.att}});closeM();return}
 if(rem.length){try{await trash(rem)}catch(e){}}put('tx',t);closeM()}
 async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,f=$('#s_from').value,t=$('#s_to').value;if(!files.length||!a||!f||!t)return setStatus('Pick account, dates and file');
 try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),f.slice(0,4));
@@ -246,5 +286,6 @@ x.strokeStyle=A;x.lineWidth=8;x.lineJoin=x.lineCap='round';const rr=(a,b,w,h,r)=
 rr(32,58,116,78,16);x.stroke();x.beginPath();x.moveTo(48,58);x.lineTo(112,36);x.lineTo(122,58);x.stroke();
 rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A;x.fill();
 const u=c.toDataURL();for(const r of['icon','apple-touch-icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
+document.addEventListener('click',e=>{const t=e.target;if(t&&t.matches&&t.matches('input[type=date],input[type=month]')&&t.showPicker){try{t.showPicker()}catch(x){}}});
 render();if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
