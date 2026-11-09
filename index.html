@@ -12,8 +12,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,sans-seri
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;position:sticky;top:0;background:var(--bg);z-index:5}
 header span{color:var(--mut);font-size:12px}
 main{max-width:900px;margin:auto;padding:0 12px 130px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);padding-bottom:env(safe-area-inset-bottom);z-index:6}
-nav a{flex:1;text-align:center;padding:8px 0;color:var(--mut);cursor:pointer;display:flex;flex-direction:column;font-size:18px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;overflow-x:auto;background:var(--card);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav a{flex:1 0 52px;text-align:center;padding:8px 2px;color:var(--mut);cursor:pointer;display:flex;flex-direction:column;font-size:18px}
 nav a small{font-size:11px}nav a.on{color:var(--acc)}
 .fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:30px;z-index:7;box-shadow:0 4px 14px #0006}
 .card{background:var(--card);border-radius:12px;padding:12px;margin:8px 0}
@@ -170,7 +170,7 @@ const mo=d=>{const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.get
 function render(){GT=gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,st:stv,set:sett}[tab]();
 $('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b><span id="stat">${esc(status)}</span></header><main>${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['rp','bd','cm','st','set'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
 ${tab=='ov'||tab=='tx'?'<button class="fab" onclick="edit()">+</button>':''}`}
 function ov(){const m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
@@ -259,7 +259,7 @@ return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)"
 return`<div class="card"><div class="fl"><span>${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${b||''}" style="width:110px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>
 <div class="fl"><small>Spent ${money(sp)}</small><small class="${b&&sp>b?'r':''}">${b?(sp>b?'Over by '+money(sp-b):'Left '+money(b-sp)):'No budget'}</small></div>
 <div style="height:6px;background:#8883;border-radius:3px"><i style="display:block;height:6px;border-radius:3px;width:${p}%;background:${b&&sp>b?'var(--r)':b&&sp>=b*(S.cfg.bw||80)/100?'#f59e0b':c.color}"></i></div></div>`}).join('')}`}
-function mre(){const l=[['rp','📑','Reports','Profit &amp; loss, balance sheet, receivables, payables, fixed assets'],['bd','🎯','Budget','Monthly limits per category'],['cm','🏷️','Category manager','Expense and income categories'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="go('${k}')" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 function acm(){const as=S.accs,ta=as.filter(a=>!isL(a)).reduce((s,a)=>s+bal(a),0),tl=-as.filter(isL).reduce((s,a)=>s+bal(a),0);
 return`<div class="row3"><div class="card">Assets<h3 class="g">${money(ta)}</h3></div><div class="card">Owed<h3 class="r">${money(tl)}</h3></div><div class="card">Net worth<h3>${money(ta-tl)}</h3></div></div>
