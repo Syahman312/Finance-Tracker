@@ -79,12 +79,13 @@ async function path(...p){let id=null;for(const n of p)id=await folder(n,id);ret
 async function upload(file,parent,name,existing){const fd=new FormData();
 fd.append('metadata',new Blob([JSON.stringify({name,...(existing?{}:{parents:[parent]})})],{type:'application/json'}));fd.append('file',file);
 return(await api(`https://www.googleapis.com/upload/drive/v3/files${existing?'/'+existing:''}?uploadType=multipart&fields=id,webViewLink`,{method:existing?'PATCH':'POST',body:fd})).json()}
-async function sync(){if(busy||!localStorage.getItem(ON))return;busy=true;setStatus('Syncing…');
-try{const root=await path(S.cfg.root),id=await find('data.json',root);
-if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
-await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id);
+const SU='ledger.sheet',SK='ledger.key';
+async function sync(){const u=localStorage.getItem(SU);if(busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
+try{if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',data:S})})).json();if(r.error)throw new Error(r.error);merge(r.data)}
+else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
+await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
 localStorage.setItem(K,JSON.stringify(S));setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}
-catch(e){setStatus('Sync failed — tap Settings › Sync');console.warn(e)}busy=false;render()}
+catch(e){setStatus('Sync failed — '+String(e.message).slice(0,60));console.warn(e)}busy=false;render()}
 async function connect(){try{await auth();await sync()}catch(e){setStatus(e.message)}}
 const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
 async function trash(ids){for(const id of ids.filter(Boolean)){try{await api(`${D}/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}catch(e){if(!/^404/.test(e.message))throw e}}}
@@ -120,7 +121,8 @@ function stv(){return`<h4>Upload bank statement</h4><div class="card"><div class
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button></div>
 <h4>Statements</h4>${[...S.stm].sort((a,b)=>b.month.localeCompare(a.month)).map(s=>`<div class="card fl"><a href="${esc(s.link)}" target="_blank" rel="noopener">📄 ${esc(s.name)}</a><small>${esc(acc(s.acc).name)} · ${s.month}</small><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
 function sett(){const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
-return`<h4>Google Drive sync</h4><div class="card"><small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())">
+return`<h4>Google Sheet sync (data)</h4><div class="card"><small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button></div>
+<h4>Google Drive (receipts &amp; statements)</h4><div class="card"><small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())">
 <small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect &amp; sync now</button></div>
 <h4>Appearance</h4><div class="card"><small>App name</small>${inp('name')}<div class="two"><div><small>Currency symbol</small>${inp('cur')}</div><div><small>Accent colour</small>${inp('accent','color')}</div></div>
 <small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select></div>
@@ -156,7 +158,10 @@ catch(e){setStatus('Upload failed: '+e.message)}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='ledger-backup.json';a.click()}
 async function imp(f){if(!f)return;try{merge(JSON.parse(await f.text()));save()}catch(e){setStatus('Bad file')}}
 
-(()=>{const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');x.fillStyle='#4f8cff';x.fillRect(0,0,180,180);x.font='110px serif';x.textAlign='center';x.fillText('💰',90,130);
-const l=document.createElement('link');l.rel='apple-touch-icon';l.href=c.toDataURL();document.head.append(l)})();
-render();if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
+(()=>{const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d'),A='#4f8cff';x.fillStyle='#000';x.fillRect(0,0,180,180);
+x.strokeStyle=A;x.lineWidth=8;x.lineJoin=x.lineCap='round';const rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,h,r):x.rect(a,b,w,h)};
+rr(32,58,116,78,16);x.stroke();x.beginPath();x.moveTo(48,58);x.lineTo(112,36);x.lineTo(122,58);x.stroke();
+rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A;x.fill();
+const u=c.toDataURL();for(const r of['icon','apple-touch-icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
+render();if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
