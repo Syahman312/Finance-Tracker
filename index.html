@@ -33,8 +33,9 @@ input[type=color]{padding:2px;height:40px}small{color:var(--mut)}a{color:var(--a
 .modal{display:none;position:fixed;inset:0;background:#0009;z-index:9;overflow:auto}.modal.show{display:block}
 .modal>div{background:var(--card);max-width:480px;margin:5vh auto;padding:16px;border-radius:14px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:60px 1fr 60px 40px;gap:6px}
+.row5{display:grid;grid-template-columns:44px 1fr 80px 46px 36px;gap:6px;align-items:center}.lgl{display:flex;justify-content:center;cursor:pointer;font-size:24px}
 </style></head><body>
-<div id="app"></div><div id="m" class="modal"></div>
+<div id="app"></div><div id="m" class="modal"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder';
@@ -44,13 +45,21 @@ let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
 S=S||{cfg:{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark',root:'Finance Tracker',u:0},
 cats:[['c1','Food','🍜','#f59e0b'],['c2','Transport','🚗','#3b82f6'],['c3','Bills','💡','#a855f7'],['c4','Shopping','🛍️','#ec4899'],['c5','Health','🏥','#ef4444'],['c6','Salary','💰','#22c55e'],['c7','Other','📦','#94a3b8']].map(([id,name,i,color])=>({id,name,i,color,u:0})),
 accs:[['a1','Cash','#22c55e'],['a2','Bank','#4f8cff']].map(([id,name,color])=>({id,name,color,open:0,u:0})),tx:[],stm:[],del:{}};
+S.shops=S.shops||[['s1','Shell','🐚'],['s2','Petronas','⛽'],['s3',"Lotus's",'🛒'],['s4','Shopee','🧡'],['s5','Grab','🚖'],['s6','Starbucks','☕']].map(([id,name,i])=>({id,name,i,color:'#94a3b8',u:0}));
+[['c8','Fuel','⛽','#f97316'],['c9','Car service','🔧','#14b8a6']].forEach(([id,name,i,color])=>{if(!S.cats.some(c=>c.id==id)&&!(S.del||{})[id])S.cats.push({id,name,i,color,u:0})});
 let tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
 const acc=id=>S.accs.find(a=>a.id==id)||{name:'?',color:'#888',open:0};
 const cat=id=>S.cats.find(c=>c.id==id)||{name:'Uncategorised',i:'❓',color:'#888'};
-const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=a=>(a.open||0)+sum(S.tx.filter(t=>t.acc==a.id));
+const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=a=>(a.open||0)+sum(TX().filter(t=>t.acc==a.id));
 const money=n=>(n<0?'-':'')+S.cfg.cur+' '+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const opts=(l,sel,f)=>l.map(x=>`<option value="${x.id}" ${x.id==sel?'selected':''}>${f(x)}</option>`).join('');
 const setStatus=m=>{status=m;const e=$('#stat');if(e)e.textContent=m};
+const lg=x=>x.logo?`<img src="${x.logo}" style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle">`:esc(x.i||'🏦');
+let GT=[];
+const gt=()=>{let G=[];try{G=JSON.parse(localStorage.getItem('ledger.g')||'[]')}catch(e){}const car={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});
+return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petrol|refuel/i.test(i.kind),what=f?[i.brand,i.place].filter(Boolean).join(' '):[].concat(i.item||i.name||'').join(', ');
+return{id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:i.rid?[{id:i.rid,name:'Garage receipt',link:'https://drive.google.com/file/d/'+i.rid+'/view'}]:[]}})};
+const TX=()=>S.tx.concat(GT);
 
 /* ---------- storage & merge ---------- */
 function save(){localStorage.setItem(K,JSON.stringify(S));render();clearTimeout(timer);timer=setTimeout(sync,1500)}
@@ -59,7 +68,7 @@ function rm(k,id){S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
 function cfg(f,v){S.cfg[f]=v;S.cfg.u=now();save()}
 function merge(r){const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
-for(const k of['tx','stm','cats','accs']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
+for(const k of['tx','stm','cats','accs','shops']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
 
 /* ---------- Google Drive ---------- */
@@ -79,12 +88,24 @@ async function path(...p){let id=null;for(const n of p)id=await folder(n,id);ret
 async function upload(file,parent,name,existing){const fd=new FormData();
 fd.append('metadata',new Blob([JSON.stringify({name,...(existing?{}:{parents:[parent]})})],{type:'application/json'}));fd.append('file',file);
 return(await api(`https://www.googleapis.com/upload/drive/v3/files${existing?'/'+existing:''}?uploadType=multipart&fields=id,webViewLink`,{method:existing?'PATCH':'POST',body:fd})).json()}
+async function blobOf(id){const u=localStorage.getItem(SU);
+if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',action:'get',fid:id})})).json();if(r.error)throw new Error(r.error);
+const b=atob(r.data),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:r.mime})}
+return await(await api(`${D}/${id}?alt=media`)).blob()}
+async function pv(id){const p=$('#p'),cl=`<button class="s" onclick="$('#p').className='modal'">Close</button>`;p.className='modal show';p.innerHTML='<div><small>Loading preview…</small></div>';
+try{const b=await blobOf(id),u=URL.createObjectURL(b),t=b.type;
+p.innerHTML=`<div style="max-width:720px">${t.startsWith('image/')?`<img src="${u}" style="width:100%;border-radius:8px">`:t=='application/pdf'?`<iframe src="${u}" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>`:`<a href="${u}" download>Download file</a>`}${cl}</div>`}
+catch(e){p.innerHTML=`<div><small>Preview failed: ${esc(e.message)}</small>${cl}</div>`}}
+function logoUp(k,id,f){if(!f)return;const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d'),m=Math.min(im.width,im.height);
+x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,96,96);upd(k,id,'logo',c.toDataURL('image/png'))};im.src=URL.createObjectURL(f)}
+function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S.shops.find(x=>x.name.toLowerCase()==n.toLowerCase());
+if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
 async function sync(){const u=localStorage.getItem(SU);if(busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
-try{if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',data:S})})).json();if(r.error)throw new Error(r.error);merge(r.data)}
+let ge='';try{if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',data:S})})).json();if(r.error)throw new Error(r.error);merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
-localStorage.setItem(K,JSON.stringify(S));setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}
+localStorage.setItem(K,JSON.stringify(S));setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':''))}
 catch(e){setStatus('Sync failed — '+String(e.message).slice(0,60));console.warn(e)}busy=false;render()}
 async function connect(){try{await auth();await sync()}catch(e){setStatus(e.message)}}
 const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
@@ -100,26 +121,27 @@ rm('stm',id)}
 /* ---------- views ---------- */
 const go=k=>{tab=k;render();scrollTo(0,0)};
 const mo=d=>{const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
-function render(){const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
+function render(){GT=gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,st:stv,set:sett}[tab]();
 $('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b><span id="stat">${esc(status)}</span></header><main>${v}</main>
 <nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['st','🏦','Statements'],['set','⚙️','Settings']].map(([k,i,l])=>`<a class="${tab==k?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
 ${tab=='ov'||tab=='tx'?'<button class="fab" onclick="edit()">+</button>':''}`}
-function ov(){const m=S.tx.filter(t=>t.date.startsWith(ym)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
-m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
+function ov(){const m=TX().filter(t=>t.date.startsWith(ym)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
+m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
 <div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
-<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${esc(a.name)}</small><h3>${money(bal(a))}</h3></div>`).join('')}</div>
-<h4>Spending by category</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const k=cat(c);return`<div class="bar"><div class="fl"><span>${k.i} ${esc(k.name)}</span><span>${money(v)}</span></div><i style="width:${v/exp*100}%;background:${k.color}"></i></div>`}).join('')||'<small>No expenses this month</small>'}</div>`}
+<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${lg(a)} ${esc(a.name)}</small><h3>${money(bal(a))}</h3></div>`).join('')}</div>
+<h4>Spending by category</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const k=cat(c);return`<div class="bar"><div class="fl"><span>${k.i} ${esc(k.name)}</span><span>${money(v)}</span></div><i style="width:${v/exp*100}%;background:${k.color}"></i></div>`}).join('')||'<small>No expenses this month</small>'}</div>
+<h4>Top shops</h4><div class="card">${Object.entries(bs).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([id,v])=>{const k=S.shops.find(x=>x.id==id)||{name:'?',i:'🏷️'};return`<div class="fl" style="margin:6px 0"><span>${lg(k)} ${esc(k.name)}</span><span>${money(v)}</span></div>`}).join('')||'<small>Add a shop when you record an expense</small>'}</div>`}
 function reg(){let run=fa?acc(fa).open||0:null;
-const rows=S.tx.filter(t=>(!fa||t.acc==fa)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u)
+const rows=TX().filter(t=>(!fa||t.acc==fa)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u)
 .map(t=>{if(run!==null)run+=t.amt;return{t,run}}).reverse().slice(0,300);
 return`<div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()"></div>
-<div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
-${rows.map(({t,run})=>{const k=cat(t.cat);return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${esc(t.desc)} ${t.att&&t.att.length?'📎'+t.att.length:''}<td>${k.i} ${esc(k.name)}<td>${esc(acc(t.acc).name)}<td class="n ${t.amt<0?'r':'g'}">${money(t.amt)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="6"><small>No transactions yet — tap +</small>'}</table></div>`}
+<div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
+${rows.map(({t,run})=>{const k=cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc);return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?'🔗 ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.amt<0?'r':'g'}">${money(t.amt)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions yet — tap +</small>'}</table></div>`}
 function stv(){return`<h4>Upload bank statement</h4><div class="card"><div class="two"><select id="s_acc">${opts(S.accs,'',a=>esc(a.name))}</select><input id="s_mon" type="month" value="${ym}"></div>
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button></div>
-<h4>Statements</h4>${[...S.stm].sort((a,b)=>b.month.localeCompare(a.month)).map(s=>`<div class="card fl"><a href="${esc(s.link)}" target="_blank" rel="noopener">📄 ${esc(s.name)}</a><small>${esc(acc(s.acc).name)} · ${s.month}</small><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
+<h4>Statements</h4>${[...S.stm].sort((a,b)=>b.month.localeCompare(a.month)).map(s=>`<div class="card fl"><a onclick="pv('${fid(s)}')">📄 ${esc(s.name)}</a><a href="${esc(s.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(s.acc).name)} · ${s.month}</small><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
 function sett(){const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<h4>Google Sheet sync (data)</h4><div class="card"><small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button></div>
 <h4>Google Drive (receipts &amp; statements)</h4><div class="card"><small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())">
@@ -128,25 +150,32 @@ return`<h4>Google Sheet sync (data)</h4><div class="card"><small>Apps Script Web
 <small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select></div>
 <h4>Categories</h4><div class="card">${S.cats.map(k=>`<div class="three"><input value="${esc(k.i)}" onchange="upd('cats','${k.id}','i',this.value)"><input value="${esc(k.name)}" onchange="upd('cats','${k.id}','name',this.value)"><input type="color" value="${k.color}" onchange="upd('cats','${k.id}','color',this.value)"><button class="d" onclick="rm('cats','${k.id}')">×</button></div>`).join('')}
 <button class="s" onclick="put('cats',{id:uid(),name:'New',i:'📦',color:'#94a3b8'})">+ Add category</button></div>
-<h4>Accounts</h4><div class="card">${S.accs.map(a=>`<div class="three" style="grid-template-columns:1fr 90px 60px 40px"><input value="${esc(a.name)}" onchange="upd('accs','${a.id}','name',this.value)"><input type="number" step="0.01" value="${a.open||0}" title="Opening balance" onchange="upd('accs','${a.id}','open',parseFloat(this.value)||0)"><input type="color" value="${a.color}" onchange="upd('accs','${a.id}','color',this.value)"><button class="d" onclick="if(confirm('Delete account?'))rm('accs','${a.id}')">×</button></div>`).join('')}
-<button class="s" onclick="put('accs',{id:uid(),name:'New account',color:'#4f8cff',open:0})">+ Add account</button><small>Name · opening balance · colour</small></div>
+<h4>Accounts</h4><div class="card">${S.accs.map(a=>`<div class="row5"><label class="lgl">${lg(a)}<input type="file" accept="image/*" hidden onchange="logoUp('accs','${a.id}',this.files[0])"></label><input value="${esc(a.name)}" onchange="upd('accs','${a.id}','name',this.value)"><input type="number" step="0.01" value="${a.open||0}" title="Opening balance" onchange="upd('accs','${a.id}','open',parseFloat(this.value)||0)"><input type="color" value="${a.color}" onchange="upd('accs','${a.id}','color',this.value)"><button class="d" onclick="if(confirm('Delete account?'))rm('accs','${a.id}')">×</button></div>`).join('')}
+<button class="s" onclick="put('accs',{id:uid(),name:'New account',color:'#4f8cff',open:0})">+ Add account</button><small>Tap the icon to upload a logo · name · opening balance · colour</small></div>
+<h4>Shops &amp; brands</h4><div class="card">${S.shops.map(x=>`<div class="row5"><label class="lgl">${lg(x)}<input type="file" accept="image/*" hidden onchange="logoUp('shops','${x.id}',this.files[0])"></label><input value="${esc(x.name)}" onchange="upd('shops','${x.id}','name',this.value)"><input value="${esc(x.i||'')}" placeholder="emoji" onchange="upd('shops','${x.id}','i',this.value)"><input type="color" value="${x.color||'#94a3b8'}" onchange="upd('shops','${x.id}','color',this.value)"><button class="d" onclick="rm('shops','${x.id}')">×</button></div>`).join('')}
+<button class="s" onclick="put('shops',{id:uid(),name:'New shop',i:'🏷️',color:'#94a3b8'})">+ Add shop</button><small>New shops are also added when you type one in a transaction</small></div>
+<h4>Garage link</h4><div class="card"><small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select>
+<div class="two"><select onchange="cfg('gFuel',this.value)">${opts(S.cats,S.cfg.gFuel||'c8',k=>k.i+' '+esc(k.name))}</select><select onchange="cfg('gSvc',this.value)">${opts(S.cats,S.cfg.gSvc||'c9',k=>k.i+' '+esc(k.name))}</select></div><small>Fuel category · service category</small></div>
 <h4>Backup</h4><div class="card"><button class="s" onclick="exp()">Export JSON</button><input type="file" accept=".json" onchange="imp(this.files[0])"></div>`}
 
 /* ---------- transaction form ---------- */
-function edit(id){const t=S.tx.find(x=>x.id==id);cur=t?structuredClone(t):{id:'',date:today(),desc:'',amt:0,cat:(S.cats[0]||{}).id,acc:fa||(S.accs[0]||{}).id,note:'',att:[]};cur.att=cur.att||[];cur.rem=[];
+function edit(id){const t=TX().find(x=>x.id==id);
+if(t&&t.g){$('#m').innerHTML=`<div><h3>🔗 From Garage</h3><p>${esc(t.desc)}</p><p>${t.date} · <b class="r">${money(t.amt)}</b></p>${t.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(a.link)}" target="_blank" rel="noopener">↗</a></div>`).join('')}<small>Edit or delete this in Garage — it updates here automatically.</small><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show';return}
+cur=t?structuredClone(t):{id:'',date:today(),desc:'',amt:0,cat:(S.cats[0]||{}).id,acc:fa||(S.accs[0]||{}).id,note:'',att:[]};cur.att=cur.att||[];cur.rem=[];
 $('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3><div class="two"><select id="f_type"><option value="e">Expense</option><option value="i" ${cur.amt>0?'selected':''}>Income</option></select>
 <input id="f_amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" value="${Math.abs(cur.amt)||''}"></div>
 <input id="f_date" type="date" value="${cur.date}"><input id="f_desc" placeholder="Description / payee" value="${esc(cur.desc)}">
 <div class="two"><select id="f_cat">${opts(S.cats,cur.cat,k=>k.i+' '+esc(k.name))}</select><select id="f_acc">${opts(S.accs,cur.acc,a=>esc(a.name))}</select></div>
+<input id="f_shop" list="shl" placeholder="Shop / brand (e.g. Shell, Shopee)" value="${esc((S.shops.find(x=>x.id==cur.shop)||{}).name||'')}"><datalist id="shl">${S.shops.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
 <input id="f_note" placeholder="Note" value="${esc(cur.note)}">
-${cur.att.map(a=>`<div class="fl"><a href="${esc(a.link)}" target="_blank" rel="noopener">📎 ${esc(a.name)}</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
+${cur.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(a.link)}" target="_blank" rel="noopener">↗</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
 <small>Attach receipts (PDF or image) — saved to Google Drive</small><input id="f_files" type="file" multiple accept="image/*,application/pdf">
 <button onclick="saveTx('${cur.id}')">Save</button>${t?`<button class="d" onclick="delTx('${cur.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
 $('#m').className='modal show'}
 const closeM=()=>{$('#m').className='modal'};
 async function saveTx(id){const g=x=>$('#f_'+x).value,a=Math.abs(parseFloat(g('amt')))||0;
 if(!a)return setStatus('Enter an amount');
-const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a:a,cat:g('cat'),acc:g('acc'),note:g('note')},files=[...$('#f_files').files],rem=cur.rem||[];delete t.rem;
+const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a:a,cat:g('cat'),acc:g('acc'),note:g('note'),shop:shopId()},files=[...$('#f_files').files],rem=cur.rem||[];delete t.rem;
 if(files.length){try{setStatus('Uploading…');const f=await path(S.cfg.root,'Receipts',t.date.slice(0,7));
 for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,30)}_${x.name}`));t.att.push({id:r.id,name:x.name,link:r.webViewLink})}}
 catch(e){return setStatus('Upload failed: '+e.message)}}
