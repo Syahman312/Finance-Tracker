@@ -12,8 +12,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,sans-seri
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;position:sticky;top:0;background:var(--bg);z-index:5}
 header span{color:var(--mut);font-size:12px}
 main{max-width:900px;margin:auto;padding:0 12px 130px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);padding-bottom:env(safe-area-inset-bottom);z-index:6}
-nav a{flex:1;text-align:center;padding:8px 0;color:var(--mut);cursor:pointer;display:flex;flex-direction:column;font-size:18px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;overflow-x:auto;background:var(--card);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav a{flex:1 0 52px;text-align:center;padding:8px 2px;color:var(--mut);cursor:pointer;display:flex;flex-direction:column;font-size:18px}
 nav a small{font-size:11px}nav a.on{color:var(--acc)}
 .fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:30px;z-index:7;box-shadow:0 4px 14px #0006}
 .card{background:var(--card);border-radius:12px;padding:12px;margin:8px 0}
@@ -51,16 +51,24 @@ cats:[['c1','Food','🍜','#f59e0b'],['c2','Transport','🚗','#3b82f6'],['c3','
 accs:[['a1','Cash','#22c55e'],['a2','Bank','#4f8cff']].map(([id,name,color])=>({id,name,color,t:id=='a1'?'cash':'bank',open:0,u:0})),tx:[],stm:[],del:{}};
 S.bills=S.bills||[];S.buds=S.buds||[];S.govr=S.govr||[];S.fixed=S.fixed||[];S.rec=S.rec||[];
 S.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});
+if(!S.cats.some(c=>c.id=='cadj')&&!(S.del||{}).cadj)S.cats.push({id:'cadj',name:'Balance adjustment',i:'⚖️',color:'#94a3b8',ty:'e',u:0});
 S.shops=S.shops||[['s1','Shell','🐚'],['s2','Petronas','⛽'],['s3',"Lotus's",'🛒'],['s4','Shopee','🧡'],['s5','Grab','🚖'],['s6','Starbucks','☕']].map(([id,name,i])=>({id,name,i,color:'#94a3b8',u:0}));
 [['c8','Fuel','⛽','#f97316'],['c9','Car service','🔧','#14b8a6']].forEach(([id,name,i,color])=>{if(!S.cats.some(c=>c.id==id)&&!(S.del||{})[id])S.cats.push({id,name,i,color,u:0})});
-let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',ra=false,rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
+let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',rmode='m',xf='',xt='',sy=today().slice(0,4),sm=today().slice(5,7),sa='',ME=null,view='',rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
 const acc=id=>S.accs.find(a=>a.id==id)||{name:'?',color:'#888',open:0};
-const cat=id=>id=='_dep'?{name:'Depreciation',i:'📉',color:'#94a3b8'}:S.cats.find(c=>c.id==id)||{name:'Uncategorised',i:'❓',color:'#888'};
+const isMain=c=>!c.p||!S.cats.some(x=>x.id==c.p);
+const mainOf=id=>{const c=S.cats.find(x=>x.id==id);return c&&!isMain(c)?c.p:id};
+const cat=id=>{if(id=='_dep')return{name:'Depreciation',i:'📉',color:'#94a3b8'};const c=S.cats.find(x=>x.id==id);if(!c)return{name:'Uncategorised',i:'❓',color:'#888'};const m=!isMain(c)&&S.cats.find(x=>x.id==c.p);return m?{...c,name:m.name+' › '+c.name}:c};
+const catsOf=ty=>{const o=[];S.cats.filter(c=>isMain(c)&&(c.ty||'e')==ty).forEach(m=>{o.push(m);S.cats.filter(c=>c.p==m.id).forEach(c=>o.push(c))});return o};
+function famRows(m){const f={};Object.entries(m).forEach(([id,v])=>{const k=mainOf(id);(f[k]=f[k]||{id:k,v:0,subs:{}}).v+=v;if(k!=id)f[k].subs[id]=(f[k].subs[id]||0)+v});
+return Object.values(f).sort((a,b)=>b.v-a.v).map(x=>({...x,main:S.cats.find(c=>c.id==x.id)||cat(x.id),subs:Object.entries(x.subs).sort((a,b)=>b[1]-a[1]).map(([id,v])=>({id,v,c:S.cats.find(c=>c.id==id)||{name:'?',i:'❓'}}))}))}
+function famTr(m){return famRows(m).map(f=>{const d=f.v-f.subs.reduce((a,x)=>a+x.v,0);return`<tr><td><b>${f.main.i} ${esc(f.main.name)}</b><td class="n"><b>${money(f.v)}</b>${f.subs.map(x=>`<tr><td>　↳ ${x.c.i} ${esc(x.c.name)}<td class="n">${money(x.v)}`).join('')}${f.subs.length&&d>0.005?`<tr><td>　↳ General<td class="n">${money(d)}`:''}`}).join('')||'<tr><td colspan="2"><small>None</small>'}
+const dup=b=>String(b.id).startsWith('b:')&&b.cats.length==1&&S.cats.some(c=>c.id==b.cats[0]&&!isMain(c)&&S.buds.some(z=>z.cat==c.p));
 const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>(isL(a)?-(a.open||0):(a.open||0))+TX().reduce((s,t)=>s+(!d||t.date<=d?dl(t,a.id):0),0);
 const money=n=>(n<0?'-':'')+S.cfg.cur+' '+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const opts=(l,sel,f)=>l.map(x=>`<option value="${x.id}" ${x.id==sel?'selected':''}>${f(x)}</option>`).join('');
 const setStatus=m=>{status=m;const e=$('#stat');if(e)e.textContent=m};
-const lg=x=>x.logo?`<img src="${x.logo}" style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle">`:esc(x.i||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',member:'🪪'}[x.t]||'🏦');
+const lg=x=>x.logo?`<img src="${x.logo}" style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle">`:esc(x.i||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',member:'🪪',bnpl:'🛍️',gold:'🥇'}[x.t]||'🏦');
 let GT=[];
 const gfiles=i=>{const o=[],seen={},okid=v=>typeof v=='string'&&/^[\w-]{25,60}$/.test(v),add=(id,name)=>{if(id&&!seen[id]){seen[id]=1;o.push({id,name:name||'Garage receipt',link:'https://drive.google.com/file/d/'+id+'/view'})}};
 const walk=(v,k)=>{if(v==null)return;if(typeof v=='string'){const m=v.match(/\/d\/([\w-]{20,})/)||v.match(/[?&]id=([\w-]{20,})/);if(m)add(m[1]);else if(/^(rid|fid|rids|fids|receipt|receipts|file|files|pdf|photo|photos|img|att)$/i.test(k||'')&&okid(v))add(v)}
@@ -79,10 +87,45 @@ function dsched(a,months){const o=[];let ac=0,ya=0;for(let m=0;m<months;m++){if(
 function accDep(a,d){if(!a.cost||!a.date)return 0;let m=600;if(d){if(d<a.date)return 0;m=(+d.slice(0,4)-+a.date.slice(0,4))*12+(+d.slice(5,7)-+a.date.slice(5,7))+1}m=Math.min(m,600);return m>0?dsched(a,m)[m-1]:0}
 const dayB=f=>{const d=new Date(f+'T00:00:00');d.setDate(d.getDate()-1);return d.toLocaleDateString('en-CA')};
 const depIn=(f,t)=>S.fixed.reduce((s,a)=>s+accDep(a,t)-(f?accDep(a,dayB(f)):0),0);
-const AT={cash:'Cash',bank:'Bank',ewallet:'E-wallet',card:'Credit card',loan:'Loan',borrow:'Borrowed (I owe)',lend:'Lent (owed to me)',invest:'Investment',member:'Member account'},isL=a=>a.t=='card'||a.t=='loan'||a.t=='borrow';
-const GRP={debit:['cash','bank','ewallet'],credit:['card','loan'],bl:['borrow','lend'],inv:['invest'],mem:['member']},GN={debit:'Debit',credit:'Credit',bl:'Borrow / Lend',inv:'Invest',mem:'Member'};
+const AT={cash:'Cash',bank:'Bank',ewallet:'E-wallet',card:'Credit card',loan:'Loan',borrow:'Borrowed (I owe)',lend:'Lent (owed to me)',invest:'Investment',gold:'Gold (grams)',member:'Member account',bnpl:'BNPL (buy now, pay later)'},isL=a=>['card','loan','borrow','bnpl'].includes(a.t);
+const GRP={debit:['cash','bank','ewallet'],credit:['card','bnpl','loan'],bl:['borrow','lend'],inv:['invest','gold'],mem:['member']},GN={debit:'Debit',credit:'Credit',bl:'Borrow / Lend',inv:'Invest',mem:'Member'};
 const grp=a=>Object.keys(GRP).find(g=>GRP[g].includes(a.t||'bank'))||'debit';
-const catOpts=(ty,sel)=>{const l=S.cats.filter(c=>(c.ty||'e')==ty),x=S.cats.find(c=>c.id==sel);if(x&&!l.includes(x))l.push(x);return opts(l,sel,k=>k.i+' '+esc(k.name))};
+const catOpts=(ty,sel,st)=>{const l=catsOf(ty),x=S.cats.find(c=>c.id==sel);if(!st&&x&&!l.includes(x))l.push(x);return l.map(c=>`<option value="${c.id}" ${c.id==sel?'selected':''}>${isMain(c)?'':'　↳ '}${c.i} ${esc(c.name)}</option>`).join('')};
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],PAL=['#4f8cff','#34c38f','#f59e0b','#f46a6a','#a855f7','#14b8a6','#ec4899','#94a3b8'];
+const stM=s=>s.month||(s.from||'').slice(0,7),stAcc=()=>S.accs.filter(a=>a.t!='cash');
+const yrs=()=>{const y=new Date().getFullYear(),a=S.stm.map(s=>+stM(s).slice(0,4)).filter(Boolean),lo=Math.min(y-2,...a),o=[];for(let i=y+1;i>=lo;i--)o.push(i);return o};
+const mOpts=(sel,all)=>(all?'<option value="">All months</option>':'')+MN.map((n,i)=>{const v=String(i+1).padStart(2,'0');return`<option value="${v}" ${sel==v?'selected':''}>${n}</option>`}).join('');
+const yOpts=(sel,all)=>(all?'<option value="">All years</option>':'')+yrs().map(y=>`<option value="${y}" ${sel==y?'selected':''}>${y}</option>`).join('');
+function pieSvg(it){const t=it.reduce((s,x)=>s+x.v,0);if(!t)return'<small>No data</small>';const C=2*Math.PI*56;let off=0;
+const p=it.map(x=>{const L=x.v/t*C,e=`<circle cx="80" cy="80" r="56" fill="none" stroke="${x.c}" stroke-width="28" stroke-dasharray="${L} ${C-L}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)"/>`;off+=L;return e}).join('');
+return`<div class="fl" style="align-items:flex-start"><svg viewBox="0 0 160 160" width="150" height="150">${p}</svg><div style="flex:1">${it.map(x=>`<div class="fl" style="margin:4px 0;font-size:12px"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.c};margin-right:6px"></i>${x.n}</span><span>${Math.round(x.v/t*100)}%</span></div>`).join('')}</div></div>`}
+function barSvg(lb,a,b){const mx=Math.max(1,...a,...b),W=320,H=130,bw=14,g=W/lb.length;
+return`<svg viewBox="0 0 ${W} ${H+20}" width="100%">${lb.map((l,i)=>{const x=i*g+g/2-bw-1,ha=a[i]/mx*H,hb=b[i]/mx*H;return`<rect x="${x}" y="${H-ha}" width="${bw}" height="${ha}" rx="3" fill="var(--g)"/><rect x="${x+bw+2}" y="${H-hb}" width="${bw}" height="${hb}" rx="3" fill="var(--r)"/><text x="${i*g+g/2}" y="${H+14}" font-size="10" text-anchor="middle" fill="var(--mut)">${l}</text>`}).join('')}</svg>`}
+function lineSvg(lb,v){const W=300,H=110,mn=Math.min(...v,0),mx=Math.max(...v,1),rg=mx-mn||1,g=W/(lb.length-1||1),pt=v.map((y,i)=>[i*g,H-(y-mn)/rg*H]);
+return`<svg viewBox="0 0 ${W+20} ${H+26}" width="100%"><g transform="translate(10,8)"><polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="${pt.map(p=>p.join(',')).join(' ')}"/>${pt.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--acc)"/><text x="${p[0]}" y="${H+18}" font-size="10" text-anchor="middle" fill="var(--mut)">${lb[i]}</text>`).join('')}</g></svg>`}
+const barRow=(s,b)=>`<div style="height:6px;background:#8883;border-radius:3px;margin:4px 0"><i style="display:block;height:6px;border-radius:3px;width:${b?Math.min(100,s/b*100):0}%;background:${s>b?'var(--r)':s>=b*(S.cfg.bw||80)/100?'#f59e0b':'var(--g)'}"></i></div>`;
+const BL=()=>[...S.buds.filter(b=>b.cat).map(b=>({id:b.id,name:cat(b.cat).i+' '+cat(b.cat).name,amt:b.amt,per:'m',cats:[b.cat],shops:[]})),...S.buds.filter(b=>!b.cat).map(b=>({...b,cats:b.cats||[],shops:b.shops||[],per:b.per||'m'}))];
+function bspent(b,m){let f,t;if(b.per=='y'){f=m.slice(0,4)+'-01-01';t=m.slice(0,4)+'-12-31'}else if(b.per=='r'){f=b.from||'';t=b.to||''}else{f=m+'-01';t=m+'-31'}
+const hit=x=>(!b.cats.length||b.cats.includes(x.cat)||b.cats.includes(mainOf(x.cat)))&&(!b.shops.length||b.shops.includes(x.shop));
+return TX().filter(x=>!x.tr&&!x.set&&x.amt<0&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s-x.amt,0)+(b.shops.length?0:S.bills.filter(x=>x.k=='ap'&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s+x.amt,0))}
+const RO=()=>!!ME,links=()=>{try{return JSON.parse(localStorage.getItem('ledger.links')||'[]')}catch(e){return[]}};
+function norm(d){['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec'].forEach(k=>d[k]=d[k]||[]);d.del=d.del||{};d.cfg=d.cfg||{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark'};
+d.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});return d}
+async function sw(id){if(!id){if(ME){S=ME;ME=null}view='';tab='ov';render();return}
+const l=links().find(x=>x.id==id);if(!l)return;setStatus('Loading '+l.name+'…');let d=null;
+try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);d=r.data;if(d)localStorage.setItem('ledger.o.'+id,JSON.stringify(d))}
+catch(e){try{d=JSON.parse(localStorage.getItem('ledger.o.'+id))}catch(x){}setStatus(d?'Offline — showing the last saved copy':'Could not load: '+String(e.message).slice(0,40))}
+if(!d)return;if(!ME)ME=S;S=norm(d);view=id;tab='ov';render()}
+function addLink(){const g=x=>$('#lk_'+x).value.trim();if(!g('n')||!g('u')||!g('k'))return setStatus('Enter name, web app URL and view key');
+const l=links();l.push({id:uid(),name:g('n'),url:g('u'),key:g('k')});localStorage.setItem('ledger.links',JSON.stringify(l));render()}
+function delLink(id){localStorage.setItem('ledger.links',JSON.stringify(links().filter(x=>x.id!=id)));render()}
+async function goldRefresh(){const c=S.cfg,src=c.gsrc||'spot';try{let p=0;
+if(src=='spot'){let j;try{j=await(await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json')).json()}catch(e){j=await(await fetch('https://latest.currency-api.pages.dev/v1/currencies/xau.json')).json()}p=j.xau.myr/31.1034768*(1+(c.gadj||0)/100)}
+else if(src=='web'){const r=await(await fetch(localStorage.getItem(SU),{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',action:'price',url:c.gurl,after:c.gafter||''})})).json();if(r.error)throw new Error(r.error);p=r.price*(1+(c.gadj||0)/100)}
+else p=c.gman||0;
+if(p>0){S.cfg.gp=Math.round(p*100)/100;S.cfg.gd=today();S.cfg.u=now();save();setStatus('Gold price updated')}else setStatus('No gold price available')}
+catch(e){setStatus('Gold price failed: '+String(e.message).slice(0,40))}}
+function goldAuto(){if(RO()||!S.accs.some(a=>a.t=='gold')||(S.cfg.gsrc||'spot')=='manual'||S.cfg.gd==today())return;goldRefresh()}
 const FQ={d:'day',w:'week',m:'month',y:'year'},RN={rep:'repeating item',ins:'installment',sub:'subscription'};
 const mq=r=>r.amt*({d:365/12,w:52/12,m:1,y:1/12}[r.freq])/(r.ev||1);
 const rdate=(r,i)=>{const[y,m,d]=r.start.split('-').map(Number),e=r.ev||1;let D;
@@ -91,7 +134,7 @@ return D.toLocaleDateString('en-CA')};
 const rid=(r,d)=>'r:'+r.id+':'+d;
 function rocc(r,upTo){const o=[],max=r.k=='ins'?(r.n||0):1000;for(let i=0;i<max;i++){const d=rdate(r,i);if(r.end&&d>r.end)break;if(upTo&&d>upTo)break;o.push(d)}return o}
 function rtx(r,d){return{id:rid(r,d),u:now(),date:d,desc:r.name,amt:r.ty=='i'?r.amt:-r.amt,cat:r.cat,acc:r.acc,shop:r.shop||'',note:({rep:'Repeat',ins:'Installment',sub:'Subscription'})[r.k],att:[],rc:r.id,tr:0,to:''}}
-function autoRec(){const has=new Set(S.tx.map(x=>x.id));let n=0;S.rec.forEach(r=>{if(!r.on||!r.auto||!r.start||!r.amt)return;rocc(r,today()).forEach(d=>{const id=rid(r,d);if(!has.has(id)&&!S.del[id]){S.tx.push(rtx(r,d));has.add(id);n++}})});return n}
+function autoRec(){if(RO())return 0;const has=new Set(S.tx.map(x=>x.id));let n=0;S.rec.forEach(r=>{if(!r.on||!r.auto||!r.start||!r.amt)return;rocc(r,today()).forEach(d=>{const id=rid(r,d);if(!has.has(id)&&!S.del[id]){S.tx.push(rtx(r,d));has.add(id);n++}})});return n}
 function nextOcc(r){if(!r.start)return'';const has=new Set(S.tx.map(x=>x.id)),max=r.k=='ins'?(r.n||0):1000;for(let i=0;i<max;i++){const d=rdate(r,i);if(r.end&&d>r.end)return'';const id=rid(r,d);if(!has.has(id)&&!S.del[id])return d}return''}
 const dl=(t,id)=>t.tr?(t.acc==id?-t.amt:0)+(t.to==id?t.amt:0):(t.acc==id?t.amt:0);
 const inR=(d,f,t)=>(!f||d>=f)&&(!t||d<=t),sum2=o=>Object.values(o).reduce((a,b)=>a+b,0);
@@ -103,10 +146,10 @@ S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat
 
 /* ---------- storage & merge ---------- */
 function save(){localStorage.setItem(K,JSON.stringify(S));render();clearTimeout(timer);timer=setTimeout(sync,1500)}
-function put(k,x){const i=S[k].findIndex(y=>y.id==x.id);x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
-function rm(k,id){S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
+function put(k,x){if(RO())return setStatus('👁 View only');const i=S[k].findIndex(y=>y.id==x.id);x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
+function rm(k,id){if(RO())return setStatus('👁 View only');S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
-function cfg(f,v){S.cfg[f]=v;S.cfg.u=now();save()}
+function cfg(f,v){if(RO())return setStatus('👁 View only');S.cfg[f]=v;S.cfg.u=now();save()}
 function merge(r){const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
 for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
@@ -141,7 +184,7 @@ x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,96,96);upd(k,id,'logo',c.t
 function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S.shops.find(x=>x.name.toLowerCase()==n.toLowerCase());
 if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
-async function sync(){const u=localStorage.getItem(SU);if(busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
+async function sync(){const u=localStorage.getItem(SU);if(RO()||busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
 let ge='';try{if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',data:S})})).json();if(r.error)throw new Error(r.error);merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
@@ -167,43 +210,63 @@ rm('stm',id)}
 /* ---------- views ---------- */
 const go=k=>{tab=k;render();scrollTo(0,0)};
 const mo=d=>{const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
-function render(){GT=gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
+function render(){GT=RO()?[]:gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,st:stv,set:sett}[tab]();
-$('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b><span id="stat">${esc(status)}</span></header><main>${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['rp','bd','cm','st','set'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
-${tab=='ov'||tab=='tx'?'<button class="fab" onclick="edit()">+</button>':''}`}
+$('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat">${esc(status)}</span></header><main>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
+${(tab=='ov'||tab=='tx')&&!RO()?'<button class="fab" onclick="edit()">+</button>':''}`}
 function ov(){const m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
 <div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
-<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>
-<h4>Spending by category</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const k=cat(c);return`<div class="bar"><div class="fl"><span>${k.i} ${esc(k.name)}</span><span>${money(v)}</span></div><i style="width:${v/exp*100}%;background:${k.color}"></i></div>`}).join('')||'<small>No expenses this month</small>'}</div>
+${bovw()}${chv()}<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>
+<h4>Spending by category</h4><div class="card">${famRows(by).map(f=>`<div class="bar"><div class="fl"><span>${f.main.i} ${esc(f.main.name)}</span><span>${money(f.v)}</span></div><i style="width:${f.v/exp*100}%;background:${f.main.color||'#94a3b8'}"></i>${f.subs.map(x=>`<div class="fl"><small>　↳ ${x.c.i} ${esc(x.c.name)}</small><small>${money(x.v)}</small></div>`).join('')}</div>`).join('')||'<small>No expenses this month</small>'}</div>
 <h4>Top shops</h4><div class="card">${Object.entries(bs).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([id,v])=>{const k=S.shops.find(x=>x.id==id)||{name:'?',i:'🏷️'};return`<div class="fl" style="margin:6px 0"><span>${lg(k)} ${esc(k.name)}</span><span>${money(v)}</span></div>`}).join('')||'<small>Add a shop when you record an expense</small>'}</div>`}
 function reg(){let run=null;if(fa){const A=acc(fa);run=isL(A)?-(A.open||0):(A.open||0)}
 const all=TX().filter(t=>!fa||t.acc==fa||t.to==fa).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
-const rows=all.filter(({t})=>(ra||t.date.startsWith(ym))&&(!fc||t.cat==fc)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))),
+const inP=t=>rmode=='a'||(rmode=='m'&&t.date.startsWith(ym))||(rmode=='r'&&inR(t.date,xf,xt)),
+rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))),
 cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
 cash.forEach(t=>{const k=(t.amt>0?'i':'e')+t.cat;gp[k]=gp[k]||{c:t.cat,ty:t.amt>0?'i':'e',n:0,v:0};gp[k].n++;gp[k].v+=Math.abs(t.amt)});
 const gl=Object.values(gp).sort((a,b)=>b.v-a.v),mx=Math.max(1,...gl.map(x=>x.v));
-const head=`${ra?'':`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>`}<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
-<div class="seg"><a class="${rv=='l'?'on':''}" onclick="rv='l';render()">List</a><a class="${rv=='c'?'on':''}" onclick="rv='c';render()">By category</a><a class="${ra?'on':''}" onclick="ra=!ra;render()">All time</a>${fc?`<a onclick="fc='';render()">✕ ${esc(cat(fc).name)}</a>`:''}</div>
-<div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><select onchange="fc=this.value;render()"><option value="">All categories</option><optgroup label="Expenses">${opts(S.cats.filter(c=>c.ty!='i'),fc,k=>k.i+' '+esc(k.name))}</optgroup><optgroup label="Income">${opts(S.cats.filter(c=>c.ty=='i'),fc,k=>k.i+' '+esc(k.name))}</optgroup></select></div><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()">`;
-if(rv=='c')return head+`<h4>${rows.length} transactions · tap a category to list it</h4>`+(gl.map(x=>{const k=cat(x.c);return`<div class="card" onclick="fc='${x.c}';rv='l';render()"><div class="fl"><span>${k.i} ${esc(k.name)} <small>· ${x.n}</small></span><span class="${x.ty=='i'?'g':'r'}">${money(x.v)}</span></div><i style="display:block;height:6px;border-radius:3px;margin-top:4px;width:${x.v/mx*100}%;background:${k.color}"></i></div>`}).join('')||'<small>Nothing in this period</small>');
+const head=`<div class="seg">${[['m','Month'],['r','Date range'],['a','All time']].map(([k,n])=>`<a class="${rmode==k?'on':''}" onclick="rmode='${k}';render()">${n}</a>`).join('')}</div>
+${rmode=='m'?`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>`:rmode=='r'?`<div class="two"><div><small>From</small><input type="date" value="${xf}" onchange="xf=this.value;render()"></div><div><small>To</small><input type="date" value="${xt}" onchange="xt=this.value;render()"></div></div>`:''}
+<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
+<div class="seg"><a class="${rv=='l'?'on':''}" onclick="rv='l';render()">List</a><a class="${rv=='c'?'on':''}" onclick="rv='c';render()">By category</a>${fc?`<a onclick="fc='';render()">✕ ${esc(cat(fc).name)}</a>`:''}</div>
+<div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><select onchange="fc=this.value;render()"><option value="">All categories</option><optgroup label="Expenses">${catOpts('e',fc,1)}</optgroup><optgroup label="Income">${catOpts('i',fc,1)}</optgroup></select></div><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()">`;
+if(rv=='c'){const me={},mi={};cash.forEach(t=>{const m=t.amt>0?mi:me;m[t.cat]=(m[t.cat]||0)+Math.abs(t.amt)});
+const fm=(m,cls)=>{const rs=famRows(m),mx=Math.max(1,...rs.map(f=>f.v));return rs.map(f=>`<div class="card" onclick="fc='${f.id}';rv='l';render()"><div class="fl"><span>${f.main.i} ${esc(f.main.name)}</span><span class="${cls}">${money(f.v)}</span></div><i style="display:block;height:6px;border-radius:3px;margin-top:4px;width:${f.v/mx*100}%;background:${f.main.color||'#94a3b8'}"></i>${f.subs.map(x=>`<div class="fl" style="margin-top:6px" onclick="event.stopPropagation();fc='${x.id}';rv='l';render()"><small>　↳ ${x.c.i} ${esc(x.c.name)}</small><small>${money(x.v)}</small></div>`).join('')}</div>`).join('')||'<small>None</small>'};
+return head+`<h4>${rows.length} transactions · tap a category to list it</h4><h4>Expenses</h4>${fm(me,'r')}<h4>Income</h4>${fm(mi,'g')}`}
 return head+`<div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
 ${rows.slice().reverse().slice(0,300).map(({t,run})=>{const k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name}:t.f?{i:'🏗️',name:'Fixed asset'}:t.set?{i:'💵',name:'Bill payment'}:cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc),v=t.tr&&fa?dl(t,fa):t.amt;
-return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${t.rc?'🔁 ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions in this period — tap +</small>'}</table></div>`}
-function stv(){const inM=s=>s.month==ym||(s.to||'').slice(0,7)==ym,miss=S.accs.filter(a=>['debit','credit'].includes(grp(a))&&!S.stm.some(s=>s.acc==a.id&&inM(s))),l=String(new Date(+ym.slice(0,4),+ym.slice(5),0).getDate()).padStart(2,'0');
-return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div><div class="row3"><div class="card">Statements<h3>${S.stm.length}</h3></div><div class="card">This month<h3>${S.stm.filter(inM).length}</h3></div><div class="card">Missing<h3 class="${miss.length?'r':''}">${miss.length}</h3></div></div>${miss.length?`<small>No statement this month: ${miss.map(a=>esc(a.name)).join(', ')}</small>`:''}<h4>Upload bank statement</h4><div class="card"><select id="s_acc">${opts(S.accs,'',a=>esc(a.name))}</select>
-<div class="two"><div><small>Statement from</small><input id="s_from" type="date" value="${ym}-01"></div><div><small>to</small><input id="s_to" type="date" value="${ym}-${l}"></div></div>
-<input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button></div>
-<h4>Statements</h4>${[...S.stm].sort((a,b)=>(b.from||b.month).localeCompare(a.from||a.month)).map(s=>`<div class="card fl"><a onclick="pv('${fid(s)}')">📄 ${esc(s.name)}</a><a href="${esc(s.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(s.acc).name)} · ${s.from?s.from+' → '+s.to:s.month}</small><a onclick="renStm('${s.id}')">✏️</a><a onclick="delStm('${s.id}')">🗑</a></div>`).join('')||'<small>None yet</small>'}`}
+return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${t.rc?'🔁 ':''}${t.adj?'⚖️ ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions in this period — tap +</small>'}</table></div>`}
+function stv(){const l=S.stm.filter(x=>{const m=stM(x);return(!sy||m.slice(0,4)==sy)&&(!sm||m.slice(5,7)==sm)&&(!sa||x.acc==sa)}),
+miss=sy&&sm?stAcc().filter(a=>['debit','credit'].includes(grp(a))&&!S.stm.some(x=>x.acc==a.id&&stM(x)==sy+'-'+sm)):[];
+return`<div class="row3"><div class="card">Statements<h3>${l.length}</h3></div><div class="card">Accounts covered<h3>${new Set(l.map(x=>x.acc)).size}</h3></div><div class="card">Missing<h3 class="${miss.length?'r':''}">${sy&&sm?miss.length:'–'}</h3></div></div>
+${miss.length?`<small>No statement for ${MN[+sm-1]} ${sy}: ${miss.map(a=>esc(a.name)).join(', ')}</small>`:''}
+<h4>Filter</h4><div class="two"><select onchange="sy=this.value;render()">${yOpts(sy,1)}</select><select onchange="sm=this.value;render()">${mOpts(sm,1)}</select></div><select onchange="sa=this.value;render()"><option value="">All accounts</option>${opts(stAcc(),sa,a=>esc(a.name))}</select>
+<h4>Upload bank statement</h4><div class="card"><select id="s_acc">${opts(stAcc(),sa,a=>esc(a.name))}</select><div class="two"><select id="s_m">${mOpts(sm||today().slice(5,7))}</select><select id="s_y">${yOpts(sy||today().slice(0,4))}</select></div>
+<input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button><small>Cash accounts don't need statements.</small></div>
+<h4>Statements</h4>${[...l].sort((a,b)=>stM(b).localeCompare(stM(a))).map(x=>`<div class="card fl"><a onclick="pv('${fid(x)}')">📄 ${esc(x.name)}</a><a href="${esc(x.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small><a onclick="stEd('${x.id}')">✏️</a><a onclick="delStm('${x.id}')">🗑</a></div>`).join('')||'<small>No statements for this filter</small>'}`}
+function stEd(id){const x=S.stm.find(y=>y.id==id),m=stM(x);
+$('#m').innerHTML=`<div><h3>Edit statement</h3><small>Name</small><input id="e_n" value="${esc(x.name)}"><small>Account (change it if you picked the wrong one)</small><select id="e_a">${opts(S.accs.filter(a=>a.t!='cash'||a.id==x.acc),x.acc,a=>esc(a.name))}</select>
+<div class="two"><div><small>Month</small><select id="e_m">${mOpts(m.slice(5,7))}</select></div><div><small>Year</small><select id="e_y">${yOpts(m.slice(0,4))}</select></div></div>
+<small>If the account or year changes, the file is also moved to the right folder in Google Drive.</small><button onclick="saveStm('${id}')">Save</button><button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+async function saveStm(id){const x=S.stm.find(y=>y.id==id),a=$('#e_a').value,mo=$('#e_m').value,y=$('#e_y').value,n=$('#e_n').value.trim()||x.name,
+mv=a!=x.acc||y!=stM(x).slice(0,4),rn=n!=x.name,H={'Content-Type':'application/json'};
+try{if(localStorage.getItem(ON)&&(mv||rn)){const f=fid(x);
+if(mv){const ps=((await(await api(`${D}/${f}?fields=parents`)).json()).parents||[]).join(','),d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
+await api(`${D}/${f}?addParents=${d}${ps?'&removeParents='+ps:''}&fields=id`,{method:'PATCH',headers:H,body:JSON.stringify(rn?{name:n}:{})})}
+else await api(`${D}/${f}`,{method:'PATCH',headers:H,body:JSON.stringify({name:n})})}}
+catch(e){setStatus('Updated in the app only — Drive: '+String(e.message).slice(0,40))}
+put('stm',{...x,acc:a,month:y+'-'+mo,name:n,from:'',to:''});closeM()}
 function pr(k){const y=new Date().getFullYear(),m=new Date().getMonth(),f=d=>d.toLocaleDateString('en-CA');
 if(k=='m'){rf=f(new Date(y,m,1));rto=f(new Date(y,m+1,0))}else if(k=='y'){rf=y+'-01-01';rto=y+'-12-31'}else{rf='';rto=''}render()}
-function rpt(){const tabs=[['pl','Profit & Loss'],['bs','Balance sheet'],['ar','Receivables'],['ap','Payables'],['fa','Fixed assets']];
-const per=rt=='pl'?`<div class="two"><div><small>From</small><input type="date" value="${rf}" onchange="rf=this.value;render()"></div><div><small>To</small><input type="date" value="${rto}" onchange="rto=this.value;render()"></div></div><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">All time</a></div>`:rt=='bs'?`<small>As at</small><input type="date" value="${rto}" onchange="rto=this.value;render()"><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">Today</a></div>`:'';
+function rpt(){const tabs=[['pl','Profit & Loss'],['bs','Balance sheet'],['ar','Receivables'],['ap','Payables'],['fa','Fixed assets'],['cf','Cash flow']];
+const per=rt=='pl'||rt=='cf'?`<div class="two"><div><small>From</small><input type="date" value="${rf}" onchange="rf=this.value;render()"></div><div><small>To</small><input type="date" value="${rto}" onchange="rto=this.value;render()"></div></div><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">All time</a></div>`:rt=='bs'?`<small>As at</small><input type="date" value="${rto}" onchange="rto=this.value;render()"><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">Today</a></div>`:'';
 const P0=PL(rf,rto),ar0=S.bills.filter(b=>b.k=='ar').reduce((s,b)=>s+out(b),0),ap0=S.bills.filter(b=>b.k=='ap').reduce((s,b)=>s+out(b),0),np=sum2(P0.inc)-sum2(P0.exp);
-return`<div class="row3"><div class="card">Profit (period)<h3 class="${np<0?'r':'g'}">${money(np)}</h3></div><div class="card">Receivables<h3>${money(ar0)}</h3></div><div class="card">Payables<h3>${money(ap0)}</h3></div></div><div class="seg">${tabs.map(([k,l])=>`<a class="${rt==k?'on':''}" onclick="rt='${k}';render()">${l}</a>`).join('')}</div>${per}${rt=='pl'?plv():rt=='bs'?bsv():rt=='fa'?fav():bills(rt)}`}
-function plv(){const{inc,exp}=PL(rf,rto),ti=sum2(inc),te=sum2(exp),rows=m=>Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const k=cat(c);return`<tr><td>${k.i} ${esc(k.name)}<td class="n">${money(v)}`}).join('')||'<tr><td colspan="2"><small>None</small>';
+return`<div class="row3"><div class="card">Profit (period)<h3 class="${np<0?'r':'g'}">${money(np)}</h3></div><div class="card">Receivables<h3>${money(ar0)}</h3></div><div class="card">Payables<h3>${money(ap0)}</h3></div></div><div class="seg">${tabs.map(([k,l])=>`<a class="${rt==k?'on':''}" onclick="rt='${k}';render()">${l}</a>`).join('')}</div>${per}${rt=='pl'?plv():rt=='cf'?cfv():rt=='bs'?bsv():rt=='fa'?fav():bills(rt)}`}
+function plv(){const{inc,exp}=PL(rf,rto),ti=sum2(inc),te=sum2(exp),rows=famTr;
 return`<div class="tw"><table><tr><th colspan="2">Statement of Profit or Loss</th></tr><tr><th colspan="2">Income</th></tr>${rows(inc)}<tr><td><b>Total income</b><td class="n"><b>${money(ti)}</b>
 <tr><th colspan="2">Expenses</th></tr>${rows(exp)}<tr><td><b>Total expenses</b><td class="n"><b>${money(te)}</b>
 <tr><td><b>Net profit / (loss)</b><td class="n ${ti-te<0?'r':'g'}"><b>${money(ti-te)}</b></table></div><small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses.</small>`}
@@ -251,35 +314,60 @@ function payBill(id){const b=S.bills.find(x=>x.id==id),x=parseFloat($('#p_a').va
 put('tx',{id:uid(),date:$('#p_d').value,desc:(b.k=='ar'?'Received from ':'Paid to ')+b.party,amt:b.k=='ar'?x:-x,cat:b.cat,acc:$('#p_c').value,note:b.ref||'',att:[],set:b.id,tr:0,to:'',shop:''});billEd(id)}
 function delBill(id){if(!confirm('Delete this bill and its recorded payments?'))return;S.tx.filter(t=>t.set==id).forEach(t=>rm('tx',t.id));rm('bills',id);closeM()}
 function setBud(c,v){const n=parseFloat(v)||0,id='b:'+c;if(n)put('buds',{id,cat:c,amt:n});else if(S.buds.some(b=>b.id==id))rm('buds',id)}
-function bud(){const{exp}=PL(ym+'-01',ym+'-31'),bm={};S.buds.forEach(b=>bm[b.cat]=b.amt);
-const tb=sum2(bm),ts=S.cats.filter(c=>c.ty!='i').reduce((s,c)=>s+(bm[c.id]?(exp[c.id]||0):0),0);
+function bud(){const bl=BL().map(b=>({b,sp:bspent(b,ym)})),m=bl.filter(x=>x.b.per=='m'&&!dup(x.b)),tb=m.reduce((a,x)=>a+x.b.amt,0),ts=m.reduce((a,x)=>a+x.sp,0),cu=bl.filter(x=>!String(x.b.id).startsWith('b:')),bm={};S.buds.filter(b=>b.cat).forEach(b=>bm[b.cat]=b.amt);
+const per=b=>b.per=='y'?'Yearly '+ym.slice(0,4):b.per=='r'?(b.from||'?')+' → '+(b.to||'?'):'Monthly',cov=b=>[...b.cats.map(c=>cat(c).name),...b.shops.map(x=>(S.shops.find(y=>y.id==x)||{name:'?'}).name)].join(', ')||'All spending';
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
-<div class="row3"><div class="card">Budget<h3>${money(tb)}</h3></div><div class="card">Spent<h3 class="${ts>tb?'r':''}">${money(ts)}</h3></div><div class="card">Left<h3 class="${tb-ts<0?'r':'g'}">${money(tb-ts)}</h3></div></div>
-<h4>Monthly budget per category</h4>${S.cats.filter(c=>c.ty!='i').map(c=>{const b=bm[c.id]||0,sp=exp[c.id]||0,p=b?Math.min(100,sp/b*100):0;
-return`<div class="card"><div class="fl"><span>${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${b||''}" style="width:110px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>
-<div class="fl"><small>Spent ${money(sp)}</small><small class="${b&&sp>b?'r':''}">${b?(sp>b?'Over by '+money(sp-b):'Left '+money(b-sp)):'No budget'}</small></div>
-<div style="height:6px;background:#8883;border-radius:3px"><i style="display:block;height:6px;border-radius:3px;width:${p}%;background:${b&&sp>b?'var(--r)':b&&sp>=b*(S.cfg.bw||80)/100?'#f59e0b':c.color}"></i></div></div>`}).join('')}`}
-function mre(){const l=[['rp','📑','Reports','Profit &amp; loss, balance sheet, receivables, payables, fixed assets'],['bd','🎯','Budget','Monthly limits per category'],['cm','🏷️','Category manager','Expense and income categories'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
+<div class="row3"><div class="card">Monthly budget<h3>${money(tb)}</h3></div><div class="card">Spent<h3 class="${ts>tb?'r':''}">${money(ts)}</h3></div><div class="card">Left<h3 class="${tb-ts<0?'r':'g'}">${money(tb-ts)}</h3></div></div>
+<button onclick="budEd('')">+ Add budget (any categories or shops)</button>
+${cu.length?'<h4>Your budgets</h4>'+cu.map(x=>`<div class="card" onclick="budEd('${x.b.id}')" style="cursor:pointer"><div class="fl"><b>${esc(x.b.name)}</b><span>${money(x.sp)} / ${money(x.b.amt)}</span></div><small>${per(x.b)} · ${esc(cov(x.b))}</small>${barRow(x.sp,x.b.amt)}<small class="${x.sp>x.b.amt?'r':''}">${x.sp>x.b.amt?'Over by '+money(x.sp-x.b.amt):'Left '+money(x.b.amt-x.sp)}</small></div>`).join(''):''}
+<h4>Quick category budgets (monthly)</h4>${catsOf('e').map(c=>{const b=bm[c.id]||0,sp=bspent({cats:[c.id],shops:[],per:'m'},ym);return`<div class="card"><div class="fl"><span>${isMain(c)?'':'　↳ '}${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${b||''}" style="width:110px;text-align:right" onchange="setBud('${c.id}',this.value)"></div><div class="fl"><small>Spent ${money(sp)}</small><small class="${b&&sp>b?'r':''}">${b?(sp>b?'Over by '+money(sp-b):'Left '+money(b-sp)):'No budget'}</small></div>${b?barRow(sp,b):''}</div>`}).join('')}`}
+function budEd(id){const b=S.buds.find(x=>x.id==id&&!x.cat)||{id:'',name:'',amt:0,per:'m',cats:[],shops:[],from:today(),to:today()},cs=b.cats||[],sh=b.shops||[];
+$('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeholder="Budget name (e.g. Eating out, Holiday)" value="${esc(b.name)}">
+<div class="two"><input id="u_a" type="number" step="0.01" inputmode="decimal" placeholder="Amount" value="${b.amt||''}"><select id="u_p" onchange="$('#u_r').style.display=this.value=='r'?'':'none'"><option value="m" ${b.per=='m'?'selected':''}>Monthly</option><option value="y" ${b.per=='y'?'selected':''}>Yearly</option><option value="r" ${b.per=='r'?'selected':''}>Custom dates</option></select></div>
+<div id="u_r" class="two" style="display:${b.per=='r'?'':'none'}"><input id="u_f" type="date" value="${b.from||''}"><input id="u_t" type="date" value="${b.to||''}"></div>
+<h4>Categories it covers</h4>${catsOf('e').map(c=>`<label class="fl"><span>${isMain(c)?'':'　↳ '}${c.i} ${esc(c.name)}</span><input type="checkbox" class="bc" value="${c.id}" ${cs.includes(c.id)?'checked':''} style="width:auto"></label>`).join('')}
+<h4>Shops / brands (optional)</h4>${S.shops.map(x=>`<label class="fl"><span>${lg(x)} ${esc(x.name)}</span><input type="checkbox" class="bh" value="${x.id}" ${sh.includes(x.id)?'checked':''} style="width:auto"></label>`).join('')||'<small>No shops yet</small>'}
+<small>A main category also covers its sub-categories. Pick categories, shops, or both. With both, only spending at those shops in those categories counts.</small>
+<button onclick="saveBud('${b.id}')">Save</button>${b.id?`<button class="d" onclick="if(confirm('Delete this budget?')){rm('buds','${b.id}');closeM()}">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
+if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
+put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="go('${k}')" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
-function acm(){const as=S.accs,ta=as.filter(a=>!isL(a)).reduce((s,a)=>s+bal(a),0),tl=-as.filter(isL).reduce((s,a)=>s+bal(a),0);
+function acm(){const as=S.accs,ta=as.filter(a=>!isL(a)).reduce((x,a)=>x+bal(a),0),tl=-as.filter(isL).reduce((x,a)=>x+bal(a),0),gp=S.cfg.gp||0,gl=as.filter(a=>a.t=='gold'),gv=gl.reduce((x,a)=>x+(a.gm||0)*gp,0),gc=gl.reduce((x,a)=>x+bal(a),0);
 return`<div class="row3"><div class="card">Assets<h3 class="g">${money(ta)}</h3></div><div class="card">Owed<h3 class="r">${money(tl)}</h3></div><div class="card">Net worth<h3>${money(ta-tl)}</h3></div></div>
+${gl.length?`<small>🥇 Gold market value ${money(gv)} · cost ${money(gc)} · ${gv-gc<0?'loss':'gain'} ${money(Math.abs(gv-gc))} (price ${gp?money(gp)+'/g':'not set yet'})</small>`:''}
 <div class="seg">${Object.keys(GN).map(g=>`<a class="${ag==g?'on':''}" onclick="ag='${g}';render()">${GN[g]} (${as.filter(a=>grp(a)==g).length})</a>`).join('')}</div>
 <button onclick="acEd('','${ag}')">+ Add ${GN[ag]} account</button>
-${as.filter(a=>grp(a)==ag).map(a=>{const b=bal(a),lb=isL(a);return`<div class="card fl"><label class="lgl">${lg(a)}<input type="file" accept="image/*" hidden onchange="logoUp('accs','${a.id}',this.files[0])"></label><div style="flex:1;cursor:pointer" onclick="acEd('${a.id}')"><b>${esc(a.name)}</b><br><small>${AT[a.t||'bank']}${lb&&a.lim?' · limit '+money(a.lim)+' · available '+money(a.lim+b):''}</small></div><b class="${lb?'r':''}" onclick="acEd('${a.id}')">${money(lb?-b:b)}</b></div>`}).join('')||'<small>No accounts here yet</small>'}<small>Tap an icon to upload a logo.</small>`}
+${as.filter(a=>grp(a)==ag).map(a=>{const b=bal(a),lb=isL(a);return`<div class="card fl"><label class="lgl">${lg(a)}<input type="file" accept="image/*" hidden onchange="logoUp('accs','${a.id}',this.files[0])"></label><div style="flex:1;cursor:pointer" onclick="acEd('${a.id}')"><b>${esc(a.name)}</b><br><small>${AT[a.t||'bank']}${lb&&a.lim?' · limit '+money(a.lim)+' · available '+money(a.lim+b):''}${a.t=='gold'?' · '+(a.gm||0)+' g × '+money(gp)+' = '+money((a.gm||0)*gp):''}</small></div><b class="${lb?'r':''}" onclick="acEd('${a.id}')">${money(lb?-b:b)}</b><a onclick="adjEd('${a.id}')" title="Adjust balance">⚖️</a></div>`}).join('')||'<small>No accounts here yet</small>'}<small>Tap an icon to upload a logo · ⚖️ corrects a balance that doesn't match reality.</small>`}
 function acEd(id,g){const a=S.accs.find(x=>x.id==id)||{id:'',name:'',t:GRP[g][0],color:'#4f8cff',open:0,lim:0},G=grp(a);
-$('#m').innerHTML=`<div><h3>${id?'Edit':'New'} ${GN[G]} account</h3><input id="a_n" placeholder="Name (e.g. Maybank, CIMB Visa)" value="${esc(a.name)}"><select id="a_t">${GRP[G].map(k=>`<option value="${k}" ${a.t==k?'selected':''}>${AT[k]}</option>`).join('')}</select>
-<small>Opening balance (for credit, loans and borrowed money: the amount you owe)</small><input id="a_o" type="number" step="0.01" inputmode="decimal" value="${a.open||0}">
+$('#m').innerHTML=`<div><h3>${id?'Edit':'New'} ${GN[G]} account</h3><input id="a_n" placeholder="Name (e.g. Maybank, CIMB Visa, Atome)" value="${esc(a.name)}"><select id="a_t" onchange="$('#a_g').style.display=this.value=='gold'?'':'none'">${GRP[G].map(k=>`<option value="${k}" ${a.t==k?'selected':''}>${AT[k]}</option>`).join('')}</select>
+<small>Opening balance (for credit, BNPL, loans and borrowed money: the amount you owe; for gold: the cost)</small><input id="a_o" type="number" step="0.01" inputmode="decimal" value="${a.open||0}">
 ${G=='credit'?`<small>Credit limit / original loan amount (optional)</small><input id="a_l" type="number" step="0.01" value="${a.lim||''}">`:''}
+${G=='inv'?`<div id="a_g" style="display:${a.t=='gold'?'':'none'}"><small>Gold held (grams) — price is set in Settings › Gold price</small><input id="a_gm" type="number" step="0.001" inputmode="decimal" value="${a.gm||''}"></div>`:''}
 <small>Colour</small><input id="a_c" type="color" value="${a.color}"><button onclick="saveAc('${a.id}')">Save</button>${id?`<button class="d" onclick="delAc('${id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
 function saveAc(id){const gv=x=>{const e=$('#a_'+x);return e?e.value:''};if(!gv('n'))return setStatus('Enter a name');
-put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid()}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,color:gv('c')});closeM()}
+put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid()}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,gm:parseFloat(gv('gm'))||0,color:gv('c')});closeM()}
 function delAc(id){if(confirm('Delete this account? Its transactions stay but show as "?".')){rm('accs',id);closeM()}}
-function cmv(){const{inc,exp}=PL(ym+'-01',ym+'-31'),m=cg=='e'?exp:inc,l=S.cats.filter(c=>(c.ty||'e')==cg),top=Object.entries(m).filter(([k])=>k!='_dep').sort((a,b)=>b[1]-a[1])[0],tc=top?cat(top[0]):null;
+function adjEd(id){const a=acc(id),b=bal(a),lb=isL(a);
+$('#m').innerHTML=`<div><h3>⚖️ Adjust balance — ${esc(a.name)}</h3><small>Balance in the app now</small><h3>${money(lb?-b:b)}</h3><small>${lb?'Actual amount you owe':'Actual balance'}</small><input id="j_v" type="number" step="0.01" inputmode="decimal" placeholder="Enter the real balance"><input id="j_n" placeholder="Note (optional)">
+<small>The difference is recorded as a "Balance adjustment" transaction dated today. You can edit or delete it in the Register.</small><button onclick="saveAdj('${id}')">Save adjustment</button><button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function saveAdj(id){const a=acc(id),v=parseFloat($('#j_v').value);if(isNaN(v))return setStatus('Enter the real balance');const df=(isL(a)?-v:v)-bal(a);
+if(Math.abs(df)<0.005){closeM();return setStatus('Already matches')}
+put('tx',{id:uid(),date:today(),desc:'Balance adjustment',amt:df,cat:'cadj',acc:id,shop:'',note:$('#j_n').value,att:[],adj:1,tr:0,to:''});closeM()}
+function cmv(){const{inc,exp}=PL(ym+'-01',ym+'-31'),m=cg=='e'?exp:inc,mm=Object.fromEntries(Object.entries(m).filter(([k])=>k!='_dep')),fam=famRows(mm),top=fam[0]?fam[0].main:null,
+mains=catsOf(cg).filter(isMain),own=id=>m[id]||0,tot=id=>own(id)+S.cats.filter(c=>c.p==id).reduce((a,c)=>a+own(c.id),0),nSub=catsOf(cg).length-mains.length,
+row=k=>`<div class="three"><input value="${esc(k.i)}" onchange="upd('cats','${k.id}','i',this.value)"><input value="${esc(k.name)}" onchange="upd('cats','${k.id}','name',this.value)"><input type="color" value="${k.color}" onchange="upd('cats','${k.id}','color',this.value)"><button class="d" onclick="delCat('${k.id}')">×</button></div>`;
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
-<div class="row3"><div class="card">${cg=='e'?'Expenses':'Income'}<h3 class="${cg=='e'?'r':'g'}">${money(sum2(m))}</h3></div><div class="card">Categories<h3>${l.length}</h3></div><div class="card">Top<h3 style="font-size:14px">${tc?tc.i+' '+esc(tc.name):'—'}</h3></div></div>
-<div class="seg"><a class="${cg=='e'?'on':''}" onclick="cg='e';render()">Expenses (${S.cats.filter(c=>(c.ty||'e')=='e').length})</a><a class="${cg=='i'?'on':''}" onclick="cg='i';render()">Income (${S.cats.filter(c=>c.ty=='i').length})</a></div>
-${l.map(k=>`<div class="card"><div class="three"><input value="${esc(k.i)}" onchange="upd('cats','${k.id}','i',this.value)"><input value="${esc(k.name)}" onchange="upd('cats','${k.id}','name',this.value)"><input type="color" value="${k.color}" onchange="upd('cats','${k.id}','color',this.value)"><button class="d" onclick="if(confirm('Delete category?'))rm('cats','${k.id}')">×</button></div><div class="fl"><small>This month ${money(m[k.id]||0)}</small><small style="cursor:pointer" onclick="upd('cats','${k.id}','ty','${cg=='e'?'i':'e'}')">Move to ${cg=='e'?'Income':'Expenses'} ›</small></div></div>`).join('')}
-<button class="s" onclick="put('cats',{id:uid(),name:'New',i:'📦',color:'#94a3b8',ty:'${cg}'})">+ Add ${cg=='e'?'expense':'income'} category</button>`}
+<div class="row3"><div class="card">${cg=='e'?'Expenses':'Income'}<h3 class="${cg=='e'?'r':'g'}">${money(sum2(mm))}</h3></div><div class="card">Main · Sub<h3>${mains.length} · ${nSub}</h3></div><div class="card">Top<h3 style="font-size:14px">${top?top.i+' '+esc(top.name):'—'}</h3></div></div>
+<div class="seg"><a class="${cg=='e'?'on':''}" onclick="cg='e';render()">Expenses (${catsOf('e').length})</a><a class="${cg=='i'?'on':''}" onclick="cg='i';render()">Income (${catsOf('i').length})</a></div>
+${mains.map(k=>{const subs=S.cats.filter(c=>c.p==k.id),oth=mains.filter(x=>x.id!=k.id);return`<div class="card">${row(k)}<div class="fl"><small>This month ${money(tot(k.id))}${subs.length?' (incl. sub-categories)':''}</small><small style="cursor:pointer" onclick="moveCat('${k.id}')">Move to ${cg=='e'?'Income':'Expenses'} ›</small></div>
+${subs.map(c=>`<div style="margin:10px 0 0 12px;border-left:2px solid #8886;padding-left:8px">${row(c)}<div class="fl"><small>This month ${money(own(c.id))}</small><select style="width:auto;margin:0;padding:4px" onchange="upd('cats','${c.id}','p',this.value)"><option value="${k.id}" selected>Under ${esc(k.name)}</option>${oth.map(x=>`<option value="${x.id}">Move under ${esc(x.name)}</option>`).join('')}<option value="">Make main category</option></select></div></div>`).join('')}
+<div class="two" style="margin-top:8px"><button class="s" onclick="put('cats',{id:uid(),name:'New sub-category',i:'•',color:'${k.color}',ty:'${cg}',p:'${k.id}'})">+ Sub-category</button>${!subs.length&&oth.length?`<select onchange="if(this.value)upd('cats','${k.id}','p',this.value)"><option value="">Make it a sub-category of…</option>${oth.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>`:'<span></span>'}</div></div>`}).join('')}
+<button class="s" onclick="put('cats',{id:uid(),name:'New',i:'📦',color:'#94a3b8',ty:'${cg}'})">+ Add main ${cg=='e'?'expense':'income'} category</button>
+<small>Use a main category (e.g. Car) with sub-categories (Fuel, Service, Parking). Reports and budgets roll sub-categories up into the main one.</small>`}
+function delCat(id){const k=S.cats.filter(c=>c.p==id);if(!confirm(k.length?`Delete this category? Its ${k.length} sub-categories become main categories.`:'Delete category?'))return;k.forEach(c=>put('cats',{...c,p:''}));rm('cats',id)}
+function moveCat(id){const c=S.cats.find(x=>x.id==id),t=(c.ty||'e')=='e'?'i':'e';put('cats',{...c,ty:t});S.cats.filter(x=>x.p==id).forEach(x=>put('cats',{...x,ty:t}))}
 function rcv(){const act=S.rec.filter(r=>r.on),w7=new Date();w7.setDate(w7.getDate()+7);const w=w7.toLocaleDateString('en-CA'),
 mo_=act.filter(r=>r.ty!='i').reduce((s,r)=>s+mq(r),0),mi=act.filter(r=>r.ty=='i').reduce((s,r)=>s+mq(r),0),due=act.filter(r=>{const n=nextOcc(r);return n&&n<=w}),
 left=act.filter(r=>r.k=='ins').reduce((s,r)=>s+Math.max(0,(r.n||0)-S.tx.filter(x=>x.rc==r.id).length)*r.amt,0);
@@ -304,15 +392,45 @@ ${r.k=='rep'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</optio
 function rtg(){const c=$('#r_c');c.innerHTML=catOpts($('#r_t').value=='i'?'i':'e',c.value)}
 function saveRc(id,k){const gv=x=>{const e=$('#r_'+x);return e?e.value:''},a=parseFloat(gv('a'))||0;if(!gv('n')||!a||!gv('s'))return setStatus('Enter name, amount and first date');
 put('rec',{...(S.rec.find(x=>x.id==id)||{}),id:id||uid(),k,name:gv('n'),ty:gv('t')||'e',amt:a,acc:gv('ac'),cat:gv('c'),freq:gv('f'),ev:Math.max(1,parseInt(gv('e'))||1),start:gv('s'),end:gv('d'),n:parseInt(gv('x'))||0,auto:$('#r_au').checked,on:$('#r_on').checked});closeM();if(autoRec())save()}
-function rcPost(id){const r=S.rec.find(x=>x.id==id),d=nextOcc(r);if(!d)return;S.tx.push(rtx(r,d));save()}
+function rcPost(id){if(RO())return;const r=S.rec.find(x=>x.id==id),d=nextOcc(r);if(!d)return;S.tx.push(rtx(r,d));save()}
 function delRc(id){if(confirm('Delete this item? Transactions already recorded stay.')){rm('rec',id);closeM()}}
-function sett(){const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
+function bovw(){const bl=BL().map(b=>({b,sp:bspent(b,ym)})),m=bl.filter(x=>x.b.per=='m'&&!dup(x.b)),tb=m.reduce((a,x)=>a+x.b.amt,0),ts=m.reduce((a,x)=>a+x.sp,0);
+if(!bl.length)return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer"><small>No budgets yet — tap to add one ›</small></div>`;
+const top=bl.filter(x=>x.b.amt>0).sort((a,b)=>b.sp/b.b.amt-a.sp/a.b.amt).slice(0,4);
+return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer"><div class="fl"><span>Monthly budget ${money(tb)}</span><span class="${ts>tb?'r':''}">${tb-ts<0?'Over by '+money(ts-tb):'Left '+money(tb-ts)}</span></div>${barRow(ts,tb)}${top.map(x=>`<div class="fl" style="margin-top:10px"><small>${esc(x.b.name)}</small><small>${money(x.sp)} / ${money(x.b.amt)}</small></div>${barRow(x.sp,x.b.amt)}`).join('')}</div>`}
+function chv(){const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(+ym.slice(0,4),+ym.slice(5)-1-i,1).toLocaleDateString('en-CA').slice(0,7));
+const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)),by={};
+cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
+let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8]}));
+if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
+return`<h4>Trends</h4><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it)}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp)}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw)}</div>`}
+function cfv(){const f=rf,t=rto,D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),eff=x=>D.reduce((a,c)=>a+dl(x,c.id),0),sec={op:[],inv:[],fin:[]},add=(k,n,v)=>{const r=sec[k].find(x=>x.n==n);if(r)r.v+=v;else sec[k].push({n,v})};
+TX().filter(x=>inR(x.date,f,t)).forEach(x=>{const e=eff(x);if(Math.abs(e)<0.005)return;
+if(x.f)add('inv','🏗️ Fixed assets purchased',e);
+else if(x.tr){const o=acc(ids.has(x.acc)?x.to:x.acc),g=grp(o);
+if(g=='credit'||(g=='bl'&&isL(o)))add('fin',e<0?'Repayments (cards, BNPL, loans, borrowings)':'Borrowings & loans received',e);
+else add('inv',e<0?'Invested, lent or saved':'Investments & loans returned',e)}
+else if(x.set)add('op',x.amt>0?'Receipts from customers':'Payments to suppliers',e);
+else{const k=cat(x.cat);add('op',k.i+' '+k.name,e)}});
+const tot=k=>sec[k].reduce((a,x)=>a+x.v,0),net=tot('op')+tot('inv')+tot('fin'),open=f?D.reduce((a,c)=>a+bal(c,dayB(f)),0):D.reduce((a,c)=>a+(c.open||0),0),close=D.reduce((a,c)=>a+bal(c,t),0),
+rows=k=>sec[k].sort((a,b)=>b.v-a.v).map(x=>`<tr><td>${esc(x.n)}<td class="n ${x.v<0?'r':'g'}">${money(x.v)}`).join('')||'<tr><td colspan="2"><small>None</small>',
+sh=(k,n)=>`<tr><th colspan="2">${n}</th></tr>${rows(k)}<tr><td><b>Net cash from ${n.toLowerCase()}</b><td class="n"><b>${money(tot(k))}</b>`;
+return`<div class="row3"><div class="card">Opening cash<h3>${money(open)}</h3></div><div class="card">Net change<h3 class="${net<0?'r':'g'}">${money(net)}</h3></div><div class="card">Closing cash<h3>${money(open+net)}</h3></div></div>
+<div class="tw"><table><tr><th colspan="2">Cash flow statement</th></tr><tr><td>Opening cash<td class="n">${money(open)}${sh('op','Operating activities')}${sh('inv','Investing activities')}${sh('fin','Financing activities')}<tr><td><b>Net change in cash</b><td class="n"><b>${money(net)}</b><tr><td><b>Closing cash</b><td class="n"><b>${money(open+net)}</b></table></div>
+${Math.abs(open+net-close)>0.005?`<small class="r">⚠ Differs from account balances by ${money(close-open-net)}</small>`:'<small>Matches your cash, bank and e-wallet balances ✔</small>'}
+<small>Cash = cash, bank and e-wallet accounts. Spending on credit cards, BNPL and loans shows up when you repay it.</small>`}
+function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
 +det('ap','🎨 Appearance',`<small>App name</small>${inp('name')}<div class="two"><div><small>Currency symbol</small>${inp('cur')}</div><div><small>Accent colour</small>${inp('accent','color')}</div></div><small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select>`)
-+det('bu','🎯 Budget settings',`<small>Warn when spending reaches (%)</small><input type="number" value="${S.cfg.bw||80}" onchange="cfg('bw',parseFloat(this.value)||80)"><small>Monthly budget per expense category (repeats every month)</small>${S.cats.filter(c=>c.ty!='i').map(c=>`<div class="fl"><span>${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${(S.buds.find(b=>b.cat==c.id)||{}).amt||''}" style="width:120px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>`).join('')}<small>Manage categories in More › Category manager.</small>`)
++det('bu','🎯 Budget settings',`<button class="s" onclick="budEd('')">+ Add custom budget</button>${S.buds.filter(b=>!b.cat).map(b=>`<div class="fl" onclick="budEd('${b.id}')" style="cursor:pointer;margin:8px 0"><span>${esc(b.name)}</span><span>${money(b.amt)}</span></div>`).join('')}<small>Warn when spending reaches (%)</small><input type="number" value="${S.cfg.bw||80}" onchange="cfg('bw',parseFloat(this.value)||80)"><small>Monthly budget per expense category (repeats every month)</small>${catsOf('e').map(c=>`<div class="fl"><span>${isMain(c)?'':'　↳ '}${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${(S.buds.find(b=>b.cat==c.id)||{}).amt||''}" style="width:120px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>`).join('')}<small>Manage categories in More › Category manager.</small>`)
++det('gd','🥇 Gold price',`<small>Price source</small><select onchange="cfg('gsrc',this.value)"><option value="spot" ${(c.gsrc||'spot')=='spot'?'selected':''}>Live gold price (XAU → MYR, automatic)</option><option value="web" ${c.gsrc=='web'?'selected':''}>A website I choose (via my Google script)</option><option value="manual" ${c.gsrc=='manual'?'selected':''}>Manual price</option></select>
+<small>Adjust % (dealer buy/sell difference or purity)</small><input type="number" step="0.1" value="${c.gadj||0}" onchange="cfg('gadj',parseFloat(this.value)||0)"><small>Manual price per gram</small><input type="number" step="0.01" value="${c.gman||''}" onchange="cfg('gman',parseFloat(this.value)||0)">
+<small>Website page address (for "a website I choose")</small><input value="${esc(c.gurl||'')}" onchange="cfg('gurl',this.value.trim())"><small>Text just before the price on that page</small><input value="${esc(c.gafter||'')}" onchange="cfg('gafter',this.value)">
+<small>Latest: ${c.gp?money(c.gp)+' per gram · '+c.gd:'none yet'}</small><button class="s" onclick="goldRefresh()">Update gold price now</button>`)
++det('lk','👥 Linked ledgers (monitor each other)',`${links().map(l=>`<div class="fl" style="margin:6px 0"><span>👁 ${esc(l.name)}</span><a onclick="delLink('${l.id}')">✕</a></div>`).join('')||'<small>No linked ledgers yet</small>'}<h4>Add a ledger</h4><input id="lk_n" placeholder="Name (e.g. Aisyah)"><input id="lk_u" placeholder="Their Web App URL"><input id="lk_k" placeholder="Their view key"><button class="s" onclick="addLink()">Add</button><small>They set up their own copy of the app and share the Web App URL and view key with you. You can view their ledger from the switch at the top; it is read only.</small>`)
 +det('sh',`🛒 Shops &amp; brands (${S.shops.length})`,S.shops.map(x=>`<div class="row5"><label class="lgl">${lg(x)}<input type="file" accept="image/*" hidden onchange="logoUp('shops','${x.id}',this.files[0])"></label><input value="${esc(x.name)}" onchange="upd('shops','${x.id}','name',this.value)"><input value="${esc(x.i||'')}" placeholder="emoji" onchange="upd('shops','${x.id}','i',this.value)"><input type="color" value="${x.color||'#94a3b8'}" onchange="upd('shops','${x.id}','color',this.value)"><button class="d" onclick="rm('shops','${x.id}')">×</button></div>`).join('')+`<button class="s" onclick="put('shops',{id:uid(),name:'New shop',i:'🏷️',color:'#94a3b8'})">+ Add shop</button>`)
-+det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${opts(S.cats,S.cfg.gFuel||'c8',k=>k.i+' '+esc(k.name))}</select><select onchange="cfg('gSvc',this.value)">${opts(S.cats,S.cfg.gSvc||'c9',k=>k.i+' '+esc(k.name))}</select></div><small>Fuel category · service category</small><small>Tap a 🔗 entry in the Register to edit it here without changing Garage.</small>${S.govr.some(o=>o.h)?`<button class="s" onclick="gRestore()">Restore ${S.govr.filter(o=>o.h).length} hidden</button>`:''}`)
++det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${catOpts('e',S.cfg.gFuel||'c8')}</select><select onchange="cfg('gSvc',this.value)">${catOpts('e',S.cfg.gSvc||'c9')}</select></div><small>Fuel category · service category</small><small>Tap a 🔗 entry in the Register to edit it here without changing Garage.</small>${S.govr.some(o=>o.h)?`<button class="s" onclick="gRestore()">Restore ${S.govr.filter(o=>o.h).length} hidden</button>`:''}`)
 +det('bk','💾 Backup',`<button class="s" onclick="exp()">Export JSON</button><input type="file" accept=".json" onchange="imp(this.files[0])">`)}
 
 /* ---------- transaction form ---------- */
@@ -339,9 +457,9 @@ for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,
 catch(e){return setStatus('Upload failed: '+e.message)}}
 if(t.g){put('govr',{id:t.id,h:0,f:{date:t.date,desc:t.desc,amt:t.amt,cat:t.cat,acc:t.acc,shop:t.shop,note:t.note,att:t.att}});closeM();return}
 if(rem.length){try{await trash(rem)}catch(e){}}put('tx',t);closeM()}
-async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,f=$('#s_from').value,t=$('#s_to').value;if(!files.length||!a||!f||!t)return setStatus('Pick account, dates and file');
-try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),f.slice(0,4));
-for(const x of files){const r=await upload(x,d,safe(`${f}_to_${t}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a,from:f,to:t,month:f.slice(0,7),name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
+async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,m=$('#s_m').value,y=$('#s_y').value;if(!files.length||!a)return setStatus('Pick an account and a file');
+try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
+for(const x of files){const r=await upload(x,d,safe(`${y}-${m}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a,month:y+'-'+m,name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
 catch(e){setStatus('Upload failed: '+e.message)}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='ledger-backup.json';a.click()}
 async function imp(f){if(!f)return;try{merge(JSON.parse(await f.text()));save()}catch(e){setStatus('Bad file')}}
@@ -353,5 +471,5 @@ rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A
 const u=c.toDataURL();for(const r of['icon','apple-touch-icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
 document.addEventListener('click',e=>{const t=e.target;if(t&&t.matches&&t.matches('input[type=date],input[type=month]')&&t.showPicker){try{t.showPicker()}catch(x){}}});
 if(autoRec())localStorage.setItem(K,JSON.stringify(S));
-render();if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
+render();setTimeout(goldAuto,1500);if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
