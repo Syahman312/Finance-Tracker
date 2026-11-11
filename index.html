@@ -49,12 +49,12 @@ let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
 S=S||{cfg:{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark',root:'Finance Tracker',u:0},
 cats:[['c1','Food','🍜','#f59e0b'],['c2','Transport','🚗','#3b82f6'],['c3','Bills','💡','#a855f7'],['c4','Shopping','🛍️','#ec4899'],['c5','Health','🏥','#ef4444'],['c6','Salary','💰','#22c55e'],['c7','Other','📦','#94a3b8']].map(([id,name,i,color])=>({id,name,i,color,u:0})),
 accs:[['a1','Cash','#22c55e'],['a2','Bank','#4f8cff']].map(([id,name,color])=>({id,name,color,t:id=='a1'?'cash':'bank',open:0,u:0})),tx:[],stm:[],del:{}};
-S.bills=S.bills||[];S.buds=S.buds||[];S.govr=S.govr||[];S.fixed=S.fixed||[];S.rec=S.rec||[];
+S.bills=S.bills||[];S.buds=S.buds||[];S.govr=S.govr||[];S.fixed=S.fixed||[];S.rec=S.rec||[];S.pay=S.pay||[];
 S.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});
 if(!S.cats.some(c=>c.id=='cadj')&&!(S.del||{}).cadj)S.cats.push({id:'cadj',name:'Balance adjustment',i:'⚖️',color:'#94a3b8',ty:'e',u:0});
 S.shops=S.shops||[['s1','Shell','🐚'],['s2','Petronas','⛽'],['s3',"Lotus's",'🛒'],['s4','Shopee','🧡'],['s5','Grab','🚖'],['s6','Starbucks','☕']].map(([id,name,i])=>({id,name,i,color:'#94a3b8',u:0}));
 [['c8','Fuel','⛽','#f97316'],['c9','Car service','🔧','#14b8a6']].forEach(([id,name,i,color])=>{if(!S.cats.some(c=>c.id==id)&&!(S.del||{})[id])S.cats.push({id,name,i,color,u:0})});
-let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',rmode='m',xf='',xt='',sy=today().slice(0,4),sm=today().slice(5,7),sa='',ME=null,view='',rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
+let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',rmode='m',xf='',xt='',py=today().slice(0,4),PE=null,sy=today().slice(0,4),sm=today().slice(5,7),sa='',ME=null,view='',rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
 const acc=id=>S.accs.find(a=>a.id==id)||{name:'?',color:'#888',open:0};
 const isMain=c=>!c.p||!S.cats.some(x=>x.id==c.p);
 const mainOf=id=>{const c=S.cats.find(x=>x.id==id);return c&&!isMain(c)?c.p:id};
@@ -159,7 +159,7 @@ function bspent(b,m){let f,t;if(b.per=='y'){f=m.slice(0,4)+'-01-01';t=m.slice(0,
 const hit=x=>(!b.cats.length||b.cats.includes(x.cat)||b.cats.includes(mainOf(x.cat)))&&(!b.shops.length||b.shops.includes(x.shop));
 return TX().filter(x=>!x.tr&&!x.set&&x.amt<0&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s-x.amt,0)+(b.shops.length?0:S.bills.filter(x=>x.k=='ap'&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s+x.amt,0))}
 const RO=()=>!!ME,links=()=>{try{return JSON.parse(localStorage.getItem('ledger.links')||'[]')}catch(e){return[]}};
-function norm(d){['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec'].forEach(k=>d[k]=d[k]||[]);d.del=d.del||{};d.cfg=d.cfg||{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark'};
+function norm(d){['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay'].forEach(k=>d[k]=d[k]||[]);d.del=d.del||{};d.cfg=d.cfg||{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark'};
 d.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});return d}
 async function sw(id){if(!id){if(ME){S=ME;ME=null}view='';tab='ov';render();return}
 const l=links().find(x=>x.id==id);if(!l)return;setStatus('Loading '+l.name+'…');let d=null;
@@ -201,7 +201,7 @@ function rm(k,id){if(RO())return setStatus('👁 View only');S[k]=S[k].filter(x=
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
 function cfg(f,v){if(RO())return setStatus('👁 View only');S.cfg[f]=v;S.cfg.u=now();save()}
 function merge(r){const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
-for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
+for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
 
 /* ---------- Google Drive ---------- */
@@ -261,9 +261,9 @@ rm('stm',id)}
 const go=k=>{tab=k;render();scrollTo(0,0)};
 const mo=d=>{const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
-const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,st:stv,set:sett}[tab]();
+const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,st:stv,set:sett}[tab]();
 $('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat">${esc(status)}</span></header><main>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set','imp'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set','imp','sal'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()?'<button class="fab" onclick="edit()">+</button>':''}`}
 function ov(){const m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
@@ -382,7 +382,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="go('${k}')" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
@@ -478,6 +478,46 @@ return`<div class="row3"><div class="card">Opening cash<h3>${money(open)}</h3></
 <div class="tw"><table><tr><th colspan="2">Cash flow statement</th></tr><tr><td>Opening cash<td class="n">${money(open)}${sh('op','Operating activities')}${sh('inv','Investing activities')}${sh('fin','Financing activities')}<tr><td><b>Net change in cash</b><td class="n"><b>${money(net)}</b><tr><td><b>Closing cash</b><td class="n"><b>${money(open+net)}</b></table></div>
 ${Math.abs(open+net-close)>0.005?`<small class="r">⚠ Differs from account balances by ${money(close-open-net)}</small>`:'<small>Matches your cash, bank and e-wallet balances ✔</small>'}
 <small>Cash = cash, bank and e-wallet accounts. Spending on credit cards, BNPL and loans shows up when you repay it.</small>`}
+const pg=p=>(p.basic||0)+(p.allow||[]).reduce((a,x)=>a+(x.v||0),0),pd=p=>(p.ded||[]).reduce((a,x)=>a+(x.v||0),0),pn=p=>pg(p)-pd(p);
+function payCat(){let c=S.cats.find(x=>x.id=='cpay');if(!c){c={id:'cpay',name:'Payroll deductions',i:'🧾',color:'#94a3b8',ty:'e',u:now()};S.cats.push(c)}return c.id}
+function payTx(p){const o=[],t0=now(),b='p:'+p.id+':'+p.rev,mm=MN[+p.date.slice(5,7)-1]+' '+p.date.slice(0,4),kw=S.accs.find(a=>a.t=='kwsp'),sc=S.cats.find(c=>c.id=='c6')||S.cats.find(c=>c.ty=='i'),al=(p.allow||[]).reduce((a,x)=>a+(x.v||0),0);
+o.push({id:b+':g',u:t0,date:p.date,desc:'Salary '+mm+(p.employer?' · '+p.employer:''),amt:pg(p),cat:sc?sc.id:'',acc:p.acc,shop:'',note:'Basic '+money(p.basic||0)+(al?' + allowances '+money(al):''),att:p.att||[],pay:p.id,tr:0,to:''});
+(p.ded||[]).forEach((d,i)=>{if(!d.v)return;const n=d.n||'Deduction';
+if(kw&&/epf|kwsp/i.test(n))o.push({id:b+':d'+i,u:t0,date:p.date,desc:n+' ('+mm+')',amt:d.v,tr:1,acc:p.acc,to:kw.id,cat:'',shop:'',note:'From payslip',att:[],pay:p.id});
+else o.push({id:b+':d'+i,u:t0,date:p.date,desc:n+' ('+mm+')',amt:-d.v,cat:payCat(),acc:p.acc,shop:'',note:'Payslip deduction',att:[],pay:p.id,tr:0,to:''})});return o}
+function salv(){const l=S.pay.filter(p=>p.date.slice(0,4)==py).sort((a,b)=>b.date.localeCompare(a.date)),G=l.reduce((a,p)=>a+pg(p),0),D=l.reduce((a,p)=>a+pd(p),0),by={};
+l.forEach(p=>(p.ded||[]).forEach(d=>{if(d.v)by[d.n||'Deduction']=(by[d.n||'Deduction']||0)+d.v}));
+const nets=MN.map((_,i)=>l.filter(p=>+p.date.slice(5,7)==i+1).reduce((a,p)=>a+pn(p),0)),dds=MN.map((_,i)=>l.filter(p=>+p.date.slice(5,7)==i+1).reduce((a,p)=>a+pd(p),0));
+return`<div class="mn"><a onclick="py=String(+py-1);render()">‹</a><b>${py}</b><a onclick="py=String(+py+1);render()">›</a></div>
+<div class="row3"><div class="card">Gross<h3>${money(G)}</h3></div><div class="card">Deductions<h3 class="r">${money(D)}</h3></div><div class="card">Net pay<h3 class="g">${money(G-D)}</h3></div></div>
+<button onclick="payEd('')">+ Add payslip</button>
+${l.length?`<div class="card"><small>Net pay <span class="g">■</span> and deductions <span class="r">■</span> by month</small>${barSvg(MN,nets,dds)}</div>`:''}
+${Object.keys(by).length?`<h4>Deductions this year</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<div class="fl" style="margin:4px 0"><span>${esc(n)}</span><span>${money(v)}</span></div>`).join('')}</div>`:''}
+<h4>Payslips</h4>${l.map(p=>`<div class="card" onclick="payEd('${p.id}')" style="cursor:pointer"><div class="fl"><b>${MN[+p.date.slice(5,7)-1]} ${p.date.slice(0,4)}${p.employer?' · '+esc(p.employer):''}</b><b class="g">${money(pn(p))}</b></div>
+<div class="fl"><small>Basic ${money(p.basic||0)} · Allowances ${money(pg(p)-(p.basic||0))}</small><small>Gross ${money(pg(p))}</small></div><div class="fl"><small>Deductions ${money(pd(p))} · paid ${p.date} → ${esc(acc(p.acc).name)}</small>${(p.att||[]).length?`<a onclick="event.stopPropagation();pv('${p.att[0].id}')">📎 payslip</a>`:''}</div></div>`).join('')||'<small>No payslips for this year yet</small>'}
+<small>Gross = basic + allowances. Net pay = gross − deductions.</small>`}
+function payEd(id){const p=S.pay.find(x=>x.id==id),last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];
+PE=p?structuredClone(p):{id:'',date:today(),employer:last?last.employer:'',acc:last?last.acc:((S.accs.find(a=>a.t=='bank')||S.accs[0]||{}).id),basic:last?last.basic:0,allow:last?structuredClone(last.allow||[]):[],ded:last?structuredClone(last.ded||[]):[],att:[],rec:true,note:''};PE.rem=[];payRender()}
+function payRender(){const p=PE,AL=['Transport','Housing','Phone','Meal','Overtime','Bonus','Commission'],DD=['EPF (KWSP)','SOCSO (PERKESO)','EIS','PCB (income tax)','Zakat'],
+row=(k,i,x)=>`<div style="display:grid;grid-template-columns:1fr 100px 36px;gap:6px;margin:4px 0"><input value="${esc(x.n)}" placeholder="Name" onchange="PE.${k}[${i}].n=this.value"><input type="number" step="0.01" inputmode="decimal" value="${x.v||''}" placeholder="0.00" oninput="PE.${k}[${i}].v=parseFloat(this.value)||0;payTot()"><button class="d" onclick="PE.${k}.splice(${i},1);payRender()">×</button></div>`,
+chips=(k,l)=>`<div class="seg">${l.map(n=>`<a onclick="PE.${k}.push({n:'${n}',v:0});payRender()">+ ${n}</a>`).join('')}<a onclick="PE.${k}.push({n:'',v:0});payRender()">+ Other</a></div>`;
+$('#m').innerHTML=`<div><h3>${p.id?'Edit':'New'} payslip</h3><input placeholder="Employer (optional)" value="${esc(p.employer||'')}" onchange="PE.employer=this.value">
+<div class="two"><div><small>Pay date</small><input type="date" value="${p.date}" onchange="PE.date=this.value"></div><div><small>Credited to</small><select onchange="PE.acc=this.value">${opts(S.accs,p.acc,a=>esc(a.name))}</select></div></div>
+<h4>Basic salary</h4><input type="number" step="0.01" inputmode="decimal" value="${p.basic||''}" placeholder="0.00" oninput="PE.basic=parseFloat(this.value)||0;payTot()">
+<h4>Allowances</h4>${(p.allow||[]).map((x,i)=>row('allow',i,x)).join('')}${chips('allow',AL)}
+<h4>Deductions</h4>${(p.ded||[]).map((x,i)=>row('ded',i,x)).join('')}${chips('ded',DD)}
+<div class="card"><div class="fl"><span>Gross salary (basic + allowances)</span><b id="pt_g"></b></div><div class="fl"><span>Total deductions</span><b id="pt_d" class="r"></b></div><div class="fl"><span>Net pay (take-home)</span><b id="pt_n" class="g"></b></div></div>
+<h4>Payslip file</h4>${(p.att||[]).map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a onclick="PE.rem.push('${a.id}');PE.att=PE.att.filter(x=>x.id!='${a.id}');payRender()">✕</a></div>`).join('')}<input id="p_files" type="file" multiple accept="application/pdf,image/*">
+<label class="fl"><span>Record in Register (salary income, deductions, EPF into my KWSP account)</span><input type="checkbox" ${p.rec!==false?'checked':''} onchange="PE.rec=this.checked" style="width:auto"></label>
+<button onclick="savePay()">Save</button>${p.id?`<button class="d" onclick="delPay('${p.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show';payTot()}
+function payTot(){const g=pg(PE),d=pd(PE);[['g',g],['d',d],['n',g-d]].forEach(([k,v])=>{const e=$('#pt_'+k);if(e)e.textContent=money(v)})}
+async function savePay(){if(RO())return;const files=[...$('#p_files').files];
+if(files.length){try{setStatus('Uploading…');const d=await path(S.cfg.root,'Payslips',PE.date.slice(0,4));for(const x of files){const r=await upload(x,d,safe(`${PE.date}_payslip_${x.name}`));PE.att.push({id:r.id,name:x.name,link:r.webViewLink})}}catch(e){return setStatus('Upload failed: '+e.message)}}
+const rem=PE.rem||[],q={...PE,id:PE.id||uid(),rev:(PE.rev||0)+1};delete q.rem;if(!pg(q)&&!(q.att||[]).length)return setStatus('Enter the basic salary or attach a payslip');
+S.tx.filter(t=>t.pay==q.id).forEach(t=>{S.del[t.id]=now()});S.tx=S.tx.filter(t=>t.pay!=q.id);if(q.rec!==false&&pg(q)>0)payTx(q).forEach(t=>S.tx.push(t));
+if(rem.length){try{await trash(rem)}catch(e){}}put('pay',q);closeM()}
+async function delPay(id){const q=S.pay.find(x=>x.id==id);if(!q||!confirm('Delete this payslip, its Register entries and its file in Google Drive?'))return;
+S.tx.filter(t=>t.pay==id).forEach(t=>{S.del[t.id]=now()});S.tx=S.tx.filter(t=>t.pay!=id);try{await trash((q.att||[]).map(a=>a.id))}catch(e){}rm('pay',id);closeM()}
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
