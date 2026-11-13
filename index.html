@@ -243,7 +243,7 @@ function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S
 if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
 /* ===== SYNC ===== */
-let LASTERR='';
+let LASTERR='';const SCRIPT_V='2026-11-14';let oldScript=false;
 async function post(u,body){let r;try{r=await fetch(u,{method:'POST',body:JSON.stringify(body)})}catch(e){throw new Error('No connection to the script. Check the internet and that the Web App URL is right.')}
 const t=await r.text();
 if(/^\s*</.test(t)){if(/accounts\.google\.com|Sign in/i.test(t))throw new Error('The script asked for a Google sign-in. Redeploy it with "Who has access: Anyone".');
@@ -255,11 +255,17 @@ let j;try{j=JSON.parse(t)}catch(e){throw new Error('The script replied with some
 if(j.error)throw new Error(String(j.error).slice(0,160));return j}
 async function sync(){const u=localStorage.getItem(SU);if(RO()||busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
 let ge='';try{if(u){const size=JSON.stringify(S).length;if(size>4000000)throw new Error('Your data is '+Math.round(size/1e6)+' MB, too big to sync. Remove some uploaded account logos in Accounts › Edit.');
-const r=await post(u,{key:localStorage.getItem(SK)||'',data:S});if(r.data)merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
+const r=await post(u,{key:localStorage.getItem(SK)||'',data:S});oldScript=!r.v||r.v<SCRIPT_V;if(r.data)merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
-if(autoRec())setTimeout(save,300);persist();LASTERR='';lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'');setStatus(lastSync,1)}
+if(autoRec())setTimeout(save,300);persist();LASTERR='';lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'')+(oldScript?' · ⚠ Google script out of date':'');setStatus(lastSync,1)}
 catch(e){LASTERR=String(e.message||e);setStatus('Sync failed — tap More › Settings › Sync › Why did it fail?');console.warn(e)}busy=false;render()}
+async function testScript(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',el=$('#dg_t'),say=(ok,t)=>{el.innerHTML+=`<div>${ok?'<span class="g">✔</span>':'<span class="r">✘</span>'} ${esc(t)}</div>`};el.innerHTML='<small>Testing…</small>';
+if(!u){el.innerHTML='';return say(0,'No Web App URL in Settings')}el.innerHTML='';let v='';
+try{const t=await(await fetch(u)).text();if(/^\s*</.test(t))say(0,/accounts\.google\.com|Sign in/i.test(t)?'The script needs a Google sign-in — redeploy with "Who has access: Anyone"':'The URL opens a web page, not your script — copy it again from Deploy › Manage deployments');
+else{const j=JSON.parse(t);v=j.v||'';say(1,'Script reachable'+(v?' · version '+v:' · old version (no version number)'))}}catch(e){return say(0,'Cannot reach the script: check your internet and the Web App URL')}
+if(!v||v<SCRIPT_V)say(0,'Script is older than the app ('+(v||'unknown')+' < '+SCRIPT_V+') — paste the new code, then deploy a New version');
+try{await post(u,{key:k,action:'read'});say(1,'Secret key accepted')}catch(e){say(0,String(e.message))}}
 function diag(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',cid=localStorage.getItem(CID)||'',on=!!localStorage.getItem(ON),size=JSON.stringify(S).length,
 y=t=>'<span class="g">✔</span> '+t,n=t=>'<span class="r">✘</span> '+t;
 $('#m').innerHTML=`<div><h3>Sync check</h3>${LASTERR?`<div class="card"><small>Last error</small><p class="r">${esc(LASTERR)}</p></div>`:'<small>No error recorded in this session.</small>'}
@@ -268,7 +274,7 @@ $('#m').innerHTML=`<div><h3>Sync check</h3>${LASTERR?`<div class="card"><small>L
 <div>${cid?y('Google Drive Client ID is set'):n('No Client ID — uploads and previews will not work')}</div>
 <div>${on?y('Google Drive has been connected on this device'):n('Google Drive not connected here — tap Connect Google Drive')}</div>
 <div>${size<2000000?y('Data size '+Math.round(size/1024)+' KB'):n('Data size '+Math.round(size/1024)+' KB — this is large; uploaded logos are the usual cause')}</div></div>
-<button onclick="closeM();sync()">Try syncing again</button><button class="s" onclick="connect()">Reconnect Google Drive</button><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
+${oldScript?'<div class="card"><p class="r">⚠ Your Google script is older than this app. Paste the latest ledger-sync.gs into Apps Script, put your KEY and GARAGE_ID back, then Deploy › Manage deployments › ✏️ › New version › Deploy.</p></div>':''}<div id="dg_t"></div><button onclick="testScript()">Test the connection to my Google script</button><button onclick="closeM();sync()">Try syncing again</button><button class="s" onclick="connect()">Reconnect Google Drive</button><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
 async function connect(){try{await auth();await sync()}catch(e){setStatus(e.message)}}
 const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
 async function trash(ids){for(const id of ids.filter(Boolean)){try{await api(`${D}/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}catch(e){if(!/^404/.test(e.message))throw e}}}
@@ -749,12 +755,97 @@ if(Math.abs(diff)>=0.005){if(!adj)return setStatus('The difference must be zero 
 const id=uid(),items=rcItems(a.id,end).filter(t=>rst(t,a.id).cl);items.forEach(t=>rcSet(t,a.id,{rcn:id}));const f=S.stm.find(x=>x.acc==a.id&&stM(x)==end.slice(0,7));
 S.recs.push({id,u:now(),acc:a.id,end,bal:sb,n:items.length,adj:Math.abs(diff)>=0.005?diff:0,fid:f?fid(f):'',fname:f?f.name:''});RCX={acc:a.id,end:'',bal:'',bank:[]};save();setStatus('Reconciled ✔ '+items.length+' transactions locked')}
 function rcUndo(id){if(!confirm('Undo this reconciliation? Its transactions stay ticked so you can redo it.'))return;S.rcm.filter(x=>x.rcn==id).forEach(x=>{x.rcn='';x.cl=1;x.u=now()});S.del[id]=now();S.recs=S.recs.filter(r=>r.id!=id);RMC=null;save()}
-function imMatch(){const aid=IM.opt.racc,a=acc(aid),L=IM.rows.map((r,i)=>{const x=imRow(r);if(!x)return null;x.bal=IM.map.bal>=0?pAmt(r[IM.map.bal]):NaN;return x}).filter(Boolean);if(!L.length)return setStatus('No usable lines in this file');
-const end=L.reduce((m,x)=>x.date>m?x.date:m,''),asc=L[0].date<=L[L.length-1].date,lr=L.filter(x=>x.date==end),last=asc?lr[lr.length-1]:lr[0],used=new Set(),bank=[],dd=(x,y)=>Math.abs((new Date(x)-new Date(y))/864e5);
+function rcMatch(aid,L,bal){const used=new Set(),bank=[],dd=(x,y)=>Math.abs((new Date(x)-new Date(y))/864e5),end=L.reduce((m,x)=>x.date>m?x.date:m,'');
 const cands=TX().filter(t=>(t.acc==aid||t.to==aid)&&!rst(t,aid).rcn);let n=0;
 L.forEach(s=>{let best=null,bd=99;cands.forEach(t=>{if(used.has(t.id)||Math.abs(dl(t,aid)-s.amt)>=0.005)return;const d=dd(t.date,s.date);if(d<=4&&d<bd){bd=d;best=t}});
 if(best){used.add(best.id);rcSet(best,aid,{cl:1});n++}else bank.push({date:s.date,desc:s.desc,amt:s.amt})});
-RCX={acc:aid,end,bal:isNaN(last.bal)?'':String(isL(a)?Math.abs(last.bal):last.bal),bank};IM=null;save();go('rcn');setStatus(n+' matched and ticked · '+bank.length+' only on the statement')}
+RCX={acc:aid,end,bal:bal==null||isNaN(bal)?'':String(bal),bank};IM=null;save();go('rcn');setStatus(n+' matched and ticked · '+bank.length+' only on the statement')}
+function imMatch(){const aid=IM.opt.racc,a=acc(aid),L=IM.rows.map(r=>{const x=imRow(r);if(!x)return null;x.bal=IM.map.bal>=0?pAmt(r[IM.map.bal]):NaN;return x}).filter(Boolean);if(!L.length)return setStatus('No usable lines in this file');
+const end=L.reduce((m,x)=>x.date>m?x.date:m,''),asc=L[0].date<=L[L.length-1].date,lr=L.filter(x=>x.date==end),last=asc?lr[lr.length-1]:lr[0];
+rcMatch(aid,L,isNaN(last.bal)?null:(isL(a)?Math.abs(last.bal):last.bal))}
+/* ===== PDF STATEMENT READER ===== */
+const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+let PDFLIB=null;
+function pdfLib(){if(PDFLIB)return PDFLIB;PDFLIB=new Promise((ok,no)=>{if(window.pdfjsLib){window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';return ok(window.pdfjsLib)}
+const sc=document.createElement('script');sc.src=PDFJS+'pdf.min.js';sc.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';ok(window.pdfjsLib)};sc.onerror=()=>{PDFLIB=null;no(new Error('Could not load the PDF reader. Check your internet connection.'))};document.head.append(sc)});return PDFLIB}
+async function pdfLines(lib,data,askPw){
+const task=lib.getDocument({data,isEvalSupported:false});
+task.onPassword=(cb,reason)=>{const p=askPw(reason==2);if(p==null){task.destroy();return}cb(p)};
+const doc=await task.promise,out=[];
+for(let n=1;n<=doc.numPages;n++){const pg=await doc.getPage(n),tc=await pg.getTextContent(),rows=[];
+tc.items.forEach(it=>{const s=(it.str||'').trim();if(!s)return;const x=it.transform[4],y=it.transform[5],w=it.width||0;let r=rows.find(q=>Math.abs(q.y-y)<2.5);if(!r){r={y,it:[]};rows.push(r)}r.it.push({x,w,s})});
+rows.sort((a,b)=>b.y-a.y).forEach(r=>out.push(r.it.sort((a,b)=>a.x-b.x)))}
+return out}
+const MONS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,mac:3,mei:5,ogo:8,ogos:8,dis:12,okt:10};
+function stParse(lines,kind){
+const P=n=>String(n).padStart(2,'0'),card=kind=='card';
+// words with an x position, so amounts can be matched to columns
+const words=l=>{const o=[];l.forEach(i=>{const p=i.s.split(/\s+/).filter(Boolean),k=p.length;p.forEach((s,j)=>o.push({s,cx:i.x+(i.w||0)*(j+.5)/k}))});return o};
+const AM=/^\(?-?(?:RM)?\d{1,3}(?:,\d{3})*\.\d{2}\)?[+-]?$|^\(?-?(?:RM)?\d+\.\d{2}\)?[+-]?$/i;
+const amts=W=>{const o=[];for(let i=0;i<W.length;i++){let s=W[i].s;if(/^RM$/i.test(s)&&W[i+1]&&AM.test(W[i+1].s)){i++;s=W[i].s}if(!AM.test(s))continue;
+let sg=0;if(/\+$/.test(s))sg=1;if(/-$/.test(s)||/^\(.*\)$/.test(s)||/^-/.test(s))sg=-1;const nx=W[i+1]&&W[i+1].s;
+if(nx&&/^(CR|DR|\+|-)$/i.test(nx)){sg=/^(CR|\+)$/i.test(nx)?1:-1;i++}
+o.push({v:parseFloat(s.replace(/[^\d.]/g,'')),sg,cx:W[i].cx})}return o};
+// year of the statement, for dates written without a year
+const full=[];lines.forEach(l=>{const t=l.map(i=>i.s).join(' ');let m;const re=/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/g;while(m=re.exec(t)){const y=m[3].length==2?2000+ +m[3]:+m[3];if(+m[2]>=1&&+m[2]<=12)full.push(y+'-'+P(m[2])+'-'+P(m[1]))}
+const re2=/\b(\d{1,2})\s?([A-Za-z]{3,4})\s?(20\d{2})\b/g;while(m=re2.exec(t)){const mo=MONS[m[2].toLowerCase()];if(mo)full.push(m[3]+'-'+P(mo)+'-'+P(m[1]))}});
+const sd=full.sort().slice(-1)[0]||new Date().toLocaleDateString('en-CA'),sy=+sd.slice(0,4),sm=+sd.slice(5,7);
+const dateAt=W=>{if(!W.length)return null;let m,a=W[0].s;
+if(m=a.match(/^(\d{4})-(\d{2})-(\d{2})$/))return{d:a,n:1};
+if(m=a.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/)){const y=m[3].length==2?2000+ +m[3]:+m[3];if(+m[2]<1||+m[2]>12)return null;return{d:y+'-'+P(m[2])+'-'+P(m[1]),n:1}}
+if(m=a.match(/^(\d{1,2})[\/.-]?([A-Za-z]{3,4})[\/.-]?(\d{2,4})?$/)){const mo=MONS[m[2].toLowerCase()];if(!mo)return null;let y=m[3]?(m[3].length==2?2000+ +m[3]:+m[3]):0,n=1;
+if(!y&&W[1]&&/^(20)?\d{2}$/.test(W[1].s)&&W[1].s.length==4){y=+W[1].s;n=2}if(!y)y=mo>sm?sy-1:sy;return{d:y+'-'+P(mo)+'-'+P(m[1]),n}}
+if(m=a.match(/^(\d{1,2})$/)&&W[1]){const mo=MONS[W[1].s.toLowerCase().replace(/[^a-z]/g,'')];if(!mo)return null;let y=0,n=2;if(W[2]&&/^20\d{2}$/.test(W[2].s)){y=+W[2].s;n=3}if(!y)y=mo>sm?sy-1:sy;return{d:y+'-'+P(mo)+'-'+P(+a),n}}
+return null};
+const OPEN=/(beginning balance|opening balance|balance b\/?f|brought forward|previous (statement )?balance|balance from (last|previous)|baki (awal|bawa|permulaan)|last statement balance)/i,
+CLOSE=/(ending balance|closing balance|balance c\/?f|carried forward|(total )?current balance|new balance|baki (akhir|penutup)|statement balance\s*:)/i,
+STOP=/(page \d|halaman|important|notice|perhatian|total (debit|credit)|jumlah|end of statement|protected by pidm|dilindungi)/i;
+let colO=null,colI=null,colB=null;
+lines.forEach(l=>{const W=words(l),t=W.map(w=>w.s).join(' ');if(!/(withdraw|debit|pengeluaran|keluar|deposit|credit|kemasukan|masuk|amount|amaun|balance|baki)/i.test(t)||amts(W).length)return;
+W.forEach(w=>{if(/^(withdrawal|withdrawals|debit|debits|pengeluaran|keluar)$/i.test(w.s))colO=w.cx;else if(/^(deposit|deposits|credit|credits|kemasukan|masuk)$/i.test(w.s))colI=w.cx;else if(/^(balance|baki)$/i.test(w.s))colB=w.cx})});
+let open=null,close=null,prev=null,cur=null,pend=null;const L=[];
+const push=(x,W2,desc)=>{let A=amts(W2);if(!A.length)return false;let bal=null;
+if(A.length>=2){const b=A[A.length-1];bal=b.sg<0?-b.v:b.v;A=A.slice(0,-1)}
+const a=A.find(z=>z.v>0)||A[0];let sg=a.sg,how=sg?'marker':'';
+if(!sg&&bal!=null&&prev!=null){const d=bal-prev;if(Math.abs(Math.abs(d)-a.v)<0.011){sg=(card?-1:1)*Math.sign(d);how='balance'}}
+if(!sg&&colO!=null&&colI!=null){sg=Math.abs(a.cx-colO)<Math.abs(a.cx-colI)?-1:1;how='column'}
+if(card&&!sg){sg=-1;how='card'}if(!sg){sg=-1;how='guess'}
+if(card&&a.sg==1)sg=1;if(card&&a.sg==-1&&how=='marker')sg=-1;
+cur={date:x.d,desc:desc.trim(),amt:+(sg*a.v).toFixed(2),bal,how};L.push(cur);if(bal!=null)prev=bal;return true};
+for(const l of lines){const W=words(l),t=W.map(w=>w.s).join(' ');if(!W.length)continue;
+if(OPEN.test(t)){const A=amts(W);if(A.length){const z=A[A.length-1];open=z.sg<0?-z.v:z.v;if(prev==null)prev=open}cur=null;continue}
+if(CLOSE.test(t)){const A=amts(W);if(A.length){const z=A[A.length-1];close=z.sg<0?-z.v:z.v}cur=null;continue}
+const dt=dateAt(W);
+if(dt){const rest=W.slice(dt.n);let W2=rest;const d2=dateAt(rest);if(d2)W2=rest.slice(d2.n);
+const desc=W2.filter(w=>!AM.test(w.s)&&!/^(CR|DR|RM)$/i.test(w.s)).map(w=>w.s).join(' ');
+if(push(dt,W2,desc))pend=null;else{pend={d:dt.d,desc};cur=null}continue}
+if(STOP.test(t)){cur=null;pend=null;continue}
+const A=amts(W),txt=W.filter(w=>!AM.test(w.s)&&!/^(CR|DR|RM)$/i.test(w.s)).map(w=>w.s).join(' ');
+if(pend&&A.length){push({d:pend.d},W,pend.desc+' '+txt);pend=null;continue}
+if(cur&&!A.length&&txt&&cur.desc.split(' · ').length<4&&txt.length<80)cur.desc+=' · '+txt}
+if(open==null&&L.length&&L[0].bal!=null)open=+(L[0].bal-(card?-1:1)*L[0].amt).toFixed(2);
+if(close==null&&L.length){const lb=[...L].reverse().find(x=>x.bal!=null);if(lb)close=lb.bal}
+const sum=L.reduce((s,x)=>s+x.amt,0),exp=open!=null?+(open+(card?-sum:sum)).toFixed(2):null,
+ok=open!=null&&close!=null&&Math.abs(exp-close)<0.011,guess=L.filter(x=>x.how=='guess').length;
+return{lines:L,open,close,exp,ok,guess,card,from:L.length?L.map(x=>x.date).sort()[0]:'',to:L.length?L.map(x=>x.date).sort().slice(-1)[0]:''}}
+
+let SPR=null;
+async function rcPdf(src){if(RO()||!src)return;const a=acc(RCX.acc);
+try{setStatus('Reading the statement…',1);const lib=await pdfLib(),blob=typeof src=='string'?await blobOf(src):src,buf=new Uint8Array(await blob.arrayBuffer());
+const L=await pdfLines(lib,buf,again=>prompt(again?'That password did not work. Try again (it is not saved):':'This statement is password protected. Enter its password (it is not saved):'));
+const r=stParse(L,isL(a)?'card':'bank');setStatus(lastSync,1);
+if(!r.lines.length)return stMsg(L.length?'No transactions were found in this PDF. The layout may be one the reader does not know yet — use the bank\'s CSV, or tick manually.':'This PDF has no readable text — it is probably a scan or a photo. Use the bank\'s CSV, or tick manually.');
+SPR=r;stRev()}catch(e){const m=String(e.message||e);setStatus(lastSync,1);stMsg(/password/i.test(m)?'No password entered, so the statement was not read.':'Could not read the statement: '+m)}}
+function stMsg(t){$('#m').innerHTML=`<div><h3>PDF statement</h3><p>${esc(t)}</p><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
+function stFlip(){SPR.lines.forEach(x=>x.amt=-x.amt);if(SPR.open!=null)SPR.exp=+(SPR.open+(SPR.card?-1:1)*SPR.lines.reduce((s,x)=>s+x.amt,0)).toFixed(2);SPR.ok=SPR.close!=null&&SPR.exp!=null&&Math.abs(SPR.exp-SPR.close)<0.011;stRev()}
+function stRev(){const r=SPR,a=acc(RCX.acc),inn=r.lines.filter(x=>x.amt>0).reduce((s,x)=>s+x.amt,0),out=-r.lines.filter(x=>x.amt<0).reduce((s,x)=>s+x.amt,0);
+$('#m').innerHTML=`<div style="max-width:640px"><h3>📄 ${r.lines.length} lines read · ${esc(a.name)}</h3><small>${r.from} → ${r.to}</small>
+<div class="row3"><div class="card">${r.card?'Previous owed':'Opening'}<h3>${r.open!=null?money(r.open):'–'}</h3></div><div class="card">Money in / out<h3 style="font-size:13px"><span class="g">${money(inn)}</span><br><span class="r">${money(out)}</span></h3></div><div class="card">${r.card?'Now owed':'Closing'}<h3>${r.close!=null?money(r.close):'–'}</h3></div></div>
+${r.ok?'<small class="g">✔ Every line was read: the lines add up exactly from the opening to the closing balance.</small>':r.open!=null&&r.close!=null?`<small class="r">⚠ The lines add up to ${money(r.exp)}, not ${money(r.close)}. A line may have been missed or read wrongly — check the list against the PDF.</small>`:'<small>The opening or closing balance was not found, so the lines could not be checked. Check them against the PDF.</small>'}
+${r.guess?`<small class="r">⚠ ${r.guess} line(s) had no + / − sign the reader could work out; they are shown as money out.</small>`:''}
+<div class="tw" style="max-height:45vh;overflow:auto;margin-top:8px"><table><tr><th>Date<th>Description<th class="n">Amount</tr>${r.lines.map(x=>`<tr><td>${x.date}<td>${esc(x.desc)}<td class="n ${x.amt<0?'r':'g'}">${money(x.amt)}`).join('')}</table></div>
+<button onclick="closeM();rcMatch(RCX.acc,SPR.lines,SPR.close)">Match ${r.lines.length} lines against ${esc(a.name)}</button><button class="s" onclick="stFlip()">Signs look reversed? Flip all + / −</button><button class="s" onclick="closeM()">Cancel</button>
+<small>Nothing is imported. Matching lines are ticked; lines that are only on the statement are listed so you can add them. The file and its password are not stored.</small></div>`;$('#m').className='modal show'}
 function histHtml(aid){const l=S.recs.filter(r=>!aid||r.acc==aid).sort((a,b)=>b.end.localeCompare(a.end)||b.u-a.u);if(!l.length)return'';const latest={};l.forEach(r=>{if(!latest[r.acc])latest[r.acc]=r.id});
 return`<h4>Reconciliation history</h4>${l.slice(0,24).map(r=>{const A=acc(r.acc);return`<div class="card"><div class="fl"><b>${lg(A)} ${esc(A.name)} · ${r.end}</b><span>${money(isL(A)?-r.bal:r.bal)}</span></div><div class="fl"><small>${r.n} transactions${r.adj?' · adjustment '+money(r.adj):''}${r.fid?` · <a onclick="pv('${r.fid}')">📄 statement</a>`:''}</small>${latest[r.acc]==r.id?`<a onclick="rcUndo('${r.id}')">Undo</a>`:''}</div></div>`}).join('')}`}
 function rcnv(){if(RO())return'<div class="card">Switch back to your own ledger to reconcile.</div>';
@@ -766,7 +857,7 @@ unOut=-items.filter(t=>!rst(t,a.id).cl&&dl(t,a.id)<0).reduce((s,t)=>s+dl(t,a.id)
 later=TX().filter(t=>(t.acc==a.id||t.to==a.id)&&!rst(t,a.id).rcn&&t.date>end).length,show=x=>money(L?-x:x),gap=sb+unIn-unOut-book;
 return`<div class="fl"><a onclick="RCX={acc:'',end:'',bal:'',bank:[]};render()">‹ All accounts</a><b>${lg(a)} ${esc(a.name)}</b></div>
 <div class="two"><div><small>Statement end date</small><input type="date" value="${end}" onchange="RCX.end=this.value;render()"></div><div><small>${L?'Amount owed on the statement':'Ending balance on the statement'}</small><input type="number" step="0.01" inputmode="decimal" value="${esc(RCX.bal)}" placeholder="0.00" onchange="RCX.bal=this.value;render()"></div></div>
-${f?`<small>📄 Statement for this month: <a onclick="pv('${fid(f)}')">${esc(f.name)}</a></small>`:''}<button class="s" onclick="impFor('${a.id}')">📥 Tick matches automatically from the statement CSV</button>
+${f?`<small>📄 Statement for this month: <a onclick="pv('${fid(f)}')">${esc(f.name)}</a></small>`:''}<small>Tick matches automatically from your statement:</small><div class="two"><button class="s" onclick="$('#rc_pdf').click()">📄 From a PDF</button><button class="s" onclick="impFor('${a.id}')">📥 From a CSV</button></div><input id="rc_pdf" type="file" accept="application/pdf,.pdf" hidden onchange="rcPdf(this.files[0]);this.value=''">${f?`<button class="s" onclick="rcPdf('${fid(f)}')">📄 Read the uploaded statement: ${esc(f.name)}</button>`:''}
 <div class="row3"><div class="card">Statement<h3>${hasB?show(sb):'–'}</h3></div><div class="card">Ticked<h3>${show(cb)}</h3></div><div class="card">Difference<h3 class="${ok?'g':'r'}">${hasB?(ok?'✔ 0.00':show(diff)):'–'}</h3></div></div>
 <small>Tick each transaction that is on your statement. Last reconciled balance: ${show(rb)}${lastRec(a.id)?' at '+lastRec(a.id):''}.</small>
 <div class="fl" style="margin:6px 0"><span><a onclick="rcAll(1)">Tick all</a> · <a onclick="rcAll(0)">Untick all</a></span><small>${cl.length} of ${items.length} ticked</small></div>
