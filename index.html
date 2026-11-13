@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0f1115"><title>Ledger</title>
+<meta name="theme-color" content="#0f1115"><meta name="apple-mobile-web-app-title" content="Ledger"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>Ledger</title>
 <style>
 :root{--bg:#0f1115;--fg:#eceef2;--card:#1a1d24;--mut:#8b93a1;--acc:#4f8cff;--g:#34c38f;--r:#f46a6a}
 html[data-t=light]{--bg:#f4f5f8;--fg:#1b1e25;--card:#fff;--mut:#6b7280}
@@ -65,10 +65,10 @@ function famRows(m){const f={};Object.entries(m).forEach(([id,v])=>{const k=main
 return Object.values(f).sort((a,b)=>b.v-a.v).map(x=>({...x,main:S.cats.find(c=>c.id==x.id)||cat(x.id),subs:Object.entries(x.subs).sort((a,b)=>b[1]-a[1]).map(([id,v])=>({id,v,c:S.cats.find(c=>c.id==id)||{name:'?',i:'❓'}}))}))}
 function famTr(m){return famRows(m).map(f=>{const d=f.v-f.subs.reduce((a,x)=>a+x.v,0);return`<tr><td><b>${f.main.i} ${esc(f.main.name)}</b><td class="n"><b>${money(f.v)}</b>${f.subs.map(x=>`<tr><td>　↳ ${x.c.i} ${esc(x.c.name)}<td class="n">${money(x.v)}`).join('')}${f.subs.length&&d>0.005?`<tr><td>　↳ General<td class="n">${money(d)}`:''}`}).join('')||'<tr><td colspan="2"><small>None</small>'}
 const dup=b=>String(b.id).startsWith('b:')&&b.cats.length==1&&S.cats.some(c=>c.id==b.cats[0]&&!isMain(c)&&S.buds.some(z=>z.cat==c.p));
-const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>(isL(a)?-(a.open||0):(a.open||0))+TX().reduce((s,t)=>s+(!d||t.date<=d?dl(t,a.id):0),0);
+const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>{const k=a.id+'|'+(d||'');if(k in BALC)return BALC[k];return BALC[k]=(isL(a)?-(a.open||0):(a.open||0))+TX().reduce((s,t)=>s+(!d||t.date<=d?dl(t,a.id):0),0)};
 const money=n=>(n<0?'-':'')+S.cfg.cur+' '+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const opts=(l,sel,f)=>l.map(x=>`<option value="${x.id}" ${x.id==sel?'selected':''}>${f(x)}</option>`).join('');
-const setStatus=m=>{status=m;const e=$('#stat');if(e)e.textContent=m};
+let stT,lastSync='Local only';const setStatus=(m,keep)=>{status=m;const e=$('#stat');if(e)e.textContent=m;clearTimeout(stT);if(!keep&&!/fail|⚠|error|Syncing|Uploading|Loading/i.test(m))stT=setTimeout(()=>{status=lastSync;const e2=$('#stat');if(e2)e2.textContent=lastSync},6000)};
 const BANKS=[[/maybank|\bmae\b/,'maybank2u.com.my'],[/cimb/,'cimb.com.my'],[/public ?bank|\bpbe\b/,'pbebank.com'],[/\brhb\b/,'rhbgroup.com'],[/hong ?leong|\bhlb\b|\bhlbb\b/,'hlb.com.my'],[/am ?bank|amonline/,'ambank.com.my'],[/bank ?islam|\bbimb\b/,'bankislam.com'],[/bank ?rakyat/,'bankrakyat.com.my'],[/\bbsn\b|simpanan nasional/,'bsn.com.my'],[/affin/,'affinbank.com.my'],[/alliance/,'alliancebank.com.my'],[/ocbc/,'ocbc.com.my'],[/\buob\b/,'uob.com.my'],[/hsbc/,'hsbc.com.my'],[/standard ?chartered|\bscb\b/,'sc.com'],[/\bciti(bank)?\b/,'citibank.com.my'],[/mbsb/,'mbsbbank.com'],[/agro ?bank/,'agrobank.com.my'],[/muamalat/,'muamalat.com.my'],[/touch ?n ?go|\btng\b/,'tngdigital.com.my'],[/grab/,'grab.com'],[/boost/,'myboost.co'],[/shopee|spaylater/,'shopee.com.my'],[/atome/,'atome.com.my'],[/\basnb\b|\basb\b|\basm\b/,'asnb.com.my'],[/kwsp|\bepf\b/,'kwsp.gov.my'],[/tabung ?haji/,'tabunghaji.gov.my'],[/public ?gold/,'publicgold.com.my']];
 const bankDom=n=>{n=String(n||'').toLowerCase();const m=BANKS.find(([r])=>r.test(n));return m?m[1]:''};
 const IMG='style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle"';
@@ -85,7 +85,8 @@ return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petro
 const b={id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:gfiles(i)},o=ovm[b.id];
 return o?(o.h?null:{...b,...o.f,ov:1}):b}).filter(Boolean)};
 const FT=()=>S.fixed.filter(a=>a.acc).map(a=>({id:'f:'+a.id,f:1,set:'asset',u:0,date:a.date,desc:'Purchase: '+a.name,amt:-a.cost,cat:'',acc:a.acc,shop:'',note:'',att:[]}));
-const TX=()=>S.tx.concat(GT,FT());
+let TXC=null,BALC={};const TX=()=>TXC||(TXC=S.tx.concat(GT,FT()));function txDirty(){TXC=null;BALC={}}
+const isTax=t=>!!(t.tax||t.tag=='zakat'||(t.pay&&/pcb|mtd|income tax|zakat/i.test(t.desc||''))),isNC=t=>!!(t.nc||t.cat=='cer');
 function evalF(e,v){try{if(!/^[\w\s+\-*/().,%^]*$/.test(e))return 0;const ok=['cost','res','life','rate','n','nbv','min','max','round','abs'];if((e.match(/[A-Za-z_]\w*/g)||[]).some(x=>!ok.includes(x)))return 0;
 const r=Function('cost','res','life','rate','n','nbv','min','max','round','abs','"use strict";return ('+e.replace(/\^/g,'**')+')')(v.cost,v.res,v.life,v.rate,v.n,v.nbv,Math.min,Math.max,Math.round,Math.abs);return isFinite(r)?r:0}catch(x){return 0}}
 function annual(a,n,nbv){if(a.m=='rb')return nbv*(a.rate||0)/100;if(a.m=='cu')return evalF(a.expr||'0',{cost:a.cost,res:a.res||0,life:a.life||1,rate:a.rate||0,n,nbv});return(a.cost-(a.res||0))/(a.life||1)}
@@ -160,7 +161,7 @@ const barRow=(s,b)=>`<div style="height:6px;background:#8883;border-radius:3px;m
 const BL=()=>[...S.buds.filter(b=>b.cat).map(b=>({id:b.id,name:cat(b.cat).i+' '+cat(b.cat).name,amt:b.amt,per:'m',cats:[b.cat],shops:[]})),...S.buds.filter(b=>!b.cat).map(b=>({...b,cats:b.cats||[],shops:b.shops||[],per:b.per||'m'}))];
 function bspent(b,m){let f,t;if(b.per=='y'){f=m.slice(0,4)+'-01-01';t=m.slice(0,4)+'-12-31'}else if(b.per=='r'){f=b.from||'';t=b.to||''}else{f=m+'-01';t=m+'-31'}
 const hit=x=>(!b.cats.length||b.cats.includes(x.cat)||b.cats.includes(mainOf(x.cat)))&&(!b.shops.length||b.shops.includes(x.shop));
-return TX().filter(x=>!x.tr&&!x.set&&x.amt<0&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s-x.amt,0)+(b.shops.length?0:S.bills.filter(x=>x.k=='ap'&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s+x.amt,0))}
+return TX().filter(x=>!x.tr&&!x.set&&!isTax(x)&&x.amt<0&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s-x.amt,0)+(b.shops.length?0:S.bills.filter(x=>x.k=='ap'&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s+x.amt,0))}
 const RO=()=>!!ME,links=()=>{try{return JSON.parse(localStorage.getItem('ledger.links')||'[]')}catch(e){return[]}};
 function norm(d){['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay'].forEach(k=>d[k]=d[k]||[]);d.del=d.del||{};d.cfg=d.cfg||{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark'};
 d.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});return d}
@@ -193,12 +194,13 @@ const dl=(t,id)=>t.tr?(t.acc==id?-t.amt:0)+(t.to==id?t.amt:0):(t.acc==id?t.amt:0
 const inR=(d,f,t)=>(!f||d>=f)&&(!t||d<=t),sum2=o=>Object.values(o).reduce((a,b)=>a+b,0);
 const paid=(b,d)=>TX().filter(x=>x.set==b.id&&(!d||x.date<=d)).reduce((s,x)=>s+Math.abs(x.amt),0),out=(b,d)=>b.amt-paid(b,d);
 const det=(k,t,b)=>`<details ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary>${t}</summary><div>${b}</div></details>`;
-function PL(f,t){const inc={},exp={};
-TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;const m=x.amt>0?inc:exp;m[x.cat]=(m[x.cat]||0)+Math.abs(x.amt)});
-S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp}}
+function PL(f,t){const inc={},exp={};let txp=0;
+TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;if(isTax(x)){txp-=x.amt;return}const m=x.amt>0?inc:exp;m[x.cat]=(m[x.cat]||0)+Math.abs(x.amt)});
+S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp,tax:txp}}
 
 /* ---------- storage & merge ---------- */
-function save(){localStorage.setItem(K,JSON.stringify(S));render();clearTimeout(timer);timer=setTimeout(sync,1500)}
+function persist(){try{localStorage.setItem(K,JSON.stringify(S));return true}catch(e){return false}}
+function save(){txDirty();if(!persist())setStatus('⚠ Phone storage is full. Changes are kept for now and synced to your Google Sheet; remove uploaded logos to free space.');render();clearTimeout(timer);timer=setTimeout(sync,1500)}
 function put(k,x){if(RO())return setStatus('👁 View only');const i=S[k].findIndex(y=>y.id==x.id);x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
 function rm(k,id){if(RO())return setStatus('👁 View only');S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
@@ -237,6 +239,7 @@ x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,96,96);upd(k,id,'logo',c.t
 function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S.shops.find(x=>x.name.toLowerCase()==n.toLowerCase());
 if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
+/* ===== SYNC ===== */
 let LASTERR='';
 async function post(u,body){let r;try{r=await fetch(u,{method:'POST',body:JSON.stringify(body)})}catch(e){throw new Error('No connection to the script. Check the internet and that the Web App URL is right.')}
 const t=await r.text();
@@ -252,7 +255,7 @@ let ge='';try{if(u){const size=JSON.stringify(S).length;if(size>4000000)throw ne
 const r=await post(u,{key:localStorage.getItem(SK)||'',data:S});if(r.data)merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
-if(autoRec())setTimeout(save,300);localStorage.setItem(K,JSON.stringify(S));LASTERR='';setStatus('Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':''))}
+if(autoRec())setTimeout(save,300);persist();LASTERR='';lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'');setStatus(lastSync,1)}
 catch(e){LASTERR=String(e.message||e);setStatus('Sync failed — tap More › Settings › Sync › Why did it fail?');console.warn(e)}busy=false;render()}
 function diag(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',cid=localStorage.getItem(CID)||'',on=!!localStorage.getItem(ON),size=JSON.stringify(S).length,
 y=t=>'<span class="g">✔</span> '+t,n=t=>'<span class="r">✘</span> '+t;
@@ -283,28 +286,29 @@ rm('stm',id)}
 /* ---------- views ---------- */
 const go=k=>{if(k!='tx'){selMode=false;SELS=new Set()}tab=k;render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
-function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
+function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,st:stv,set:sett}[tab]();
 $('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat">${esc(status)}</span></header><main>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
 <nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" onclick="edit()">+</button>':''}`}
-function ov(){const m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
+function ov(){const tm=TX().filter(t=>t.date.startsWith(ym)&&isTax(t)).reduce((a,t)=>a-t.amt,0),m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
-<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
+<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp-tm)}</h3></div></div>${tm?`<small>Tax &amp; zakat paid ${money(tm)} — taken off Net but not counted as spending.</small>`:''}
 ${avlCard()}${bovw()}${chv()}<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>
 <h4>Spending by category</h4><div class="card">${famRows(by).map(f=>`<div class="bar"><div class="fl"><span>${f.main.i} ${esc(f.main.name)}</span><span>${money(f.v)}</span></div><i style="width:${f.v/exp*100}%;background:${f.main.color||'#94a3b8'}"></i>${f.subs.map(x=>`<div class="fl"><small>　↳ ${x.c.i} ${esc(x.c.name)}</small><small>${money(x.v)}</small></div>`).join('')}</div>`).join('')||'<small>No expenses this month</small>'}</div>
 <h4>Top shops</h4><div class="card">${Object.entries(bs).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([id,v])=>{const k=S.shops.find(x=>x.id==id)||{name:'?',i:'🏷️'};return`<div class="fl" style="margin:6px 0"><span>${lg(k)} ${esc(k.name)}</span><span>${money(v)}</span></div>`}).join('')||'<small>Add a shop when you record an expense</small>'}</div>`}
+/* ===== REGISTER ===== */
 function reg(){let run=null;if(fa){const A=acc(fa);run=isL(A)?-(A.open||0):(A.open||0)}
 const all=TX().filter(t=>!fa||t.acc==fa||t.to==fa).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
 const inP=t=>rmode=='a'||(rmode=='m'&&t.date.startsWith(ym))||(rmode=='r'&&inR(t.date,xf,xt)),
 rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))),
-ids=(LASTIDS=rows.map(x=>x.t).filter(t=>!t.g&&!t.f).map(t=>t.id)),cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
+ids=(LASTIDS=rows.map(x=>x.t).filter(t=>!t.g&&!t.f).map(t=>t.id)),tm=rows.map(x=>x.t).filter(isTax).reduce((a,t)=>a-t.amt,0),cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
 cash.forEach(t=>{const k=(t.amt>0?'i':'e')+t.cat;gp[k]=gp[k]||{c:t.cat,ty:t.amt>0?'i':'e',n:0,v:0};gp[k].n++;gp[k].v+=Math.abs(t.amt)});
 const gl=Object.values(gp).sort((a,b)=>b.v-a.v),mx=Math.max(1,...gl.map(x=>x.v));
 const head=`<div class="seg">${[['m','Month'],['r','Date range'],['a','All time']].map(([k,n])=>`<a class="${rmode==k?'on':''}" onclick="rmode='${k}';render()">${n}</a>`).join('')}</div>
 ${rmode=='m'?`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>`:rmode=='r'?`<div class="two"><div><small>From</small><input type="date" value="${xf}" onchange="xf=this.value;render()"></div><div><small>To</small><input type="date" value="${xt}" onchange="xt=this.value;render()"></div></div>`:''}
-<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
+<div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp-tm)}</h3></div></div>${tm?`<small>Tax &amp; zakat paid ${money(tm)} — taken off Net but not counted as spending.</small>`:''}
 <div class="seg"><a class="${rv=='l'?'on':''}" onclick="rv='l';render()">List</a><a class="${rv=='c'?'on':''}" onclick="rv='c';render()">By category</a><a onclick="trEd(fa)">⇄ Transfer</a><a class="${selMode?'on':''}" onclick="selMode=!selMode;if(!selMode)SELS=new Set();render()">☑ Select</a>${fc?`<a onclick="fc='';render()">✕ ${esc(cat(fc).name)}</a>`:''}</div>
 <div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><select onchange="fc=this.value;render()"><option value="">All categories</option><optgroup label="Expenses">${catOpts('e',fc,1)}</optgroup><optgroup label="Income">${catOpts('i',fc,1)}</optgroup></select></div><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()">`;
 if(rv=='c'){const me={},mi={};cash.forEach(t=>{const m=t.amt>0?mi:me;m[t.cat]=(m[t.cat]||0)+Math.abs(t.amt)});
@@ -333,20 +337,21 @@ await api(`${D}/${f}?addParents=${d}${ps?'&removeParents='+ps:''}&fields=id`,{me
 else await api(`${D}/${f}`,{method:'PATCH',headers:H,body:JSON.stringify({name:n})})}}
 catch(e){setStatus('Updated in the app only — Drive: '+String(e.message).slice(0,40))}
 put('stm',{...x,acc:a,month:y+'-'+mo,name:n,from:'',to:''});closeM()}
+/* ===== REPORTS ===== */
 function pr(k){const y=new Date().getFullYear(),m=new Date().getMonth(),f=d=>d.toLocaleDateString('en-CA');
 if(k=='m'){rf=f(new Date(y,m,1));rto=f(new Date(y,m+1,0))}else if(k=='y'){rf=y+'-01-01';rto=y+'-12-31'}else{rf='';rto=''}render()}
 function rpt(){const tabs=[['pl','Profit & Loss'],['bs','Balance sheet'],['ar','Receivables'],['ap','Payables'],['fa','Fixed assets'],['cf','Cash flow']];
 const per=rt=='pl'||rt=='cf'?`<div class="two"><div><small>From</small><input type="date" value="${rf}" onchange="rf=this.value;render()"></div><div><small>To</small><input type="date" value="${rto}" onchange="rto=this.value;render()"></div></div><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">All time</a></div>`:rt=='bs'?`<small>As at</small><input type="date" value="${rto}" onchange="rto=this.value;render()"><div class="seg"><a onclick="pr('m')">This month</a><a onclick="pr('y')">This year</a><a onclick="pr('a')">Today</a></div>`:'';
-const P0=PL(rf,rto),ar0=S.bills.filter(b=>b.k=='ar').reduce((s,b)=>s+out(b),0),ap0=S.bills.filter(b=>b.k=='ap').reduce((s,b)=>s+out(b),0),np=sum2(P0.inc)-sum2(P0.exp);
+const P0=PL(rf,rto),ar0=S.bills.filter(b=>b.k=='ar').reduce((s,b)=>s+out(b),0),ap0=S.bills.filter(b=>b.k=='ap').reduce((s,b)=>s+out(b),0),np=sum2(P0.inc)-sum2(P0.exp)-P0.tax;
 return`<div class="row3"><div class="card">Profit (period)<h3 class="${np<0?'r':'g'}">${money(np)}</h3></div><div class="card">Receivables<h3>${money(ar0)}</h3></div><div class="card">Payables<h3>${money(ap0)}</h3></div></div><div class="seg">${tabs.map(([k,l])=>`<a class="${rt==k?'on':''}" onclick="rt='${k}';render()">${l}</a>`).join('')}</div>${per}${rt=='pl'?plv():rt=='cf'?cfv():rt=='bs'?bsv():rt=='fa'?fav():bills(rt)}`}
-function plv(){const{inc,exp}=PL(rf,rto),ti=sum2(inc),te=sum2(exp),rows=famTr;
+function plv(){const{inc,exp,tax}=PL(rf,rto),ti=sum2(inc),te=sum2(exp),rows=famTr;
 return`<div class="tw"><table><tr><th colspan="2">Statement of Profit or Loss</th></tr><tr><th colspan="2">Income</th></tr>${rows(inc)}<tr><td><b>Total income</b><td class="n"><b>${money(ti)}</b>
 <tr><th colspan="2">Expenses</th></tr>${rows(exp)}<tr><td><b>Total expenses</b><td class="n"><b>${money(te)}</b>
-<tr><td><b>Net profit / (loss)</b><td class="n ${ti-te<0?'r':'g'}"><b>${money(ti-te)}</b></table></div><small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses.</small>`}
+<tr><td><b>Profit before tax</b><td class="n ${ti-te<0?'r':'g'}"><b>${money(ti-te)}</b><tr><td>Less: income tax (PCB) &amp; zakat<td class="n">−${money(tax)}<tr><td><b>Profit after tax</b><td class="n ${ti-te-tax<0?'r':'g'}"><b>${money(ti-te-tax)}</b></table></div><small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses. Employer EPF is shown as non-cash income: you cannot spend it and it is not taxed, but it does add to your KWSP.</small>`}
 function bsv(){const d=rto,dd=d||today(),ac=S.accs.map(a=>({a,v:bal(a,d)})),A=ac.filter(x=>!isL(x.a)),L=ac.filter(x=>isL(x.a)),
 ar=S.bills.filter(b=>b.k=='ar'&&inR(b.date,'',d)).reduce((s,b)=>s+out(b,d),0),ap=S.bills.filter(b=>b.k=='ap'&&inR(b.date,'',d)).reduce((s,b)=>s+out(b,d),0),
 fx=S.fixed.filter(x=>x.date<=dd).map(x=>({x,v:x.cost-accDep(x,dd)})),tf=fx.reduce((s,y)=>s+y.v,0),
-ta=A.reduce((s,x)=>s+x.v,0)+ar+tf,tl=-L.reduce((s,x)=>s+x.v,0)+ap,open=S.accs.reduce((s,a)=>s+(isL(a)?-(a.open||0):(a.open||0)),0)+S.fixed.filter(x=>!x.acc&&x.date<=dd).reduce((s,x)=>s+x.cost,0),P=PL('',d),pf=sum2(P.inc)-sum2(P.exp),diff=ta-tl-open-pf,
+ta=A.reduce((s,x)=>s+x.v,0)+ar+tf,tl=-L.reduce((s,x)=>s+x.v,0)+ap,open=S.accs.reduce((s,a)=>s+(isL(a)?-(a.open||0):(a.open||0)),0)+S.fixed.filter(x=>!x.acc&&x.date<=dd).reduce((s,x)=>s+x.cost,0),P=PL('',d),pf=sum2(P.inc)-sum2(P.exp)-P.tax,diff=ta-tl-open-pf,
 r=(n,v)=>`<tr><td>${n}<td class="n">${money(v)}`;
 return`<div class="tw"><table><tr><th colspan="2">Statement of Financial Position</th></tr><tr><th colspan="2">Assets</th></tr>${fx.map(y=>r('🏗️ '+esc(y.x.name)+' (net book value)',y.v)).join('')}${A.map(x=>r(lg(x.a)+' '+esc(x.a.name),x.v)).join('')}${r('Trade receivables',ar)}<tr><td><b>Total assets</b><td class="n"><b>${money(ta)}</b>
 <tr><th colspan="2">Liabilities</th></tr>${L.map(x=>r(lg(x.a)+' '+esc(x.a.name),-x.v)).join('')}${r('Trade payables',ap)}<tr><td><b>Total liabilities</b><td class="n"><b>${money(tl)}</b>
@@ -411,6 +416,7 @@ const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
 function mvAc(id,d){if(RO())return;const g=grp(S.accs.find(a=>a.id==id)),l=S.accs.filter(a=>grp(a)==g),i=l.findIndex(a=>a.id==id),j=i+d;if(j<0||j>=l.length)return;
 S.accs.forEach((a,k)=>{if(a.ord!==k*10){a.ord=k*10;a.u=now()}});const A=l[i],B=l[j],t=A.ord;A.ord=B.ord;B.ord=t;A.u=B.u=now();save()}
+/* ===== ACCOUNTS ===== */
 const fxNBV=d=>{const dd=d||today();return S.fixed.filter(x=>x.date<=dd).reduce((a,x)=>a+x.cost-accDep(x,dd),0)};
 function acm(){const as=S.accs,gp=S.cfg.gp||0,nbv=fxNBV(),ta=as.filter(a=>!isL(a)).reduce((x,a)=>x+bal(a),0)+nbv,tl=-as.filter(isL).reduce((x,a)=>x+bal(a),0),iv=as.filter(a=>grp(a)=='inv'&&mval(a)!=null),vv=iv.reduce((x,a)=>x+mval(a),0),vc=iv.reduce((x,a)=>x+bal(a),0);
 const seg=`<div class="seg">${Object.keys(GN).map(g=>`<a class="${ag==g?'on':''}" onclick="ag='${g}';render()">${GN[g]} (${as.filter(a=>grp(a)==g).length})</a>`).join('')}<a class="${ag=='fx'?'on':''}" onclick="ag='fx';render()">Fixed assets (${S.fixed.length})</a></div>`;let body;
@@ -431,7 +437,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} account</h3><input id="a_n" place
 ${id?`<small>Logo (banks in Malaysia are found automatically from the name)</small><input type="file" accept="image/*" onchange="logoUp('accs','${id}',this.files[0])"><button class="s" onclick="upd('accs','${id}','logo','');closeM()">Use the automatic / default logo</button>`:''}
 <button onclick="saveAc('${a.id}')">Save</button>${id?`<button class="d" onclick="delAc('${id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show';tgi()}
 function saveAc(id){const gv=x=>{const e=$('#a_'+x);return e?e.value:''};if(!gv('n'))return setStatus('Enter a name');
-put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid()}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,pay:parseFloat(gv('py'))||0,gm:parseFloat(gv('gm'))||0,gadj:parseFloat(gv('ga'))||0,gpx:parseFloat(gv('gx'))||0,mv:parseFloat(gv('mv'))||0,color:gv('c')});
+const wo=S.accs.filter(a=>a.ord!=null);put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid(),...(wo.length?{ord:Math.max(...wo.map(a=>a.ord))+10}:{})}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,pay:parseFloat(gv('py'))||0,gm:parseFloat(gv('gm'))||0,gadj:parseFloat(gv('ga'))||0,gpx:parseFloat(gv('gx'))||0,mv:parseFloat(gv('mv'))||0,color:gv('c')});
 ag=Object.keys(GRP).find(k=>GRP[k].includes(gv('t')))||ag;closeM()}
 function delAc(id){if(confirm('Delete this account? Its transactions stay but show as "?".')){rm('accs',id);closeM()}}
 function adjEd(id){const a=acc(id),b=bal(a),lb=isL(a);
@@ -462,7 +468,7 @@ return`<div class="row3"><div class="card">Monthly out<h3 class="r">${money(mo_)
 <button onclick="rcEd('','${rk}')">+ Add ${RN[rk]}</button>
 ${S.rec.filter(r=>r.k==rk).map(r=>{const n=nextOcc(r),pd=S.tx.filter(x=>x.rc==r.id).length;return`<div class="card" onclick="rcEd('${r.id}')" style="cursor:pointer;opacity:${r.on?1:.5}"><div class="fl"><b>${esc(r.name)}</b><b class="${r.ty=='i'?'g':'r'}">${money(r.amt)}</b></div>
 <div class="fl"><small>Every ${r.ev>1?r.ev+' ':''}${FQ[r.freq]}${r.ev>1?'s':''} · ${esc(acc(r.acc).name)}${r.auto?' · 🤖 auto':''}${r.on?'':' · paused'}</small><small>${n?'Next '+n:'Finished'}</small></div>
-${r.k=='ins'?`<div class="fl"><small>${pd} of ${r.n} paid</small><small>Left ${money(Math.max(0,r.n-pd)*r.amt)}</small></div>`:''}${!r.auto&&n&&r.on?`<button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">Record ${n} now</button>`:''}</div>`}).join('')||'<small>None yet</small>'}
+${r.k=='ins'?`<div class="fl"><small>${pd} of ${r.n} paid</small><small>Left ${money(Math.max(0,r.n-pd)*r.amt)}</small></div>`:''}${!r.auto&&n&&r.on?`<button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">${(()=>{const k=dueList(r).length;return k>1?'Record '+k+' due payments':'Record '+n+' now'})()}</button>`:''}</div>`}).join('')||'<small>None yet</small>'}
 <small>Items marked 🤖 are recorded automatically on their dates whenever you open the app, including any dates you missed.</small>`}
 function rcEd(id,k){const r=S.rec.find(x=>x.id==id)||{id:'',k,name:'',ty:'e',amt:0,acc:(S.accs[0]||{}).id,cat:'',shop:'',freq:'m',ev:1,start:today(),end:'',n:12,on:true,auto:true};
 $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} ${RN[r.k]}</h3><input id="r_n" placeholder="Name (e.g. Netflix, Car loan, Salary)" value="${esc(r.name)}">
@@ -477,14 +483,16 @@ ${r.k=='rep'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</optio
 function rtg(){const c=$('#r_c');c.innerHTML=catOpts($('#r_t').value=='i'?'i':'e',c.value)}
 function saveRc(id,k){const gv=x=>{const e=$('#r_'+x);return e?e.value:''},a=parseFloat(gv('a'))||0;if(!gv('n')||!a||!gv('s'))return setStatus('Enter name, amount and first date');
 put('rec',{...(S.rec.find(x=>x.id==id)||{}),id:id||uid(),k,name:gv('n'),ty:gv('t')||'e',amt:a,acc:gv('ac'),cat:gv('c'),freq:gv('f'),ev:Math.max(1,parseInt(gv('e'))||1),start:gv('s'),end:gv('d'),n:parseInt(gv('x'))||0,auto:$('#r_au').checked,on:$('#r_on').checked});closeM();if(autoRec())save()}
-function rcPost(id){if(RO())return;const r=S.rec.find(x=>x.id==id),d=nextOcc(r);if(!d)return;S.tx.push(rtx(r,d));save()}
+function dueList(r){const has=new Set(S.tx.map(x=>x.id));return rocc(r,today()).filter(d=>!has.has(rid(r,d))&&!S.del[rid(r,d)])}
+function rcPost(id){if(RO())return;const r=S.rec.find(x=>x.id==id);if(!r)return;const due=dueList(r),l=due.length?due:[nextOcc(r)].filter(Boolean);if(!l.length)return;
+l.forEach(d=>S.tx.push(rtx(r,d)));save();setStatus(l.length+(l.length>1?' payments recorded':' payment recorded'))}
 function delRc(id){if(confirm('Delete this item? Transactions already recorded stay.')){rm('rec',id);closeM()}}
 function bovw(){const bl=BL().map(b=>({b,sp:bspent(b,ym)})),m=bl.filter(x=>x.b.per=='m'&&!dup(x.b)),tb=m.reduce((a,x)=>a+x.b.amt,0),ts=m.reduce((a,x)=>a+x.sp,0);
 if(!bl.length)return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer"><small>No budgets yet — tap to add one ›</small></div>`;
 const top=bl.filter(x=>x.b.amt>0).sort((a,b)=>b.sp/b.b.amt-a.sp/a.b.amt).slice(0,4);
 return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer"><div class="fl"><span>Monthly budget ${money(tb)}</span><span class="${ts>tb?'r':''}">${tb-ts<0?'Over by '+money(ts-tb):'Left '+money(tb-ts)}</span></div>${barRow(ts,tb)}${top.map(x=>`<div class="fl" style="margin-top:10px"><small>${esc(x.b.name)}</small><small>${money(x.sp)} / ${money(x.b.amt)}</small></div>${barRow(x.sp,x.b.amt)}`).join('')}</div>`}
 function chv(){const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(+ym.slice(0,4),+ym.slice(5)-1-i,1).toLocaleDateString('en-CA').slice(0,7));
-const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)+fxNBV(m+'-31')),by={};
+const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)+fxNBV(m+'-31')),by={};
 cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
 let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8]}));
 if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
@@ -510,7 +518,7 @@ function payTx(p){const o=[],t0=now(),b='p:'+p.id+':'+p.rev,mm=MN[+p.date.slice(
 o.push({id:b+':g',u:t0,date:p.date,desc:'Salary '+mm+(p.employer?' · '+p.employer:''),amt:pg(p),cat:sc?sc.id:'',acc:p.acc,shop:'',note:'Basic '+money(p.basic||0)+(al?' + allowances '+money(al):''),att:p.att||[],pay:p.id,tr:0,to:''});
 (p.ded||[]).forEach((d,i)=>{if(!d.v)return;const n=d.n||'Deduction';
 if(kw&&/epf|kwsp/i.test(n))o.push({id:b+':d'+i,u:t0,date:p.date,desc:n+' ('+mm+')',amt:d.v,tr:1,acc:p.acc,to:kw.id,cat:'',shop:'',note:'From payslip',att:[],pay:p.id});
-else o.push({id:b+':d'+i,u:t0,date:p.date,desc:n+' ('+mm+')',amt:-d.v,cat:payCat(),acc:p.acc,shop:'',note:'Payslip deduction',att:[],pay:p.id,tr:0,to:''})});const ee=(p.er||[]).find(x=>x.k=='epf'||/epf|kwsp/i.test(x.n||''));if(kw&&p.erEpf!==false&&ee&&ee.v>0)o.push({id:b+':er',u:t0,date:p.date,desc:'Employer EPF ('+mm+')',amt:ee.v,cat:erCat(),acc:kw.id,shop:'',note:'From payslip',att:[],pay:p.id,tr:0,to:''});return o}
+else{const tq=d.k=='pcb'||/pcb|mtd|income tax|zakat/i.test(n);o.push({id:b+':d'+i,u:t0,date:p.date,desc:n+' ('+mm+')',amt:-d.v,cat:tq?taxCat():payCat(),acc:p.acc,shop:'',note:'Payslip deduction',att:[],pay:p.id,tr:0,to:'',tax:tq?1:0})}});const ee=(p.er||[]).find(x=>x.k=='epf'||/epf|kwsp/i.test(x.n||''));if(kw&&p.erEpf!==false&&ee&&ee.v>0)o.push({id:b+':er',u:t0,date:p.date,desc:'Employer EPF ('+mm+')',amt:ee.v,nc:1,cat:erCat(),acc:kw.id,shop:'',note:'From payslip',att:[],pay:p.id,tr:0,to:''});return o}
 function salv(){const l=S.pay.filter(p=>p.date.slice(0,4)==py).sort((a,b)=>b.date.localeCompare(a.date)),G=l.reduce((a,p)=>a+pg(p),0),D=l.reduce((a,p)=>a+pd(p),0),by={};
 l.forEach(p=>(p.ded||[]).forEach(d=>{if(d.v)by[d.n||'Deduction']=(by[d.n||'Deduction']||0)+d.v}));const byE={};l.forEach(p=>(p.er||[]).forEach(d=>{if(d.v)byE[d.n||'Employer']=(byE[d.n||'Employer']||0)+d.v}));
 const nets=MN.map((_,i)=>l.filter(p=>+p.date.slice(5,7)==i+1).reduce((a,p)=>a+pn(p),0)),dds=MN.map((_,i)=>l.filter(p=>+p.date.slice(5,7)==i+1).reduce((a,p)=>a+pd(p),0));
@@ -522,22 +530,26 @@ ${Object.keys(by).length?`<h4>Deductions this year</h4><div class="card">${Objec
 ${Object.keys(byE).length?`<h4>Employer contributions this year</h4><div class="card">${Object.entries(byE).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<div class="fl" style="margin:4px 0"><span>${esc(n)}</span><span>${money(v)}</span></div>`).join('')}</div>`:''}<h4>Payslips</h4>${l.map(p=>`<div class="card" onclick="payEd('${p.id}')" style="cursor:pointer"><div class="fl"><b>${MN[+p.date.slice(5,7)-1]} ${p.date.slice(0,4)}${p.employer?' · '+esc(p.employer):''}</b><b class="g">${money(pn(p))}</b></div>
 <div class="fl"><small>Basic ${money(p.basic||0)} · Allowances ${money(pg(p)-(p.basic||0))}</small><small>Gross ${money(pg(p))}</small></div><div class="fl"><small>Deductions ${money(pd(p))}${(p.er||[]).length?' · Employer '+money((p.er||[]).reduce((a,x)=>a+(x.v||0),0)):''} · paid ${p.date} → ${esc(acc(p.acc).name)}</small>${(p.att||[]).length?`<a onclick="event.stopPropagation();pv('${p.att[0].id}')">📎 payslip</a>`:''}</div></div>`).join('')||'<small>No payslips for this year yet</small>'}
 <small>Gross = basic + allowances. Net pay = gross − deductions.</small>`}
+/* ===== PAYROLL (Malaysia statutory) ===== */
 function statCalc(p){const c=S.cfg.pr||{},old=c.age=='o60',g=pg(p),ew=p.ew>0?p.ew:g,sw=p.sw>0?p.sw:g,up=x=>Math.ceil(+x.toFixed(6)),up5=x=>Math.ceil(+(x*20).toFixed(6))/20;
 const eeR=typeof c.epfEe=='number'&&!isNaN(c.epfEe)?c.epfEe:(old?0:11),erR=old?4:(ew<=5000?13:12),band=ew<=0?0:ew<=5000?Math.ceil(ew/20)*20:ew<=20000?Math.ceil(ew/100)*100:ew;
 const epfEe=ew>20000?+(ew*eeR/100).toFixed(2):up(band*eeR/100),epfEr=ew>20000?+(ew*erR/100).toFixed(2):up(band*erR/100);
 const sc=Math.min(sw,6000),mid=sc<=0?0:Math.ceil(sc/100)*100-50,soEe=old?0:up5(mid*0.005),soEr=up5(mid*(old?0.0125:0.0175)),eisEe=old?0:+(mid*0.002).toFixed(2);
 return{epfEe,epfEr,soEe,soEr,eisEe,eisEr:eisEe,eeR,erR,old}}
-function pcbEst(p){const c=S.cfg.pr||{},st=statCalc(p),ann=pg(p)*12,rel=9000+Math.min(st.epfEe*12,4000)+Math.min((st.soEe+st.eisEe)*12,350)+(c.mar=='m1'?4000:0)+(c.kids||0)*2000,ci=Math.max(0,ann-rel);
-let t=0,prev=0;for(const[u,r]of[[5000,0],[20000,.01],[35000,.03],[50000,.06],[70000,.11],[100000,.19],[400000,.25],[600000,.26],[2000000,.28],[Infinity,.3]]){if(ci>prev)t+=(Math.min(ci,u)-prev)*r;prev=u}
-if(ci<=35000)t=Math.max(0,t-400-(c.mar=='m1'?400:0));return Math.round(t/12*100)/100}
+function pcbEst(p){const c=S.cfg.pr||{},st=statCalc(p),dt=p.date||today(),y=dt.slice(0,4),mo=+dt.slice(5,7),n=13-mo,prev=S.pay.filter(x=>x.id!==p.id&&x.date.startsWith(y)&&x.date<dt),
+ds=(l,k,re)=>l.reduce((a,q)=>a+(q.ded||[]).filter(d=>d.k?d.k==k:re.test(d.n||'')).reduce((b,d)=>b+(d.v||0),0),0),miss=Math.max(0,mo-1-prev.length),
+ytdG=prev.reduce((a,q)=>a+pg(q),0),ytdE=ds(prev,'epf',/epf|kwsp/i),ytdS=ds(prev,'socso',/socso|perkeso/i)+ds(prev,'eis',/^eis/i),paid=ds(prev,'pcb',/pcb|mtd/i),k=n+miss,
+ann=ytdG+pg(p)*k,rel=9000+Math.min(ytdE+st.epfEe*k,4000)+Math.min(ytdS+(st.soEe+st.eisEe)*k,350)+(c.mar=='m1'?4000:0)+(c.kids||0)*2000+(c.kidsHE||0)*8000+(c.dis?7000:0),ci=Math.max(0,ann-rel);
+let t=taxFor(ci);if(ci<=35000)t=Math.max(0,t-400-(c.mar=='m1'?400:0));return Math.max(0,Math.round((t-paid-t/12*miss)/n*100)/100)}
 function payApply(force,create){const st=statCalc(PE);PE.ded=PE.ded||[];PE.er=PE.er||[];
 const RX={epf:/epf|kwsp/i,socso:/socso|perkeso/i,eis:/^eis/i},set=(arr,k,n,v)=>{let x=arr.find(y=>y.k==k)||arr.find(y=>!y.k&&RX[k].test(y.n||''));if(!x){if(!create)return;x={n,v,k};arr.push(x)}x.k=k;if(force||!x.m)x.v=v;if(force)x.m=0};
 set(PE.ded,'epf','EPF (KWSP)',st.epfEe);set(PE.ded,'socso','SOCSO (PERKESO)',st.soEe);set(PE.ded,'eis','EIS',st.eisEe);
 set(PE.er,'epf','EPF (employer)',st.epfEr);set(PE.er,'socso','SOCSO (employer)',st.soEr);set(PE.er,'eis','EIS (employer)',st.eisEr)}
 function payAuto(){if(PE.auto)payApply(false,false);payRender()}
 function prSet(k,v){const c={...(S.cfg.pr||{})};c[k]=v;cfg('pr',c);payAuto()}
-function payPcb(){const v=pcbEst(PE);let x=PE.ded.find(y=>y.k=='pcb')||PE.ded.find(y=>!y.k&&/pcb|tax/i.test(y.n||''));if(!x){x={n:'PCB (income tax)',v:0,k:'pcb'};PE.ded.push(x)}x.k='pcb';x.v=v;x.m=1;payRender();setStatus('PCB is an estimate — use the amount on your payslip if it differs')}
-function erCat(){let c=S.cats.find(x=>x.id=='cer');if(!c){c={id:'cer',name:'Employer contributions',i:'🏢',color:'#34c38f',ty:'i',u:now()};S.cats.push(c)}return c.id}
+function payPcb(){const v=pcbEst(PE);let x=PE.ded.find(y=>y.k=='pcb')||PE.ded.find(y=>!y.k&&/pcb|tax/i.test(y.n||''));if(!x){x={n:'PCB (income tax)',v:0,k:'pcb'};PE.ded.push(x)}x.k='pcb';x.v=v;x.m=1;payRender();setStatus('PCB estimate: what is still due this year, spread over the months left. Your payslip is the final word.')}
+function taxCat(){let c=S.cats.find(x=>x.id=='ctax');if(!c){c={id:'ctax',name:'Income tax (PCB) & zakat',i:'🏛️',color:'#94a3b8',ty:'e',u:now()};S.cats.push(c)}return c.id}
+function erCat(){let c=S.cats.find(x=>x.id=='cer');if(!c){c={id:'cer',name:'Employer EPF (non-cash)',i:'🏢',color:'#34c38f',ty:'i',u:now()};S.cats.push(c)}return c.id}
 function payEd(id){const p=S.pay.find(x=>x.id==id),last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];
 if(p)PE=structuredClone(p);else{PE={id:'',date:today(),employer:last?last.employer:'',acc:last?last.acc:((S.accs.find(a=>a.t=='bank')||S.accs[0]||{}).id),basic:last?last.basic:0,allow:last?structuredClone(last.allow||[]):[],ded:last?structuredClone(last.ded||[]):[],er:[],att:[],rec:true,auto:true,erEpf:true,note:''};PE.ded.forEach(x=>x.m=0);payApply(true,true)}
 PE.rem=[];payRender()}
@@ -553,7 +565,7 @@ $('#m').innerHTML=`<div><h3>${p.id?'Edit':'New'} payslip</h3><input placeholder=
 <div class="two"><div><small>EPF wage (empty = gross)</small><input type="number" step="0.01" value="${p.ew||''}" onchange="PE.ew=parseFloat(this.value)||0;payAuto()"></div><div><small>SOCSO/EIS wage (empty = gross)</small><input type="number" step="0.01" value="${p.sw||''}" onchange="PE.sw=parseFloat(this.value)||0;payAuto()"></div></div>
 <small>For the PCB estimate</small><select onchange="prSet('mar',this.value)">${sel(c.mar||'s',[['s','Single'],['m1','Married, spouse has no income'],['m2','Married, spouse has income']])}</select><input type="number" min="0" value="${c.kids||0}" placeholder="Children under 18" onchange="prSet('kids',parseInt(this.value)||0)"></div></details>
 <h4>Deductions (taken from your pay)</h4>${(p.ded||[]).map((x,i)=>row('ded',i,x)).join('')}<div class="seg">${DD.map(([n,k])=>`<a onclick="PE.ded.push({n:'${n}',v:0${k?`,k:'${k}'`:''}});payAuto()">+ ${n}</a>`).join('')}<a onclick="PE.ded.push({n:'',v:0});payAuto()">+ Other</a></div>
-<div class="two"><button class="s" onclick="payApply(true,true);payRender()">↻ Calculate EPF, SOCSO &amp; EIS</button><button class="s" onclick="payPcb()">Estimate PCB</button></div>
+<div class="two"><button class="s" onclick="payApply(true,true);payRender()">↻ Calculate EPF, SOCSO &amp; EIS</button><button class="s" onclick="payPcb()">Estimate this month's PCB</button></div>
 <label class="fl"><span>Keep EPF, SOCSO &amp; EIS updated automatically</span><input type="checkbox" ${p.auto?'checked':''} onchange="PE.auto=this.checked;payAuto()" style="width:auto"></label>
 <small>Statutory rates now: EPF ${st.eeR}% employee / ${st.erR}% employer · SOCSO 0.5% / ${st.old?'1.25':'1.75'}% (wages up to RM6,000) · EIS 0.2% / 0.2%. Amounts are worked out the way KWSP and PERKESO tables do, but your payslip is the final word — you can edit any amount.</small>
 <h4>Employer contributions (not taken from your pay)</h4>${(p.er||[]).map((x,i)=>row('er',i,x)).join('')||'<small>None yet — tap "Calculate" above</small>'}
@@ -569,7 +581,8 @@ if(files.length){try{setStatus('Uploading the payslip…');const d=await path(S.
 catch(e){const m=String(e.message||e),why=/Client ID/i.test(m)?'Google Drive is not set up on this device. Go to Settings › Google Drive and paste your Client ID, then tap Connect.':/popup|auth|closed|denied/i.test(m)?'The Google sign-in did not finish — allow pop-ups for this site, then tap Connect in Settings › Google Drive.':'Google Drive said: '+m;
 if(!confirm(why+'\n\nSave the payslip without the file? You can attach it later.'))return setStatus('Payslip not saved');setStatus(why.slice(0,70))}}
 const rem=PE.rem||[],q={...PE,id:PE.id||uid(),rev:(PE.rev||0)+1};delete q.rem;delete q.so;if(!pg(q)&&!(q.att||[]).length)return setStatus('Enter the basic salary or attach a payslip');
-S.tx.filter(t=>t.pay==q.id).forEach(t=>{S.del[t.id]=now()});S.tx=S.tx.filter(t=>t.pay!=q.id);if(q.rec!==false&&pg(q)>0)payTx(q).forEach(t=>S.tx.push(t));
+const old={},role=t=>String(t.id).split(':').pop();S.tx.filter(t=>t.pay==q.id).forEach(t=>{old[role(t)]=t;S.del[t.id]=now()});S.tx=S.tx.filter(t=>t.pay!=q.id);
+if(q.rec!==false&&pg(q)>0)payTx(q).forEach(t=>{const o=old[role(t)];if(o){if(o.note&&!/^(Payslip deduction|From payslip|Basic )/.test(o.note))t.note=o.note;if(o.shop)t.shop=o.shop;if(o.tag)t.tag=o.tag;const ex=(o.att||[]).filter(a=>!(t.att||[]).some(b=>b.id==a.id));if(ex.length)t.att=[...(t.att||[]),...ex]}S.tx.push(t)});
 if(rem.length){try{await trash(rem)}catch(e){}}put('pay',q);closeM()}
 async function delPay(id){const q=S.pay.find(x=>x.id==id);if(!q||!confirm('Delete this payslip, its Register entries and its file in Google Drive?'))return;
 S.tx.filter(t=>t.pay==id).forEach(t=>{S.del[t.id]=now()});S.tx=S.tx.filter(t=>t.pay!=id);try{await trash((q.att||[]).map(a=>a.id))}catch(e){}rm('pay',id);closeM()}
@@ -581,8 +594,9 @@ $('#m').innerHTML=`<div><h3>⇄ Transfer between accounts</h3><small>From</small
 function trSwap(){const a=$('#t_f'),b=$('#t_t'),v=a.value;a.value=b.value;b.value=v}
 function saveTr(){const g=x=>$('#t_'+x).value,a=Math.abs(parseFloat(g('a')))||0;if(!a)return setStatus('Enter an amount');if(g('f')==g('t'))return setStatus('Choose two different accounts');
 const d=g('d')||today(),f=S.accs.find(x=>x.id==g('f')),t=S.accs.find(x=>x.id==g('t')),fee=parseFloat(g('fee'))||0;
-put('tx',{id:uid(),date:d,desc:g('n')||'Transfer: '+f.name+' → '+t.name,amt:a,tr:1,acc:f.id,to:t.id,cat:'',shop:'',note:'',att:[]});
-if(fee>0)put('tx',{id:uid(),date:d,desc:'Transfer fee',amt:-fee,cat:feeCat(),acc:f.id,shop:'',note:'',att:[],tr:0,to:''});closeM()}
+S.tx.push({u:now(),id:uid(),date:d,desc:g('n')||'Transfer: '+f.name+' → '+t.name,amt:a,tr:1,acc:f.id,to:t.id,cat:'',shop:'',note:'',att:[]});
+if(fee>0)S.tx.push({u:now(),id:uid(),date:d,desc:'Transfer fee',amt:-fee,cat:feeCat(),acc:f.id,shop:'',note:'',att:[],tr:0,to:''});save();closeM()}
+/* ===== TAX / LHDN ===== */
 const RLS=[
 {k:'life',n:'Life insurance / takaful',cap:3000,tag:1,note:'Self or spouse (children too from YA 2026). Premiums you pay, and extra voluntary EPF.'},
 {k:'prs',n:'PRS / deferred annuity',cap:3000,tag:1,note:'Private Retirement Scheme contributions or deferred annuity premiums.'},
@@ -637,7 +651,7 @@ row=(a,b,cls)=>`<tr><td>${a}<td class="n ${cls||''}">${b}`;
 return`<div class="mn"><a onclick="taxY=String(+taxY-1);render()">‹</a><b>YA ${ya}</b><a onclick="taxY=String(+taxY+1);render()">›</a></div>
 <small>Year of assessment ${ya} = income earned in ${ya}, filed by 30 April ${+ya+1}. Assumes you are a tax resident.</small>
 <div class="row3"><div class="card">Chargeable income<h3>${money(T.ci)}</h3></div><div class="card">Tax payable<h3>${money(T.payable)}</h3></div><div class="card">${T.bal>=0?'Still to pay':'Refund'}<h3 class="${T.bal>0?'r':'g'}">${money(Math.abs(T.bal))}</h3></div></div>
-${T.ideas.length?`<h4>Ways to lower your tax</h4><div class="card"><small>Room left in reliefs you can use. If you spent all of it, you could save about</small><h3 class="g">${money(T.potential)}</h3>${T.ideas.slice(0,6).map(i=>`<div style="margin-top:10px"><div class="fl"><b>${esc(i.n)}</b><span class="g">≈ ${money(i.save)}</span></div><small>Room left ${money(i.left)} · ${esc(i.note)}</small></div>`).join('')}</div>`:''}
+${T.ideas.length?`<h4>Ways to lower your tax</h4><div class="card"><small>Only use this for money you would spend anyway. Spending extra just to claim a relief costs more than the tax it saves: at your top rate, every RM100 of relief saves about ${money(T.rate*100)}. If spending you already plan used all the room below, your tax could drop by up to</small><h3 class="g">${money(T.potential)}</h3>${T.ideas.slice(0,6).map(i=>`<div style="margin-top:10px"><div class="fl"><b>${esc(i.n)}</b><span class="g">up to ${money(i.save)}</span></div><small>Room left ${money(i.left)} · ${esc(i.note)}</small></div>`).join('')}</div>`:''}
 <h4>How it is worked out</h4><div class="tw"><table>${row('Salary from payslips ('+T.pays+')',money(T.gr))}${T.gross!=T.gr?row('Annual gross you entered instead',money(T.gross)):''}${row('Other income',money(T.oth))}${row('Less: tax-exempt allowances','−'+money(T.exT))}${row('Less: employment expenses','−'+money(T.exp))}${row('<b>Taxable income</b>','<b>'+money(T.taxable)+'</b>')}
 ${row('Less: reliefs','−'+money(T.rel))}${row('Less: approved donations (up to 10%)','−'+money(T.donOk))}${row('<b>Chargeable income</b>','<b>'+money(T.ci)+'</b>')}${row('Tax on chargeable income (top rate '+Math.round(T.rate*100)+'%)',money(T.tax))}${row('Less: rebates'+(T.reb?' (income up to RM35,000)':''),'−'+money(T.reb))}${row('Less: zakat','−'+money(T.zak))}
 ${row('<b>Tax payable</b>','<b>'+money(T.payable)+'</b>')}${row('Less: PCB / tax already paid','−'+money(T.pcb))}${row('<b>'+(T.bal>=0?'Balance to pay':'Refund due')+'</b>','<b>'+money(Math.abs(T.bal))+'</b>',T.bal>0?'r':'g')}</table></div>
@@ -650,6 +664,7 @@ ${det('tx2','👪 Profile (spouse, children, disability)',`<small>Marital status
 ${det('tx3','🧾 Donations, zakat & tax paid elsewhere',`<small>Approved donations not in the Register</small>${inp(`tset('${ya}','mdon',this.value)`,y.mdon).replace('width:100px','width:100%')}<small>Zakat / fitrah not in the Register or payslips</small>${inp(`tset('${ya}','mzak',this.value)`,y.mzak).replace('width:100px','width:100%')}<small>Other tax already paid (extra PCB, instalments)</small>${inp(`tset('${ya}','mpcb',this.value)`,y.mpcb).replace('width:100px','width:100%')}<small>Donations to approved institutions are deducted up to 10% of your income. Zakat is deducted from the tax itself, up to the tax payable.</small>`)}
 <h4>Reliefs (reduce your taxable income)</h4>${T.auto.map(rr).join('')}<h4>Reliefs you claim with receipts</h4><small>Tag an expense with its relief when you add it. Amounts add up by themselves and stop at the limit.</small>${T.tags.map(rr).join('')}
 <small>Based on LHDN rules for YA 2025–2026 (ANC Group tax handbook, Oct 2025, and the Budget 2026 changes). Budget 2027 proposes changes from YA 2027, such as a higher individual relief, and is not included. This is an estimate to help you plan — check hasil.gov.my and your EA form before you file.</small>`}
+/* ===== AVAILABLE INCOME ===== */
 const dim=m=>new Date(+m.slice(0,4),+m.slice(5),0).getDate();
 function planCalc(m){const c=S.cfg.plan||{},last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0],act=S.rec.filter(r=>r.on),incL=[],comL=[],add=(a,n,v,k)=>{if(v>0.004)a.push({n,v,k})};
 if(last)add(incL,'Net pay'+(last.employer?' · '+last.employer:'')+' (latest payslip)',pn(last));
@@ -657,7 +672,7 @@ act.filter(r=>r.ty=='i').forEach(r=>add(incL,r.name,mq(r)));act.filter(r=>r.ty!=
 S.accs.filter(a=>(a.pay||0)>0).forEach(a=>add(comL,a.name+' repayment',a.pay,'cr'));
 S.bills.filter(b=>b.k=='ap'&&b.due&&b.due.startsWith(m)&&out(b)>0.005).forEach(b=>add(comL,b.party+' (due '+b.due+')',out(b),'bill'));
 const incAuto=incL.reduce((a,x)=>a+x.v,0),inc=c.inc>0?c.inc:incAuto,com=comL.reduce((a,x)=>a+x.v,0),sav=c.sav||0,bud=BL().filter(b=>b.per=='m'&&!dup(b)).reduce((a,b)=>a+b.amt,0),
-cash=TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set),spentVar=-sum(cash.filter(t=>t.amt<0&&!t.rc)),avail=inc-com-sav,cur=m==today().slice(0,7),days=cur?dim(m)-(+today().slice(8,10))+1:dim(m),
+cash=TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),spentVar=-sum(cash.filter(t=>t.amt<0&&!t.rc)),avail=inc-com-sav,cur=m==today().slice(0,7),days=cur?dim(m)-(+today().slice(8,10))+1:dim(m),
 liquid=S.accs.filter(a=>grp(a)=='debit').reduce((a,x)=>a+bal(x),0),debt=comL.filter(x=>x.k=='ins'||x.k=='cr').reduce((a,x)=>a+x.v,0);
 return{incL,comL,inc,incAuto,com,sav,bud,spentVar,avail,remain:avail-spentVar,days,cur,liquid,debt,gross:last?pg(last):inc,left:avail-bud}}
 function upcoming(){const e=new Date();e.setDate(e.getDate()+30);const end=e.toLocaleDateString('en-CA'),o=[];
@@ -682,6 +697,7 @@ ${P.avail<0?'<small class="r">⚠ Your commitments are higher than your income t
 <h4>Commitments</h4>${Object.keys(kn).map(k=>{const l=P.comL.filter(x=>x.k==k);return l.length?`<div class="card"><b>${kn[k]}</b>${l.map(x=>`<div class="fl" style="margin:6px 0"><span>${esc(x.n)}</span><span>${money(x.v)}</span></div>`).join('')}</div>`:''}).join('')||'<small>No commitments yet. Add subscriptions, installments and repeating payments in Recurring, and a monthly repayment on your credit accounts.</small>'}
 <h4>Coming up in the next 30 days</h4>${up.map(x=>`<div class="fl" style="margin:6px 0"><span>${x.d} · ${esc(x.n)}</span><span>${money(x.v)}</span></div>`).join('')||'<small>Nothing due.</small>'}
 <small>Budgets can overlap with commitments. If a budget already includes a subscription or loan, lower the budget so it is not counted twice.</small>`}
+/* ===== REGISTER: BULK ACTIONS ===== */
 function selTog(id){if(SELS.has(id))SELS.delete(id);else SELS.add(id);render()}
 function selAll(on){SELS=new Set(on?LASTIDS:[]);render()}
 function selInfo(ids,n){return`<div class="card fl"><span><b>${SELS.size}</b> selected</span><span><a onclick="selAll(true)">Select all ${ids.length}</a> · <a onclick="SELS=new Set();render()">Clear</a></span></div>${n>300?`<small>Showing the newest 300 of ${n}. "Select all" includes all ${ids.length} that match your filters.</small>`:''}${n>ids.length?'<small>Garage and fixed-asset rows cannot be changed here.</small>':''}`}
@@ -706,6 +722,7 @@ function bulkFlip(){if(!confirm('Flip every selected amount? Income becomes expe
 async function selDel(){if(RO())return;const l=S.tx.filter(t=>SELS.has(t.id));if(!l.length)return;if(!confirm('Delete '+l.length+' transactions? Receipts you attached will also move to the Google Drive trash.'))return;
 const ids=l.filter(t=>!t.pay).flatMap(t=>(t.att||[]).map(a=>a.id)),n=now();l.forEach(t=>{S.del[t.id]=n});S.tx=S.tx.filter(t=>!SELS.has(t.id));SELS=new Set();save();
 if(ids.length){try{await trash(ids)}catch(e){setStatus('Deleted. Drive files were not removed: '+String(e.message).slice(0,40))}}}
+/* ===== SETTINGS ===== */
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
@@ -753,7 +770,7 @@ const t={...cur,id:id||uid(),date:g('date'),desc:g('desc'),amt:g('type')=='e'?-a
 if(files.length){try{setStatus('Uploading…');const f=await path(S.cfg.root,'Receipts',t.date.slice(0,7));
 for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,30)}_${x.name}`));t.att.push({id:r.id,name:x.name,link:r.webViewLink})}}
 catch(e){return setStatus('Upload failed: '+e.message)}}
-if(t.g){put('govr',{id:t.id,h:0,f:{date:t.date,desc:t.desc,amt:t.amt,cat:t.cat,acc:t.acc,shop:t.shop,note:t.note,att:t.att}});closeM();return}
+if(t.g){put('govr',{id:t.id,h:0,f:{date:t.date,desc:t.desc,amt:t.amt,cat:t.cat,acc:t.acc,shop:t.shop,note:t.note,att:t.att,tag:t.tag}});closeM();return}
 if(rem.length){try{await trash(rem)}catch(e){}}put('tx',t);closeM()}
 async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,m=$('#s_m').value,y=$('#s_y').value;if(!files.length||!a)return setStatus('Pick an account and a file');
 try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
@@ -766,8 +783,8 @@ async function imp(f){if(!f)return;try{merge(JSON.parse(await f.text()));save()}
 x.strokeStyle=A;x.lineWidth=8;x.lineJoin=x.lineCap='round';const rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,h,r):x.rect(a,b,w,h)};
 rr(32,58,116,78,16);x.stroke();x.beginPath();x.moveTo(48,58);x.lineTo(112,36);x.lineTo(122,58);x.stroke();
 rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A;x.fill();
-const u=c.toDataURL();for(const r of['icon','apple-touch-icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
+const u=c.toDataURL();for(const r of['icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
 document.addEventListener('click',e=>{const t=e.target;if(t&&t.matches&&t.matches('input[type=date],input[type=month]')&&t.showPicker){try{t.showPicker()}catch(x){}}});
-if(autoRec())localStorage.setItem(K,JSON.stringify(S));
-render();setTimeout(goldAuto,1500);if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
+if(autoRec())persist();
+render();setTimeout(goldAuto,1500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
