@@ -38,6 +38,7 @@ input[type=color]{padding:2px;height:40px}small{color:var(--mut)}a{color:var(--a
 details{background:var(--card);border-radius:12px;margin:8px 0}summary{padding:14px;cursor:pointer;font-weight:600}details>div{padding:0 12px 12px}
 .g3{display:grid;grid-template-columns:44px 1fr 36px;gap:6px;align-items:center}.g3b{display:grid;grid-template-columns:1fr 1fr 46px;gap:6px}.acr{border-bottom:1px solid #8883;padding:6px 0}nav a small{font-size:10px}
 html[data-t=dark]{color-scheme:dark}html[data-t=light]{color-scheme:light}input[type=date]{min-height:42px}
+.selbar{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));background:var(--card);padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;z-index:8;border-top:1px solid #8884;box-shadow:0 -4px 14px #0004}
 </style></head><body>
 <div id="app"></div><div id="m" class="modal"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -54,7 +55,7 @@ S.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|divi
 if(!S.cats.some(c=>c.id=='cadj')&&!(S.del||{}).cadj)S.cats.push({id:'cadj',name:'Balance adjustment',i:'⚖️',color:'#94a3b8',ty:'e',u:0});
 S.shops=S.shops||[['s1','Shell','🐚'],['s2','Petronas','⛽'],['s3',"Lotus's",'🛒'],['s4','Shopee','🧡'],['s5','Grab','🚖'],['s6','Starbucks','☕']].map(([id,name,i])=>({id,name,i,color:'#94a3b8',u:0}));
 [['c8','Fuel','⛽','#f97316'],['c9','Car service','🔧','#14b8a6']].forEach(([id,name,i,color])=>{if(!S.cats.some(c=>c.id==id)&&!(S.del||{})[id])S.cats.push({id,name,i,color,u:0})});
-let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',rmode='m',xf='',xt='',py=today().slice(0,4),PE=null,taxY=today().slice(0,4),sy=today().slice(0,4),sm=today().slice(5,7),sa='',ME=null,view='',rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
+let rt='pl',op={},ag='debit',cg='e',rk='rep',fc='',rv='l',rmode='m',xf='',xt='',py=today().slice(0,4),PE=null,taxY=today().slice(0,4),sy=today().slice(0,4),sm=today().slice(5,7),sa='',ME=null,view='',selMode=false,SELS=new Set(),LASTIDS=[],rf=today().slice(0,8)+'01',rto=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toLocaleDateString('en-CA'),tab='ov',ym=today().slice(0,7),fa='',q='',cur=null,status='Local only',tok=null,tokExp=0,busy=false,timer;
 const acc=id=>S.accs.find(a=>a.id==id)||{name:'?',color:'#888',open:0};
 const isMain=c=>!c.p||!S.cats.some(x=>x.id==c.p);
 const mainOf=id=>{const c=S.cats.find(x=>x.id==id);return c&&!isMain(c)?c.p:id};
@@ -247,7 +248,7 @@ const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
 async function trash(ids){for(const id of ids.filter(Boolean)){try{await api(`${D}/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}catch(e){if(!/^404/.test(e.message))throw e}}}
 const fid=s=>s.fid||((s.link||'').match(/\/d\/([^\/?]+)/)||[])[1];
 async function delTx(id){const t=S.tx.find(x=>x.id==id);if(!t||!confirm('Delete this entry? Its receipts will also move to the Google Drive trash.'))return;
-try{if((t.att||[]).length){setStatus('Deleting from Drive…');await trash(t.att.map(a=>a.id))}}catch(e){return setStatus('Drive delete failed: '+e.message)}
+try{if((t.att||[]).length&&!t.pay){setStatus('Deleting from Drive…');await trash(t.att.map(a=>a.id))}}catch(e){return setStatus('Drive delete failed: '+e.message)}
 rm('tx',id);closeM()}
 function gReset(id){rm('govr',id);closeM()}
 function gHide(id){if(!confirm('Hide this from Ledger? It stays in Garage.'))return;put('govr',{id,f:{},h:1});closeM()}
@@ -260,13 +261,13 @@ try{setStatus('Deleting from Drive…');await trash([fid(s)])}catch(e){return se
 rm('stm',id)}
 
 /* ---------- views ---------- */
-const go=k=>{tab=k;render();scrollTo(0,0)};
-const mo=d=>{const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
+const go=k=>{if(k!='tx'){selMode=false;SELS=new Set()}tab=k;render();scrollTo(0,0)};
+const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,st:stv,set:sett}[tab]();
 $('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat">${esc(status)}</span></header><main>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
 <nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
-${(tab=='ov'||tab=='tx')&&!RO()?'<button class="fab" onclick="edit()">+</button>':''}`}
+${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" onclick="edit()">+</button>':''}`}
 function ov(){const m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
@@ -278,20 +279,20 @@ function reg(){let run=null;if(fa){const A=acc(fa);run=isL(A)?-(A.open||0):(A.op
 const all=TX().filter(t=>!fa||t.acc==fa||t.to==fa).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
 const inP=t=>rmode=='a'||(rmode=='m'&&t.date.startsWith(ym))||(rmode=='r'&&inR(t.date,xf,xt)),
 rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))),
-cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
+ids=(LASTIDS=rows.map(x=>x.t).filter(t=>!t.g&&!t.f).map(t=>t.id)),cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
 cash.forEach(t=>{const k=(t.amt>0?'i':'e')+t.cat;gp[k]=gp[k]||{c:t.cat,ty:t.amt>0?'i':'e',n:0,v:0};gp[k].n++;gp[k].v+=Math.abs(t.amt)});
 const gl=Object.values(gp).sort((a,b)=>b.v-a.v),mx=Math.max(1,...gl.map(x=>x.v));
 const head=`<div class="seg">${[['m','Month'],['r','Date range'],['a','All time']].map(([k,n])=>`<a class="${rmode==k?'on':''}" onclick="rmode='${k}';render()">${n}</a>`).join('')}</div>
 ${rmode=='m'?`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>`:rmode=='r'?`<div class="two"><div><small>From</small><input type="date" value="${xf}" onchange="xf=this.value;render()"></div><div><small>To</small><input type="date" value="${xt}" onchange="xt=this.value;render()"></div></div>`:''}
 <div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp)}</h3></div></div>
-<div class="seg"><a class="${rv=='l'?'on':''}" onclick="rv='l';render()">List</a><a class="${rv=='c'?'on':''}" onclick="rv='c';render()">By category</a><a onclick="trEd(fa)">⇄ Transfer</a>${fc?`<a onclick="fc='';render()">✕ ${esc(cat(fc).name)}</a>`:''}</div>
+<div class="seg"><a class="${rv=='l'?'on':''}" onclick="rv='l';render()">List</a><a class="${rv=='c'?'on':''}" onclick="rv='c';render()">By category</a><a onclick="trEd(fa)">⇄ Transfer</a><a class="${selMode?'on':''}" onclick="selMode=!selMode;if(!selMode)SELS=new Set();render()">☑ Select</a>${fc?`<a onclick="fc='';render()">✕ ${esc(cat(fc).name)}</a>`:''}</div>
 <div class="two"><select onchange="fa=this.value;render()"><option value="">All accounts</option>${opts(S.accs,fa,a=>esc(a.name))}</select><select onchange="fc=this.value;render()"><option value="">All categories</option><optgroup label="Expenses">${catOpts('e',fc,1)}</optgroup><optgroup label="Income">${catOpts('i',fc,1)}</optgroup></select></div><input placeholder="Search" value="${esc(q)}" onchange="q=this.value;render()">`;
 if(rv=='c'){const me={},mi={};cash.forEach(t=>{const m=t.amt>0?mi:me;m[t.cat]=(m[t.cat]||0)+Math.abs(t.amt)});
 const fm=(m,cls)=>{const rs=famRows(m),mx=Math.max(1,...rs.map(f=>f.v));return rs.map(f=>`<div class="card" onclick="fc='${f.id}';rv='l';render()"><div class="fl"><span>${f.main.i} ${esc(f.main.name)}</span><span class="${cls}">${money(f.v)}</span></div><i style="display:block;height:6px;border-radius:3px;margin-top:4px;width:${f.v/mx*100}%;background:${f.main.color||'#94a3b8'}"></i>${f.subs.map(x=>`<div class="fl" style="margin-top:6px" onclick="event.stopPropagation();fc='${x.id}';rv='l';render()"><small>　↳ ${x.c.i} ${esc(x.c.name)}</small><small>${money(x.v)}</small></div>`).join('')}</div>`).join('')||'<small>None</small>'};
 return head+`<h4>${rows.length} transactions · tap a category to list it</h4><h4>Expenses</h4>${fm(me,'r')}<h4>Income</h4>${fm(mi,'g')}`}
-return head+`<div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
+return head+(selMode?selInfo(ids,rows.length):'')+`<div class="tw"><table><tr>${selMode?`<th><input type="checkbox" onclick="selAll(this.checked)" ${ids.length&&ids.every(i=>SELS.has(i))?'checked':''} style="width:auto;margin:0">`:''}<th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
 ${rows.slice().reverse().slice(0,300).map(({t,run})=>{const k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name}:t.f?{i:'🏗️',name:'Fixed asset'}:t.set?{i:'💵',name:'Bill payment'}:cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc),v=t.tr&&fa?dl(t,fa):t.amt;
-return`<tr onclick="edit('${t.id}')"><td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${t.rc?'🔁 ':''}${t.adj?'⚖️ ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions in this period — tap +</small>'}</table></div>`}
+return`<tr onclick="${selMode&&!t.g&&!t.f?`selTog('${t.id}')`:`edit('${t.id}')`}">${selMode?(!t.g&&!t.f?`<td><input type="checkbox" ${SELS.has(t.id)?'checked':''} onclick="event.stopPropagation();selTog('${t.id}')" style="width:auto;margin:0">`:'<td>'):''}<td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${t.rc?'🔁 ':''}${t.adj?'⚖️ ':''}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${k.i} ${esc(k.name)}<td>${h?lg(h)+' '+esc(h.name):''}<td>${lg(a)} ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions in this period — tap +</small>'}</table></div>${selMode?selBar():''}`}
 function stv(){const l=S.stm.filter(x=>{const m=stM(x);return(!sy||m.slice(0,4)==sy)&&(!sm||m.slice(5,7)==sm)&&(!sa||x.acc==sa)}),
 miss=sy&&sm?stAcc().filter(a=>['debit','credit'].includes(grp(a))&&!S.stm.some(x=>x.acc==a.id&&stM(x)==sy+'-'+sm)):[];
 return`<div class="row3"><div class="card">Statements<h3>${l.length}</h3></div><div class="card">Accounts covered<h3>${new Set(l.map(x=>x.acc)).size}</h3></div><div class="card">Missing<h3 class="${miss.length?'r':''}">${sy&&sm?miss.length:'–'}</h3></div></div>
@@ -659,6 +660,30 @@ ${P.avail<0?'<small class="r">⚠ Your commitments are higher than your income t
 <h4>Commitments</h4>${Object.keys(kn).map(k=>{const l=P.comL.filter(x=>x.k==k);return l.length?`<div class="card"><b>${kn[k]}</b>${l.map(x=>`<div class="fl" style="margin:6px 0"><span>${esc(x.n)}</span><span>${money(x.v)}</span></div>`).join('')}</div>`:''}).join('')||'<small>No commitments yet. Add subscriptions, installments and repeating payments in Recurring, and a monthly repayment on your credit accounts.</small>'}
 <h4>Coming up in the next 30 days</h4>${up.map(x=>`<div class="fl" style="margin:6px 0"><span>${x.d} · ${esc(x.n)}</span><span>${money(x.v)}</span></div>`).join('')||'<small>Nothing due.</small>'}
 <small>Budgets can overlap with commitments. If a budget already includes a subscription or loan, lower the budget so it is not counted twice.</small>`}
+function selTog(id){if(SELS.has(id))SELS.delete(id);else SELS.add(id);render()}
+function selAll(on){SELS=new Set(on?LASTIDS:[]);render()}
+function selInfo(ids,n){return`<div class="card fl"><span><b>${SELS.size}</b> selected</span><span><a onclick="selAll(true)">Select all ${ids.length}</a> · <a onclick="SELS=new Set();render()">Clear</a></span></div>${n>300?`<small>Showing the newest 300 of ${n}. "Select all" includes all ${ids.length} that match your filters.</small>`:''}${n>ids.length?'<small>Garage and fixed-asset rows cannot be changed here.</small>':''}`}
+function selBar(){return SELS.size?`<div class="selbar"><b>${SELS.size} selected</b><span><button class="s" style="width:auto;margin:0 6px 0 0" onclick="selAct()">Change…</button><button class="d" style="width:auto;margin:0" onclick="selDel()">Delete</button></span></div>`:''}
+function selAct(){if(RO())return;if(!SELS.size)return setStatus('Select some transactions first');
+$('#m').innerHTML=`<div><h3>${SELS.size} selected</h3>
+<h4>Move to another account</h4><select id="b_acc">${opts(S.accs,'',a=>esc(a.name))}</select><button onclick="bulkAcc()">Move to this account</button>
+<h4>Convert to a transfer</h4><small>Expenses become transfers out of their account and income becomes transfers in. Pick the other account.</small><select id="b_tr">${opts(S.accs,'',a=>esc(a.name))}</select><button class="s" onclick="bulkTr()">Convert to transfer</button>
+<h4>Category</h4><select id="b_cat"><option value="">— none —</option><optgroup label="Expenses">${catOpts('e','',1)}</optgroup><optgroup label="Income">${catOpts('i','',1)}</optgroup></select><button class="s" onclick="bulkCat()">Set category</button>
+<h4>Shop / brand</h4><input id="b_shop" list="shl2" placeholder="Shop or brand name"><datalist id="shl2">${S.shops.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist><button class="s" onclick="bulkShop()">Set shop</button>
+<h4>Tax relief tag</h4><select id="b_tag"><option value="">— none —</option>${RLS.filter(r=>r.tag).map(r=>`<option value="${r.k}">${esc(r.n)}</option>`).join('')}<option value="don">Donation to an approved institution</option><option value="zakat">Zakat / fitrah</option></select><button class="s" onclick="bulkTag()">Set tag (expenses only)</button>
+<h4>Date</h4><input id="b_date" type="date" value="${today()}"><button class="s" onclick="bulkDate()">Set date</button>
+<h4>Amounts</h4><button class="s" onclick="bulkFlip()">Flip + / − (income ↔ expense)</button><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
+function bulk(fn){if(RO())return;const l=S.tx.filter(t=>SELS.has(t.id));if(!l.length)return setStatus('Nothing selected');const n=now();let ok=0;l.forEach(t=>{if(fn(t)!==false){t.u=n;ok++}});SELS=new Set();save();closeM();setStatus(ok+' updated'+(l.length-ok?' · '+(l.length-ok)+' skipped':''))}
+function bulkAcc(){const a=$('#b_acc').value;bulk(t=>{if(t.tr&&t.to==a)return false;t.acc=a})}
+function bulkTr(){const d=$('#b_tr').value;bulk(t=>{if(t.tr||t.set||t.acc==d)return false;const o=t.acc;if(t.amt<0){t.to=d}else{t.acc=d;t.to=o}t.amt=Math.abs(t.amt);t.tr=1;t.cat='';t.shop='';t.tag=''})}
+function bulkCat(){const c=$('#b_cat').value;bulk(t=>{if(t.tr)return false;t.cat=c})}
+function bulkShop(){const n=($('#b_shop').value||'').trim();let h=n?S.shops.find(x=>x.name.toLowerCase()==n.toLowerCase()):null;if(n&&!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}bulk(t=>{if(t.tr)return false;t.shop=h?h.id:''})}
+function bulkTag(){const v=$('#b_tag').value;bulk(t=>{if(t.tr||t.amt>0)return false;t.tag=v})}
+function bulkDate(){const d=$('#b_date').value;if(!d)return setStatus('Pick a date');bulk(t=>{t.date=d})}
+function bulkFlip(){if(!confirm('Flip every selected amount? Income becomes expense and expense becomes income.'))return;bulk(t=>{if(t.tr)return false;t.amt=-t.amt;const c=S.cats.find(x=>x.id==t.cat);if(c&&(c.ty||'e')!=(t.amt>0?'i':'e'))t.cat=''})}
+async function selDel(){if(RO())return;const l=S.tx.filter(t=>SELS.has(t.id));if(!l.length)return;if(!confirm('Delete '+l.length+' transactions? Receipts you attached will also move to the Google Drive trash.'))return;
+const ids=l.filter(t=>!t.pay).flatMap(t=>(t.att||[]).map(a=>a.id)),n=now();l.forEach(t=>{S.del[t.id]=n});S.tx=S.tx.filter(t=>!SELS.has(t.id));SELS=new Set();save();
+if(ids.length){try{await trash(ids)}catch(e){setStatus('Deleted. Drive files were not removed: '+String(e.message).slice(0,40))}}}
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
 return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
