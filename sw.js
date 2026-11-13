@@ -8,7 +8,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const r = e.request;
-  if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;   // Google, Drive and the script are never cached
+  if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;   // Google, Drive, the script and the PDF reader are never cached
   e.respondWith(fetch(r).then(res => { if (res.ok) { const cp = res.clone(); caches.open(C).then(c => c.put(r, cp)); } return res; })
     .catch(() => caches.match(r).then(m => m || caches.match('./index.html'))));
 });
