@@ -254,7 +254,7 @@ function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S
 if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
 /* ===== SYNC ===== */
-let LASTERR='';const SCRIPT_V='2026-11-14.2';let oldScript=false;
+let LASTERR='';const SCRIPT_V='2026-11-14.4';let oldScript=false;
 async function post(u,body){let r;try{r=await fetch(u,{method:'POST',body:JSON.stringify(body)})}catch(e){throw new Error('No connection to the script. Check the internet and that the Web App URL is right.')}
 const t=await r.text();
 if(/^\s*</.test(t)){if(/accounts\.google\.com|Sign in/i.test(t))throw new Error('The script asked for a Google sign-in. Redeploy it with "Who has access: Anyone".');
@@ -264,19 +264,34 @@ if(/moved|TEMPORARILY|not found|404/i.test(t))throw new Error('That Web App URL 
 throw new Error('The script replied with a web page instead of data. Redeploy it: Execute as Me, Who has access Anyone.')}
 let j;try{j=JSON.parse(t)}catch(e){throw new Error('The script replied with something unreadable: '+t.slice(0,80))}
 if(j.error)throw new Error(String(j.error).slice(0,160));return j}
+const SKEYS=['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay','rcm','recs','goals'];
+function delta(since){const d={cfg:S.cfg,del:{}};SKEYS.forEach(k=>d[k]=(S[k]||[]).filter(x=>since<0||(x.u||0)>since));for(const k in S.del)if(since<0||S.del[k]>since)d.del[k]=S.del[k];return d}
+function pieces(d,max){const all=[];SKEYS.forEach(k=>d[k].forEach(x=>all.push([k,x])));const out=[];let cur={cfg:d.cfg,del:d.del},size=JSON.stringify(cur).length;
+const fresh=()=>{const c={cfg:d.cfg,del:{}};SKEYS.forEach(k=>c[k]=[]);return c};cur=fresh();cur.del=d.del;
+all.forEach(([k,x])=>{const n=JSON.stringify(x).length+1;if(size+n>max&&size>2000){out.push(cur);cur=fresh();size=200}cur[k].push(x);size+=n});out.push(cur);return out}
 async function sync(){const u=localStorage.getItem(SU);if(RO()||busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
-let ge='';try{if(u){const size=JSON.stringify(S).length;if(size>4000000)throw new Error('Your data is '+Math.round(size/1e6)+' MB, too big to sync. Remove some uploaded account logos in Accounts › Edit.');
-const r=await post(u,{key:localStorage.getItem(SK)||'',data:S});oldScript=!r.v||r.v<SCRIPT_V;if(r.data)merge(r.data);ge=r.gerr||'';if(r.garage)localStorage.setItem('ledger.g',JSON.stringify(r.garage))}
+let ge='';try{if(u){const key=localStorage.getItem(SK)||'',sent=+(localStorage.getItem('ledger.sent')||-1),rev=+(localStorage.getItem('ledger.rev')||0),t0=now(),
+cfgChanged=sent<0||(S.cfg.u||0)>sent,d=delta(sent),wantG=Date.now()-(+(localStorage.getItem('ledger.gt')||0))>600000,parts=pieces(d,250000);let r;
+for(let i=0;i<parts.length;i++){const last=i==parts.length-1;if(parts.length>1)setStatus('Syncing… '+(i+1)+'/'+parts.length);
+r=await post(u,{key,action:'sync',data:parts[i],since:rev,full:sent<0?1:0,cfgChanged:cfgChanged&&i==0,part:last?'last':'more',garage:last&&wantG?1:0});
+if(r.busy)throw new Error(r.error);if(r.resend||(r.rev!=null&&r.rev<rev)){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev');busy=false;return sync()}}
+oldScript=!r.v||r.v<SCRIPT_V;if(r.data)merge(r.data);if(r.rev!=null)localStorage.setItem('ledger.rev',String(r.rev));localStorage.setItem('ledger.sent',String(t0));
+ge=r.gerr||'';if(r.garage){localStorage.setItem('ledger.g',JSON.stringify(r.garage));localStorage.setItem('ledger.gt',String(Date.now()))}}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
 if(autoRec())setTimeout(save,300);persist();LASTERR='';lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'')+(oldScript?' · ⚠ Google script out of date':'');setStatus(lastSync,1)}
-catch(e){LASTERR=String(e.message||e);setStatus('Sync failed — tap More › Settings › Sync › Why did it fail?');console.warn(e)}busy=false;render()}
+catch(e){LASTERR=String(e.message||e);const b=/another device is syncing/i.test(LASTERR);setStatus(b?'Waiting for your other device — will retry':'Sync failed — tap More › Settings › Sync › Why did it fail?',b);if(b)setTimeout(()=>pull(1),20000);console.warn(e)}busy=false;render()}
+function sizeReport(){const z=x=>JSON.stringify(x||'').length,rows=SKEYS.map(k=>[k,(S[k]||[]).length,z(S[k])]),logos=[...S.accs,...S.shops].reduce((a,x)=>a+(x.logo?x.logo.length:0),0),
+N={tx:'Transactions',stm:'Statements',cats:'Categories',accs:'Accounts (incl. logos)',shops:'Shops (incl. logos)',bills:'Bills',buds:'Budgets',govr:'Garage edits',fixed:'Fixed assets',rec:'Recurring',pay:'Payslips',rcm:'Reconciliation ticks',recs:'Reconciliations',goals:'Goals'};
+return rows.filter(r=>r[2]>2000).sort((a,b)=>b[2]-a[2]).slice(0,5).map(r=>`${N[r[0]]}: ${r[1]} · ${Math.round(r[2]/1024)} KB`).join(' · ')+(logos>20000?` · uploaded logos ${Math.round(logos/1024)} KB`:'')}
 async function testScript(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',el=$('#dg_t'),say=(ok,t)=>{el.innerHTML+=`<div>${ok?'<span class="g">✔</span>':'<span class="r">✘</span>'} ${esc(t)}</div>`};el.innerHTML='<small>Testing…</small>';
 if(!u){el.innerHTML='';return say(0,'No Web App URL in Settings')}el.innerHTML='';let v='';
 try{const t=await(await fetch(u)).text();if(/^\s*</.test(t))say(0,/accounts\.google\.com|Sign in/i.test(t)?'The script needs a Google sign-in — redeploy with "Who has access: Anyone"':'The URL opens a web page, not your script — copy it again from Deploy › Manage deployments');
 else{const j=JSON.parse(t);v=j.v||'';say(1,'Script reachable'+(v?' · version '+v:' · old version (no version number)'))}}catch(e){return say(0,'Cannot reach the script: check your internet and the Web App URL')}
 if(!v||v<SCRIPT_V)say(0,'Script is older than the app ('+(v||'unknown')+' < '+SCRIPT_V+') — paste the new code, then deploy a New version');
-try{await post(u,{key:k,action:'read'});say(1,'Secret key accepted')}catch(e){say(0,String(e.message))}}
+try{await post(u,{key:k,action:'read'});say(1,'Secret key accepted')}catch(e){say(0,String(e.message));return}
+try{const r=await post(u,{key:k,action:'sync',data:{cfg:S.cfg,del:{}},since:-1,part:'last'});say(1,'The script can save your ledger'+(r.data?' · '+((r.data.tx||[]).length)+' transactions stored in the Sheet':''))}
+catch(e){say(0,/connection/i.test(e.message)?'The script was reached but stopped while saving. Paste the newest ledger-sync.gs and deploy a New version — it fixes this.':e.message)}}
 function diag(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',cid=localStorage.getItem(CID)||'',on=!!localStorage.getItem(ON),size=JSON.stringify(S).length,
 y=t=>'<span class="g">✔</span> '+t,n=t=>'<span class="r">✘</span> '+t;
 $('#m').innerHTML=`<div><h3>Sync check</h3>${LASTERR?`<div class="card"><small>Last error</small><p class="r">${esc(LASTERR)}</p></div>`:'<small>No error recorded in this session.</small>'}
@@ -284,7 +299,7 @@ $('#m').innerHTML=`<div><h3>Sync check</h3>${LASTERR?`<div class="card"><small>L
 <div>${k?y('Secret key is set'):n('No secret key — it must match KEY in the script')}</div>
 <div>${cid?y('Google Drive Client ID is set'):n('No Client ID — uploads and previews will not work')}</div>
 <div>${on?y('Google Drive has been connected on this device'):n('Google Drive not connected here — tap Connect Google Drive')}</div>
-<div>${size<2000000?y('Data size '+Math.round(size/1024)+' KB'):n('Data size '+Math.round(size/1024)+' KB — this is large; uploaded logos are the usual cause')}</div></div>
+<div>${size<2000000?y('Data size '+Math.round(size/1024)+' KB'):n('Data size '+Math.round(size/1024)+' KB — this is large; uploaded logos are the usual cause')}</div><small>${esc(sizeReport())}</small></div>
 ${oldScript?'<div class="card"><p class="r">⚠ Your Google script is older than this app. Paste the latest ledger-sync.gs into Apps Script, put your KEY and GARAGE_ID back, then Deploy › Manage deployments › ✏️ › New version › Deploy.</p></div>':''}<small>App version on this device: ${APP_V}${oldScript?'':' · Google script '+SCRIPT_V+' or newer'}</small><div id="dg_t"></div><button onclick="testScript()">Test the connection to my Google script</button><button onclick="closeM();sync()">Try syncing again</button><button class="s" onclick="connect()">Reconnect Google Drive</button><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
 async function connect(){try{await auth();await sync()}catch(e){setStatus(e.message)}}
 const safe=s=>s.replace(/[\/\\:*?"<>|]/g,'-');
@@ -1003,7 +1018,7 @@ function gItemSave(id,k){const g=S.goals.find(x=>x.id==id),it=[...g.items];it[k]
 function gItemDel(id,k){const g=S.goals.find(x=>x.id==id);put('goals',{...g,items:g.items.filter((_,j)=>j!=k)});closeM()}
 /* ===== SETTINGS ===== */
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
-return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>`)
+return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="if(this.value.trim()!=(localStorage.getItem(SU)||'')){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
 +det('ap','🎨 Appearance',`<small>App name</small>${inp('name')}<div class="two"><div><small>Currency symbol</small>${inp('cur')}</div><div><small>Accent colour</small>${inp('accent','color')}</div></div><small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select>`)
 +det('bu','🎯 Budget settings',`<button class="s" onclick="budEd('')">+ Add custom budget</button>${S.buds.filter(b=>!b.cat).map(b=>`<div class="fl" onclick="budEd('${b.id}')" style="cursor:pointer;margin:8px 0"><span>${esc(b.name)}</span><span>${money(b.amt)}</span></div>`).join('')}<small>Warn when spending reaches (%)</small><input type="number" value="${S.cfg.bw||80}" onchange="cfg('bw',parseFloat(this.value)||80)"><small>Monthly budget per expense category (repeats every month)</small>${catsOf('e').map(c=>`<div class="fl"><span>${isMain(c)?'':'　↳ '}${c.i} ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${(S.buds.find(b=>b.cat==c.id)||{}).amt||''}" style="width:120px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>`).join('')}<small>Manage categories in More › Category manager.</small>`)
@@ -1065,7 +1080,7 @@ rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A
 const u=c.toDataURL();for(const r of['icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
 document.addEventListener('click',e=>{const t=e.target;if(t&&t.matches&&t.matches('input[type=date],input[type=month]')&&t.showPicker){try{t.showPicker()}catch(x){}}});
 if(autoRec())persist();
-const APP_V='2026-11-14.3';let lastPull=0;
+const APP_V='2026-11-14.4';let lastPull=0;
 function pull(force){if(!localStorage.getItem(SU)||RO()||busy||document.hidden)return;if(!force&&Date.now()-lastPull<20000)return;lastPull=Date.now();sync()}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});window.addEventListener('focus',()=>pull());window.addEventListener('pageshow',()=>pull());window.addEventListener('online',()=>pull(1));setInterval(()=>pull(),120000);
 render();setTimeout(goldAuto,1500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
