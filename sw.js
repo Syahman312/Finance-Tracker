@@ -1,6 +1,6 @@
 // Ledger offline support. Always asks GitHub for the newest copy first (bypassing the browser's
 // 10-minute cache), so an update shows up on the next open; uses the saved copy only when offline.
-const C = 'ledger-v2';
+const C = 'ledger-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => {
