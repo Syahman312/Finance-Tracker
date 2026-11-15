@@ -38,6 +38,14 @@ header span{color:var(--mut);font-size:12px}
 main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
 main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
 main.anim .pie .sl{animation:chf .6s ease-out both}
+.rst{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}.rst.over{color:var(--r);background:color-mix(in srgb,var(--r) 15%,transparent)}
+.rst.today{color:#f59e0b;background:#f59e0b24}.rst.soon{color:#ca8a04;background:#eab3081f}.rst.ok{color:var(--g);background:color-mix(in srgb,var(--g) 14%,transparent)}.rst.auto{color:var(--mut);background:#8882}
+.rci.over{border-left:4px solid var(--r)}.rci.today{border-left:4px solid #f59e0b}
+.rdue{border-left:4px solid #eab308}.rdue.late{border-left-color:var(--r)}.rdue>.fl small{color:var(--mut)}
+.rdr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #8882}.rdr:first-of-type{margin-top:6px}.rdr>div:last-child{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.rdr button{width:auto;margin:0;padding:5px 12px;font-size:12.5px}
+.nbg{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:var(--r);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;font-style:normal;border:2px solid var(--card);box-sizing:content-box}
+.sdot{display:inline-block;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--r);color:#fff;font-size:10px;line-height:16px;text-align:center;vertical-align:1px}
 .pb{position:relative;height:8px;background:#8883;border-radius:4px;margin:6px 0}.pb>i{display:block;height:100%;border-radius:4px;transition:width .5s ease}.pb>b{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--fg);opacity:.6;border-radius:1px}
 .pbk{display:block;margin:-4px 0 4px;color:var(--mut)}.pbk b{display:inline-block;width:2px;height:10px;background:var(--fg);opacity:.6;vertical-align:-1px;margin-right:4px}
 main.anim .pb>i{animation:pbg .8s cubic-bezier(.2,.8,.2,1) both}@keyframes pbg{from{width:0}}
@@ -119,7 +127,7 @@ nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relativ
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.7',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.8',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -232,7 +240,7 @@ return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petro
 const b={id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:gfiles(i)},o=ovm[b.id];
 return o?(o.h?null:{...b,...o.f,ov:1}):b}).filter(Boolean)};
 const FT=()=>S.fixed.filter(a=>a.acc).map(a=>({id:'f:'+a.id,f:1,set:'asset',u:0,date:a.date,desc:'Purchase: '+a.name,amt:-a.cost,cat:'',acc:a.acc,shop:'',note:'',att:[]}));
-let TXC=null,BALC={},RMC=null,BIX=null,MIX=null,TXAC=null,TXDC=null;const TX=()=>TXC||(TXC=S.tx.concat(GT,FT()));function txDirty(){TXC=null;BALC={};RMC=null;BIX=null;MIX=null;TXAC=null;TXDC=null}
+let TXC=null,BALC={},RMC=null,BIX=null,MIX=null,TXAC=null,TXDC=null;const TX=()=>TXC||(TXC=S.tx.concat(GT,FT()));function txDirty(){RCS={};TXC=null;BALC={};RMC=null;BIX=null;MIX=null;TXAC=null;TXDC=null}
 const TXA=()=>TXAC||(TXAC=TX().slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.u||0)-(b.u||0))),TXD=()=>TXDC||(TXDC=TXA().slice().reverse());
 const TXM=m=>{if(!MIX){MIX={};TX().forEach(t=>{const k=t.date.slice(0,7);(MIX[k]=MIX[k]||[]).push(t)})}return MIX[m]||[]};
 function bix(id){if(!BIX){BIX={};TXA().forEach(t=>{[t.acc,t.tr?t.to:null].forEach((a,j)=>{if(!a||(j&&a==t.acc))return;const v=dl(t,a);const o=BIX[a]||(BIX[a]={d:[],c:[]}),n=o.c.length;o.d.push(t.date);o.c.push((n?o.c[n-1]:0)+v)})})}return BIX[id]}
@@ -554,7 +562,7 @@ const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-
 function render(){CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small></a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
@@ -848,8 +856,8 @@ const i=dueInfo(a);if(i)return i.full;const o=owedOf(a);return m=='full'?o:o>0?M
 const dueTag=i=>!i?'':i.status=='paid'?(i.full<=0.005?'<small class="g">✔ Nothing due</small>':'<small class="g">✔ Paid this cycle</small>'):i.status=='overdue'?`<small class="r">⚠ Overdue ${i.days}d · ${money(i.amt)}</small>`:`<small class="${i.status=='soon'?'r':''}">Due ${i.days==0?'today':i.days==1?'tomorrow':'in '+i.days+' days'} · ${money(i.amt)}${i.future?' so far (statement '+i.stmt+')':''}</small>`;
 const payFrom=()=>(S.accs.find(a=>a.t=='bank')||S.accs.find(a=>!isL(a))||{}).id;
 function dueBanner(){if(RO())return'';const fees=S.accs.filter(a=>a.fee&&isL(a)&&a.t!='loan').map(a=>({a,d:annivNext(a)})).filter(x=>x.d&&daysB(today(),x.d)<=30),l=S.accs.map(a=>({a,i:dueInfo(a)})).filter(x=>x.i&&(x.i.status=='overdue'||x.i.status=='soon')&&x.i.amt>0),t=today(),w=new Date();w.setDate(w.getDate()+7);const we=w.toLocaleDateString('en-CA');
-const r=S.rec.filter(x=>x.on&&x.ty!='i'&&!x.auto&&(x.k=='ins'||x.k=='sub')).map(x=>({x,d:nextOcc(x)})).filter(y=>y.d&&y.d<=we);if(!l.length&&!r.length&&!fees.length)return'';
-return`<div class="card" style="border-left:4px solid var(--r)"><b>Payments due</b>${l.map(x=>`<div class="fl" style="margin:6px 0"><span>${lg(x.a)} ${esc(x.a.name)} <small>· ${x.i.date}</small></span><span>${dueTag(x.i)} <a onclick="trEd('${payFrom()}','${x.a.id}',${x.i.amt.toFixed(2)})">Pay</a></span></div>`).join('')}${r.map(y=>`<div class="fl" style="margin:6px 0"><span>${ico(y.x.name)}${esc(y.x.name)} <small>· ${y.d}</small></span><span><small class="${y.d<t?'r':''}">${y.d<t?'⚠ Overdue':'Due'} · ${money(y.x.amt)}</small> <a onclick="rcPost('${y.x.id}')">Record</a></span></div>`).join('')}${fees.map(x=>`<div class="fl" style="margin:6px 0"><span>${lg(x.a)} ${esc(x.a.name)} <small>· anniversary ${fmtD(x.d)}</small></span><small>Annual fee may be charged · <a onclick="lifeView('${x.a.id}')">details</a></small></div>`).join('')}</div>`}
+const r=S.rec.filter(x=>x.on&&x.ty!='i'&&!x.auto).map(x=>({x,d:nextOcc(x)})).filter(y=>y.d&&y.d<=we);if(!l.length&&!r.length&&!fees.length)return'';
+return`<div class="card" style="border-left:4px solid var(--r)"><b>Payments due</b>${l.map(x=>`<div class="fl" style="margin:6px 0"><span>${lg(x.a)} ${esc(x.a.name)} <small>· ${x.i.date}</small></span><span>${dueTag(x.i)} <a onclick="trEd('${payFrom()}','${x.a.id}',${x.i.amt.toFixed(2)})">Pay</a></span></div>`).join('')}${r.map(y=>`<div class="fl" style="margin:6px 0;align-items:flex-start"><span>${ico(y.x.name)}${esc(y.x.name)} <small>· ${fmtD(y.d)}</small><br>${rcTag(y.x)}</span><span style="text-align:right"><small>${money(y.x.amt*(rcStat(y.x).k||1))}</small><br><a onclick="rcPost('${y.x.id}')">Record</a></span></div>`).join('')}${fees.map(x=>`<div class="fl" style="margin:6px 0"><span>${lg(x.a)} ${esc(x.a.name)} <small>· anniversary ${fmtD(x.d)}</small></span><small>Annual fee may be charged · <a onclick="lifeView('${x.a.id}')">details</a></small></div>`).join('')}</div>`}
 const firstTx=id=>{let m='';TX().forEach(t=>{if((t.acc==id||t.to==id)&&(!m||t.date<m))m=t.date});return m};
 function ageStr(d){if(!d)return'';const n=mBetween(d,today());if(n<0)return'';const y=Math.floor(n/12),m=n%12;return y?y+' yr'+(y>1?'s':'')+(m?' '+m+' mo':''):m?m+' month'+(m>1?'s':''):'less than a month'}
 const fmtD=d=>{if(!d)return'';const x=new Date(d+'T00:00:00');return x.getDate()+' '+MN[x.getMonth()]+' '+x.getFullYear()};
@@ -930,12 +938,12 @@ mo_=act.filter(r=>r.ty!='i').reduce((s,r)=>s+mq(r),0),mi=act.filter(r=>r.ty=='i'
 left=act.filter(r=>r.k=='ins').reduce((s,r)=>s+Math.max(0,(r.n||0)-S.tx.filter(x=>x.rc==r.id).length)*r.amt,0);
 return`<div class="row3"><div class="card">Monthly out<h3 class="r">${money(mo_)}</h3></div><div class="card">Monthly in<h3 class="g">${money(mi)}</h3></div><div class="card">Due in 7 days<h3>${due.length}</h3></div></div>
 <div class="row3"><div class="card">Active<h3>${act.length}</h3></div><div class="card">Installments left<h3>${money(left)}</h3></div><div class="card">Auto-record<h3>${act.filter(r=>r.auto).length}</h3></div></div>
-<div class="seg">${[['rep','Repeat'],['ins','Installment'],['sub','Subscription']].map(([k,n])=>`<a class="${rk==k?'on':''}" onclick="rk='${k}';render()">${n} (${S.rec.filter(r=>r.k==k).length})</a>`).join('')}</div>
+${rcDueCard()}<div class="seg">${[['rep','Repeat'],['ins','Installment'],['sub','Subscription']].map(([k,n])=>{const u=S.rec.filter(r=>r.k==k&&rcLate(r)).length;return`<a class="${rk==k?'on':''}" onclick="rk='${k}';render()">${n} (${S.rec.filter(r=>r.k==k).length})${u?` <b class="sdot">${u}</b>`:''}</a>`}).join('')}</div>
 <button onclick="rcEd('','${rk}')">+ Add ${RN[rk]}</button>
-${S.rec.filter(r=>r.k==rk).map(r=>{const n=nextOcc(r),pd=S.tx.filter(x=>x.rc==r.id).length;return`<div class="card" onclick="rcEd('${r.id}')" style="cursor:pointer;opacity:${r.on?1:.5}"><div class="fl"><b>${ico(r.name+' '+((S.shops.find(x=>x.id==r.shop)||{}).name||''),'',22)}${esc(r.name)}</b><b class="${r.ty=='i'?'g':'r'}">${money(r.amt)}</b></div>
-<div class="fl"><small>Every ${r.ev>1?r.ev+' ':''}${FQ[r.freq]}${r.ev>1?'s':''}${r.freq=='m'&&r.start?' · due '+ord(+r.start.slice(8,10)):''} · ${esc(acc(r.acc).name)}${r.auto?' · 🤖 auto':''}${r.on?'':' · paused'}</small><small>${n?'Next '+n:'Finished'}</small></div>
+${S.rec.filter(r=>r.k==rk).map(r=>{const n=nextOcc(r),pd=S.tx.filter(x=>x.rc==r.id).length,st=rcStat(r).s;return`<div class="card rci ${st=='over'?'over':st=='today'?'today':''}" onclick="rcEd('${r.id}')" style="cursor:pointer;opacity:${r.on?1:.5}"><div class="fl"><b>${ico(r.name+' '+((S.shops.find(x=>x.id==r.shop)||{}).name||''),'',22)}${esc(r.name)}</b><b class="${r.ty=='i'?'g':'r'}">${money(r.amt)}</b></div>
+<div class="fl"><small>Every ${r.ev>1?r.ev+' ':''}${FQ[r.freq]}${r.ev>1?'s':''}${r.freq=='m'&&r.start?' · due '+ord(+r.start.slice(8,10)):''} · ${esc(acc(r.acc).name)}${r.auto?' · 🤖 auto':''}${r.on?'':' · paused'}</small><small>${n?'Next '+fmtD(n):'Finished'}</small></div>${r.on&&rcTag(r)?`<div style="margin-top:6px">${rcTag(r)}</div>`:''}
 ${r.k=='ins'?`<div class="fl"><small>${pd} of ${r.n} paid</small><small>Left ${money(Math.max(0,r.n-pd)*r.amt)}</small></div>`:''}${!r.auto&&n&&r.on?`<button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">${(()=>{const k=dueList(r).length;return k>1?'Record '+k+' due payments':'Record '+n+' now'})()}</button>`:''}</div>`}).join('')||'<small>None yet</small>'}
-<small>Items marked 🤖 are recorded automatically on their dates whenever you open the app, including any dates you missed.</small>`}
+<small>Items marked 🤖 are recorded automatically on their dates whenever you open the app, including any dates you missed. For the others, Ledger shows 🔴 when a date has passed without a payment recorded. Open an item and tap 📅 to get reminders in your phone's calendar.</small>`}
 function rcEd(id,k){const r=S.rec.find(x=>x.id==id)||{id:'',k,name:'',ty:'e',amt:0,acc:(S.accs[0]||{}).id,cat:'',shop:'',freq:'m',ev:1,start:today(),end:'',n:12,on:true,auto:true};
 $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} ${RN[r.k]}</h3><input id="r_n" placeholder="Name (e.g. Netflix, Car loan, Salary)" value="${esc(r.name)}">
 ${r.k=='rep'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</option><option value="i" ${r.ty=='i'?'selected':''}>Income</option></select>`:`<input type="hidden" id="r_t" value="e">`}
@@ -945,7 +953,46 @@ ${r.k=='rep'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</optio
 <div class="two"><div><small>First date</small><input id="r_s" type="date" value="${r.start}"></div><div><small>End date (optional)</small><input id="r_d" type="date" value="${r.end||''}"></div></div>
 <label class="fl"><span>🤖 Record automatically on the date</span><input type="checkbox" id="r_au" ${r.auto?'checked':''} style="width:auto"></label>
 <label class="fl"><span>Active</span><input type="checkbox" id="r_on" ${r.on?'checked':''} style="width:auto"></label>
-<button onclick="saveRc('${r.id}','${r.k}')">Save</button>${r.id?`<button class="d" onclick="delRc('${r.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+<button onclick="saveRc('${r.id}','${r.k}')">Save</button>${r.id?`<button class="s" onclick="rcIcs('${r.id}')">📅 Add reminder to my calendar</button><button class="d" onclick="delRc('${r.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+/* ===== RECURRING REMINDERS: paid / not-yet-paid status, badge, daily nudge and calendar reminders ===== */
+let RCS={};
+// over = a past date is not recorded yet; today = due today; soon = due within 7 days; paid = the latest date is recorded.
+// Items set to record automatically are never "not paid": the app records them itself.
+function rcStat(r){if(RCS[r.id])return RCS[r.id];const t=today();let o;
+if(!r.on||!r.start)o={s:'off'};else if(r.auto)o={s:'auto',n:nextOcc(r)};
+else{const late=dueList(r),od=late.filter(d=>d<t),n=nextOcc(r);
+ if(od.length)o={s:'over',d:od[0],k:late.length,days:daysB(od[0],t),n};else if(late.length)o={s:'today',d:t,k:1,n};
+ else if(!n)o={s:'done'};else{const dd=daysB(t,n);o=dd<=7?{s:'soon',d:n,days:dd,n}:{s:rocc(r,t).length?'paid':'later',d:rocc(r,t).pop(),n}}}
+return RCS[r.id]=o}
+const rcLate=r=>{const s=rcStat(r).s;return s=='over'||s=='today'};
+const rcBadge=()=>RO()?0:S.rec.filter(r=>r.ty!='i'&&rcLate(r)).length;
+function rcTag(r){const st=rcStat(r),inc=r.ty=='i',pv=inc?'received':'paid';
+return st.s=='over'?`<span class="rst over">🔴 Overdue ${st.days} day${st.days==1?'':'s'}${st.k>1?' · '+st.k+' not '+pv:''}</span>`
+:st.s=='today'?`<span class="rst today">🟠 Due today · not ${pv} yet</span>`
+:st.s=='soon'?`<span class="rst soon">🟡 Due ${st.days==1?'tomorrow':'in '+st.days+' days'}</span>`
+:st.s=='paid'?`<span class="rst ok">✅ ${inc?'Received':'Paid'} ${fmtD(st.d)}</span>`
+:st.s=='auto'?'<span class="rst auto">🤖 Recorded automatically</span>':''}
+// the list at the top of Recurring: everything due today or earlier that is not recorded, then the next 7 days
+function rcDueCard(){if(RO())return'';const l=S.rec.filter(r=>r.on&&!r.auto).map(r=>({r,st:rcStat(r)})).filter(x=>['over','today','soon'].includes(x.st.s)).sort((a,b)=>a.st.d.localeCompare(b.st.d));if(!l.length)return'';
+const late=l.filter(x=>x.st.s!='soon').length;
+return`<div class="card rdue ${late?'late':''}"><div class="fl"><b>${late?`⏰ ${late} not ${late==1?'paid':'paid'} yet`:'📅 Coming up this week'}</b><small>tap Record once it's done</small></div>${l.map(({r,st})=>`<div class="rdr"><div><span>${ico(r.name,'',18)}${esc(r.name)}</span><br>${rcTag(r)}</div><div><b class="${r.ty=='i'?'g':''}">${money(r.amt*(st.k||1))}</b><button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">${st.s=='soon'?'Record early':st.k>1?'Record '+st.k:'Record'}</button></div></div>`).join('')}</div>`}
+// once a day, when the app opens, a short reminder if payments are overdue or due today
+function rcNag(){if(RO())return;try{const t=today();if(localStorage.getItem('ledger.rcnag')==t)return;const l=S.rec.filter(r=>r.ty!='i'&&rcLate(r));if(!l.length)return;
+localStorage.setItem('ledger.rcnag',t);toast('⏰ '+(l.length==1?l[0].name+' is':l.length+' payments are')+' due and not recorded yet. See Recurring.')}catch(e){}}
+// a repeating calendar event with alerts the day before (6 pm) and on the day (9 am), so the phone reminds you even when Ledger is closed
+function rcIcs(id){const r=S.rec.find(x=>x.id==id);if(!r||!r.start)return setStatus('Save the item with a first date first');
+const d8=x=>x.replace(/-/g,''),e=x=>String(x).replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n'),day=+r.start.slice(8,10),
+nx=new Date(r.start+'T00:00:00');nx.setDate(nx.getDate()+1);
+let rule='FREQ='+({d:'DAILY',w:'WEEKLY',m:'MONTHLY',y:'YEARLY'}[r.freq]||'MONTHLY')+';INTERVAL='+(r.ev||1);
+if(r.freq=='m'&&day>28)rule+=';BYMONTHDAY='+[28,29,30,31].filter(x=>x<=day).join(',')+';BYSETPOS=-1';   // e.g. the 31st falls on the last day of shorter months, as in the app
+if(r.k=='ins'&&r.n)rule+=';COUNT='+r.n;else if(r.end)rule+=';UNTIL='+d8(r.end);
+const inc=r.ty=='i',sum=(inc?'💰 ':'💸 ')+r.name+' · '+money(r.amt),
+L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ledger//Recurring reminder//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:ledger-'+r.id+'@ledger.app',
+'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z','DTSTART;VALUE=DATE:'+d8(r.start),'DTEND;VALUE=DATE:'+d8(nx.toLocaleDateString('en-CA')),'RRULE:'+rule,
+'SUMMARY:'+e(sum),'DESCRIPTION:'+e((inc?'Expected income':'Payment due')+'. Record it in Ledger once it is '+(inc?'received':'paid')+'.'),'TRANSP:TRANSPARENT',
+'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+e(sum+' is due tomorrow'),'TRIGGER:-PT6H','END:VALARM',
+'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+e(sum+' is due today'),'TRIGGER:PT9H','END:VALARM','END:VEVENT','END:VCALENDAR'];
+dl_(new Blob([L.join('\r\n')+'\r\n'],{type:'text/calendar'}),(r.name.replace(/[^\w ]+/g,'').trim()||'Ledger reminder')+'.ics');setStatus('Open the downloaded file to add the reminder to your calendar')}
 function rtg(){const c=$('#r_c');c.innerHTML=catOpts($('#r_t').value=='i'?'i':'e',c.value)}
 function saveRc(id,k){const gv=x=>{const e=$('#r_'+x);return e?e.value:''},a=parseFloat(gv('a'))||0;if(!gv('n')||!a||!gv('s'))return setStatus('Enter name, amount and first date');
 put('rec',{...(S.rec.find(x=>x.id==id)||{}),id:id||uid(),k,name:gv('n'),ty:gv('t')||'e',amt:a,acc:gv('ac'),cat:gv('c'),freq:gv('f'),ev:Math.max(1,parseInt(gv('e'))||1),start:gv('s'),end:gv('d'),n:parseInt(gv('x'))||0,auto:$('#r_au').checked,on:$('#r_on').checked});closeM();if(autoRec())save()}
@@ -1850,5 +1897,5 @@ addEventListener('popstate',()=>{const m=$('#p.show')||$('#m.show');if(m){MBACK=
 let MBACK=0;try{const was={};new MutationObserver(()=>{['m','p'].forEach(id=>{const o=document.getElementById(id).classList.contains('show');if(o&&!was[id]){try{history.pushState({m:id},'',location.href)}catch(e){}}
 else if(!o&&was[id]){if(MBACK)MBACK=0;else if(history.state&&history.state.m==id)try{history.back()}catch(e){}}was[id]=o})}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}catch(e){}
 if(pinRec())lockNow();
-render();setTimeout(goldAuto,1500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
+render();setTimeout(goldAuto,1500);setTimeout(rcNag,2500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
