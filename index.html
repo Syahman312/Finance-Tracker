@@ -1,23 +1,31 @@
 <!doctype html>
 <html lang="en" data-t="dark"><head><meta charset="utf-8">
+<script>if(location.protocol=='http:'&&!/^(localhost|127\.|10\.|192\.168\.|\[::1\])/.test(location.hostname))location.replace('https:'+location.href.slice(5))</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev; frame-src 'self' blob: https://accounts.google.com; worker-src 'self' blob: https://cdn.jsdelivr.net; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"><meta name="googlebot" content="noindex,nofollow">
+<meta name="description" content="Ledger — a private personal finance tracker: accounts, budgets, reconciliation, payslips and Malaysian tax, synced to your own Google Sheet.">
+<meta property="og:type" content="website"><meta property="og:title" content="Ledger — personal finance"><meta property="og:description" content="A private finance tracker synced to your own Google Sheet.">
+<meta property="og:image" content="og-image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Ledger wallet logo">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0f1115"><meta name="apple-mobile-web-app-title" content="Ledger"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>Ledger</title>
+<meta name="theme-color" content="#0f1115"><meta name="apple-mobile-web-app-title" content="Ledger"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>Ledger — personal finance</title>
 <style>
 :root{--bg:#0f1115;--fg:#eceef2;--card:#1a1d24;--mut:#8b93a1;--acc:#4f8cff;--g:#34c38f;--r:#f46a6a}
 html[data-t=light]{--bg:#f4f5f8;--fg:#1b1e25;--card:#fff;--mut:#6b7280}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,sans-serif;padding-top:env(safe-area-inset-top)}
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;position:sticky;top:0;background:var(--bg);z-index:5}
-header span{color:var(--mut);font-size:12px}
+header span{color:var(--mut);font-size:12px;max-width:62%;text-align:right;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}header h1{flex-shrink:0}
 main{max-width:900px;margin:auto;padding:0 12px 130px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;overflow-x:auto;background:var(--card);padding-bottom:env(safe-area-inset-bottom);z-index:6}
 nav a{flex:1 0 52px;text-align:center;padding:8px 2px;color:var(--mut);cursor:pointer;display:flex;flex-direction:column;font-size:18px}
-nav a small{font-size:11px}nav a.on{color:var(--acc)}
+nav a{text-decoration:none}nav a small{font-size:11px}nav a.on{color:var(--acc)}
 .fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:30px;z-index:7;box-shadow:0 4px 14px #0006}
 .card{background:var(--card);border-radius:12px;padding:12px;margin:8px 0}
-.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.row3 .card{margin:0;font-size:12px;color:var(--mut)}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.row3 .card{margin:0;font-size:12px;color:var(--mut);min-width:0}.row3 h3{font-size:clamp(11.5px,3.6vw,16px);overflow-wrap:anywhere;line-height:1.25}
 h3{margin:4px 0;color:var(--fg);font-size:16px}h4{margin:16px 4px 4px;color:var(--mut);font-weight:600}
 .g{color:var(--g)!important}.r{color:var(--r)!important}
 .scroll{overflow-x:auto;display:flex;gap:8px}.scroll .card{min-width:150px;margin:0;cursor:pointer}
@@ -30,9 +38,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:9px 8px;t
 input,select,button,textarea{font:inherit;padding:9px;border-radius:8px;border:1px solid #8885;background:var(--bg);color:var(--fg);width:100%;margin:4px 0}
 button{background:var(--acc);color:#fff;border:0}button.s{background:#8883;color:var(--fg)}button.d{background:var(--r)}
 input[type=color]{padding:2px;height:40px}small{color:var(--mut)}a{color:var(--acc)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+header h1{font-size:17px;margin:0;font-weight:700}
+#lock{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px}#lock.show{display:flex}
+#lock input{max-width:240px;text-align:center;font-size:24px;letter-spacing:8px}body.blur #app,body.blur .modal{filter:blur(18px)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0}.chk>span{font-size:18px;line-height:1.2}.chk small{display:block}
+.logl{font-size:12px;border-bottom:1px solid #8883;padding:6px 0;word-break:break-word}
 .modal{display:none;position:fixed;inset:0;background:#0009;z-index:9;overflow:auto}.modal.show{display:block}
 .modal>div{background:var(--card);max-width:480px;margin:5vh auto;padding:16px;border-radius:14px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:60px 1fr 60px 40px;gap:6px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.two>*{min-width:0}input[type=date],input[type=month]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;min-height:40px}.three{display:grid;grid-template-columns:60px 1fr 60px 40px;gap:6px}
 .row5{display:grid;grid-template-columns:44px 1fr 80px 46px 36px;gap:6px;align-items:center}.lgl{display:flex;justify-content:center;cursor:pointer;font-size:24px}
 .seg{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.seg a{padding:6px 12px;border-radius:16px;background:var(--card);color:var(--mut);white-space:nowrap;cursor:pointer;font-size:13px}.seg a.on{background:var(--acc);color:#fff}
 details{background:var(--card);border-radius:12px;margin:8px 0}summary{padding:14px;cursor:pointer;font-weight:600}details>div{padding:0 12px 12px}
@@ -49,7 +63,7 @@ main.anim{animation:fu .28s ease both}@keyframes fu{from{opacity:0;transform:tra
 nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relative;transition:color .2s,transform .12s}nav a:active{transform:scale(.9)}nav a.on::before{content:'';position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--acc)}
 .fab{transition:transform .15s,box-shadow .2s;box-shadow:0 6px 20px color-mix(in srgb,var(--acc) 55%,transparent)}.fab:active{transform:scale(.9) rotate(90deg)}
 .hero{margin:6px 0 10px;padding:16px;border-radius:22px;color:#fff;background:var(--acc);background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 45%,#1a1038));box-shadow:0 10px 30px color-mix(in srgb,var(--acc) 35%,transparent)}
-.hero small{color:#ffffffcc}.hero .big{font-size:32px;font-weight:700;letter-spacing:-.5px;margin:2px 0 12px}.hs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.hs div{background:#ffffff1f;border-radius:12px;padding:8px}.hs b{display:block;font-size:clamp(11px,3.3vw,14px);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hs div{min-width:0}
+.hero small{color:#ffffffcc}.hero .big{font-size:32px;font-weight:700;letter-spacing:-.5px;margin:2px 0 12px}.hs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.hs div{background:#ffffff1f;border-radius:12px;padding:8px}.hs b{display:block;font-size:clamp(11.5px,3.4vw,14px);margin-top:2px;overflow-wrap:anywhere;line-height:1.25}.hs div{min-width:0}
 .chip{display:inline-block;background:#ffffff26;border-radius:20px;padding:3px 10px;font-size:12px}.chip.g{background:color-mix(in srgb,var(--g) 20%,transparent)}
 .nudge{margin-top:10px;background:#ffffff26;border-radius:12px;padding:8px 10px;font-size:13px;cursor:pointer}
 .qa{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}.qa a{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--fg);transition:transform .12s}.qa span{width:48px;height:48px;border-radius:16px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px}.qa small{font-size:11px}
@@ -63,10 +77,18 @@ nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relativ
 #ptr{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-40px);width:36px;height:36px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;z-index:20;box-shadow:0 4px 12px #0005;color:var(--acc)}
 .modal>div{border-radius:20px;animation:fu .22s ease both}
 </style></head><body>
-<div id="app"></div><div id="m" class="modal"></div><div id="p" class="modal" style="z-index:10"></div>
+<div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.2',LOGK='ledger.log';
+/* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
+const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
+const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
+function logErr(a,m,d){try{m=String(m||'').slice(0,300);if(!m)return;const k=a+m;if(LOGLAST[k]&&Date.now()-LOGLAST[k]<60000)return;LOGLAST[k]=Date.now();
+const l=logs();l.push({t:Date.now(),a,m,d:String(d||'').slice(0,500),v:APP_V,dev:dev()});localStorage.setItem(LOGK,JSON.stringify(l.slice(-200)))}catch(e){}}
+addEventListener('error',e=>{if(e.message)logErr('app',e.message,(e.filename||'').split('/').pop()+':'+(e.lineno||'')+':'+(e.colno||''))});
+addEventListener('unhandledrejection',e=>{const r=e.reason;logErr('app',(r&&r.message)||String(r),r&&r.stack?String(r.stack).split('\n').slice(0,2).join(' '):'')});
+document.addEventListener('securitypolicyviolation',e=>logErr('security','Blocked by the content security policy: '+(e.blockedURI||'inline')+' ('+e.effectiveDirective+')'));
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36),now=()=>Date.now(),today=()=>new Date().toLocaleDateString('en-CA');
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
@@ -88,11 +110,11 @@ function famRows(m){const f={};Object.entries(m).forEach(([id,v])=>{const k=main
 return Object.values(f).sort((a,b)=>b.v-a.v).map(x=>({...x,main:S.cats.find(c=>c.id==x.id)||cat(x.id),subs:Object.entries(x.subs).sort((a,b)=>b[1]-a[1]).map(([id,v])=>({id,v,c:S.cats.find(c=>c.id==id)||{name:'?',i:'❓'}}))}))}
 function famTr(m){return famRows(m).map(f=>{const d=f.v-f.subs.reduce((a,x)=>a+x.v,0);return`<tr><td><b>${f.main.i} ${esc(f.main.name)}</b><td class="n"><b>${money(f.v)}</b>${f.subs.map(x=>`<tr><td>　↳ ${x.c.i} ${esc(x.c.name)}<td class="n">${money(x.v)}`).join('')}${f.subs.length&&d>0.005?`<tr><td>　↳ General<td class="n">${money(d)}`:''}`}).join('')||'<tr><td colspan="2"><small>None</small>'}
 const dup=b=>String(b.id).startsWith('b:')&&b.cats.length==1&&S.cats.some(c=>c.id==b.cats[0]&&!isMain(c)&&S.buds.some(z=>z.cat==c.p));
-const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>{const k=a.id+'|'+(d||'');if(k in BALC)return BALC[k];return BALC[k]=(isL(a)?-(a.open||0):(a.open||0))+TX().reduce((s,t)=>s+(!d||t.date<=d?dl(t,a.id):0),0)};
+const sum=l=>l.reduce((s,t)=>s+t.amt,0),bal=(a,d)=>{const k=a.id+'|'+(d||'');if(k in BALC)return BALC[k];return BALC[k]=+((isL(a)?-(a.open||0):(a.open||0))+cumTo(a.id,d)).toFixed(2)};
 const money=n=>(n<0?'-':'')+S.cfg.cur+' '+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const opts=(l,sel,f)=>l.map(x=>`<option value="${x.id}" ${x.id==sel?'selected':''}>${f(x)}</option>`).join('');
 let stT,toT,lastSync='Local only';function toast(m){const e=document.getElementById('toast');if(!e)return;e.textContent=m;e.className='show';clearTimeout(toT);toT=setTimeout(()=>{e.className=''},2600)}
-const setStatus=(m,keep)=>{if(m&&!/^(Synced|Syncing|Uploading|Reading|Loading|Local only|Waiting|Testing)/.test(m))toast(m);status=m;const e=$('#stat');if(e)e.textContent=m;clearTimeout(stT);if(!keep&&!/fail|⚠|error|Syncing|Uploading|Loading/i.test(m))stT=setTimeout(()=>{status=lastSync;const e2=$('#stat');if(e2)e2.textContent=lastSync},6000)};
+const setStatus=(m,keep)=>{if(m&&!/^(Synced|Syncing|Uploading|Reading|Loading|Local only|Waiting|Testing)/.test(m))toast(m);if(m&&/fail|error|could ?n[o']t|cannot|can't|bad file|⚠|not loaded|denied|wrong|unreadable/i.test(m))logErr(/sync|script|sheet/i.test(m)?'sync':/upload|drive/i.test(m)?'drive':/import|csv/i.test(m)?'import':/pdf|statement/i.test(m)?'pdf':/gold/i.test(m)?'gold':'app',m);status=m;const e=$('#stat');if(e)e.textContent=m;clearTimeout(stT);if(!keep&&!/fail|⚠|error|Syncing|Uploading|Loading/i.test(m))stT=setTimeout(()=>{status=lastSync;const e2=$('#stat');if(e2)e2.textContent=lastSync},6000)};
 const BANKS=[[/maybank|\bmae\b/,'maybank2u.com.my'],[/cimb/,'cimb.com.my'],[/public ?bank|\bpbe\b/,'pbebank.com'],[/\brhb\b/,'rhbgroup.com'],[/hong ?leong|\bhlb\b|\bhlbb\b/,'hlb.com.my'],[/am ?bank|amonline/,'ambank.com.my'],[/bank ?islam|\bbimb\b/,'bankislam.com'],[/bank ?rakyat/,'bankrakyat.com.my'],[/\bbsn\b|simpanan nasional/,'bsn.com.my'],[/affin/,'affinbank.com.my'],[/alliance/,'alliancebank.com.my'],[/ocbc/,'ocbc.com.my'],[/\buob\b/,'uob.com.my'],[/hsbc/,'hsbc.com.my'],[/standard ?chartered|\bscb\b/,'sc.com'],[/\bciti(bank)?\b/,'citibank.com.my'],[/mbsb/,'mbsbbank.com'],[/agro ?bank/,'agrobank.com.my'],[/muamalat/,'muamalat.com.my'],[/touch ?n ?go|\btng\b/,'tngdigital.com.my'],[/grab/,'grab.com'],[/boost/,'myboost.co'],[/shopee|spaylater/,'shopee.com.my'],[/atome/,'atome.com.my'],[/\basnb\b|\basb\b|\basm\b/,'asnb.com.my'],[/kwsp|\bepf\b/,'kwsp.gov.my'],[/tabung ?haji/,'tabunghaji.gov.my'],[/public ?gold/,'publicgold.com.my']];
 const bankDom=n=>{n=String(n||'').toLowerCase();const m=BANKS.find(([r])=>r.test(n));return m?m[1]:''};
 const BRANDS=[[/netflix/,'netflix.com'],[/spotify/,'spotify.com'],[/youtube/,'youtube.com'],[/disney|hotstar/,'disneyplus.com'],[/\bhbo\b|\bmax\b/,'max.com'],[/\bviu\b/,'viu.com'],[/iqiyi/,'iq.com'],[/\bapple\b|icloud|itunes|app store|iphone|ipad|macbook|airpods|apple watch/,'apple.com'],[/google one|google play|google storage|\bgoogle\b/,'google.com'],[/microsoft|office 365|\bm365\b|xbox/,'microsoft.com'],[/adobe/,'adobe.com'],[/chatgpt|openai/,'openai.com'],[/claude|anthropic/,'anthropic.com'],[/\bcanva\b/,'canva.com'],[/dropbox/,'dropbox.com'],[/\bnotion\b/,'notion.so'],[/amazon|prime video/,'amazon.com'],[/playstation|\bpsn\b/,'playstation.com'],[/\bsteam\b/,'steampowered.com'],[/nintendo/,'nintendo.com'],
@@ -105,11 +127,11 @@ const BRANDS=[[/netflix/,'netflix.com'],[/spotify/,'spotify.com'],[/youtube/,'yo
 [/kpj/,'kpjhealth.com.my'],[/pantai/,'pantai.com.my'],[/sunway/,'sunway.com.my'],[/anytime fitness/,'anytimefitness.com'],[/celebrity fitness/,'celebrityfitness.com'],[/\blhdn\b/,'hasil.gov.my'],[/\bjpj\b|road tax/,'jpj.gov.my'],[/ptptn/,'ptptn.gov.my']];
 const brandDom=n=>{n=' '+String(n||'').toLowerCase()+' ';const m=BRANDS.find(([r])=>r.test(n));return m?m[1]:''};
 const logoDom=n=>bankDom(n)||brandDom(n);
-const ico=(n,fb,sz)=>{const d=logoDom(n);sz=sz||20;return d?`<img src="https://www.google.com/s2/favicons?sz=64&domain=${d}" style="width:${sz}px;height:${sz}px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:4px" onerror="this.remove()">`:(fb||'')};
+const ico=(n,fb,sz)=>{const d=logoDom(n);sz=sz||20;return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" style="width:${sz}px;height:${sz}px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:4px" onerror="this.remove()">`:(fb||'')};
 const IMG='style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle"';
 const lg=x=>{const em=esc(x.i||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',shares:'📊',crypto:'🪙',asnb:'💼',kwsp:'🏛️',member:'🪪',bnpl:'🛍️',gold:'🥇'}[x.t]||'🏦');
-if(x.logo)return`<img src="${x.logo}" ${IMG}>`;if(x.ip&&x.i)return em;const d=x.open!==undefined?bankDom(x.name)||brandDom(x.name):logoDom(x.name);
-return d?`<img src="https://www.google.com/s2/favicons?sz=64&domain=${d}" ${IMG} onerror="this.replaceWith(document.createTextNode('${em}'))">`:em};
+if(x.logo)return`<img alt="" src="${x.logo}" ${IMG}>`;if(x.ip&&x.i)return em;const d=x.open!==undefined?bankDom(x.name)||brandDom(x.name):logoDom(x.name);
+return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" ${IMG} onerror="this.replaceWith(document.createTextNode('${em}'))">`:em};
 const ICONS=[['Food & drink','🍔 burger fast food|🍜 noodles mee|🍚 rice nasi|🍗 chicken|🍕 pizza|🍣 sushi japanese|☕ coffee cafe|🧋 bubble tea boba|🥤 drink|🍰 cake dessert|🍎 fruit|🛒 groceries supermarket|🥡 takeaway delivery|🍽️ restaurant dining|🍳 cooking|🥐 bakery bread'],
 ['Transport','🚗 car|⛽ fuel petrol|🅿️ parking|🛣️ toll highway|🚕 taxi grab ehailing|🚌 bus|🚆 train lrt mrt ktm|✈️ flight travel|🏍️ motorbike|🔧 service repair workshop|🚙 car loan|🧼 car wash|🛞 tyre|🚲 bicycle'],
 ['Shopping','🛍️ shopping|👕 clothes fashion|👟 shoes|👜 bag|💄 beauty makeup|📱 phone gadget|💻 laptop computer|🎮 games|📦 parcel online|🎁 gift present|🪑 furniture|🧸 toys kids|⌚ watch|💍 jewellery'],
@@ -146,7 +168,11 @@ return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petro
 const b={id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:gfiles(i)},o=ovm[b.id];
 return o?(o.h?null:{...b,...o.f,ov:1}):b}).filter(Boolean)};
 const FT=()=>S.fixed.filter(a=>a.acc).map(a=>({id:'f:'+a.id,f:1,set:'asset',u:0,date:a.date,desc:'Purchase: '+a.name,amt:-a.cost,cat:'',acc:a.acc,shop:'',note:'',att:[]}));
-let TXC=null,BALC={},RMC=null;const TX=()=>TXC||(TXC=S.tx.concat(GT,FT()));function txDirty(){TXC=null;BALC={};RMC=null}
+let TXC=null,BALC={},RMC=null,BIX=null,MIX=null,TXAC=null,TXDC=null;const TX=()=>TXC||(TXC=S.tx.concat(GT,FT()));function txDirty(){TXC=null;BALC={};RMC=null;BIX=null;MIX=null;TXAC=null;TXDC=null}
+const TXA=()=>TXAC||(TXAC=TX().slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.u||0)-(b.u||0))),TXD=()=>TXDC||(TXDC=TXA().slice().reverse());
+const TXM=m=>{if(!MIX){MIX={};TX().forEach(t=>{const k=t.date.slice(0,7);(MIX[k]=MIX[k]||[]).push(t)})}return MIX[m]||[]};
+function bix(id){if(!BIX){BIX={};TXA().forEach(t=>{[t.acc,t.tr?t.to:null].forEach((a,j)=>{if(!a||(j&&a==t.acc))return;const v=dl(t,a);const o=BIX[a]||(BIX[a]={d:[],c:[]}),n=o.c.length;o.d.push(t.date);o.c.push((n?o.c[n-1]:0)+v)})})}return BIX[id]}
+function cumTo(id,d){const o=bix(id);if(!o)return 0;if(!d)return o.c[o.c.length-1];let lo=0,hi=o.d.length;while(lo<hi){const m=(lo+hi)>>1;if(o.d[m]<=d)lo=m+1;else hi=m}return lo?o.c[lo-1]:0}
 const rkey=(t,a)=>t.id+'|'+a,RMAP=()=>RMC||(RMC=Object.fromEntries(S.rcm.map(x=>[x.id,x]))),rst=(t,a)=>RMAP()[rkey(t,a)]||{},isRecd=t=>!!(rst(t,t.acc).rcn||(t.to&&rst(t,t.to).rcn));
 function rcSet(t,a,patch){const k=rkey(t,a),o=S.rcm.find(x=>x.id==k);if(o)Object.assign(o,patch,{u:now()});else S.rcm.push({id:k,cl:0,rcn:'',...patch,u:now()});RMC=null}
 function unrec(t){let n=0;S.rcm.filter(x=>x.id.startsWith(t.id+'|')&&(x.rcn||x.cl)).forEach(x=>{if(x.rcn)n++;x.rcn='';x.cl=0;x.u=now()});RMC=null;return n}
@@ -233,7 +259,7 @@ async function sw(id){if(!id){if(ME){S=ME;ME=null}view='';tab='ov';render();retu
 const l=links().find(x=>x.id==id);if(!l)return;setStatus('Loading '+l.name+'…');let d=null;
 try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);d=r.data;if(d)localStorage.setItem('ledger.o.'+id,JSON.stringify(d))}
 catch(e){try{d=JSON.parse(localStorage.getItem('ledger.o.'+id))}catch(x){}setStatus(d?'Offline — showing the last saved copy':'Could not load: '+String(e.message).slice(0,40))}
-if(!d)return;if(!ME)ME=S;S=norm(d);view=id;tab='ov';render()}
+if(!d)return;flush();if(!ME)ME=S;S=clean(norm(d),1);view=id;tab='ov';render()}
 function addLink(){const g=x=>$('#lk_'+x).value.trim();if(!g('n')||!g('u')||!g('k'))return setStatus('Enter name, web app URL and view key');
 const l=links();l.push({id:uid(),name:g('n'),url:g('u'),key:g('k')});localStorage.setItem('ledger.links',JSON.stringify(l));render()}
 function delLink(id){localStorage.setItem('ledger.links',JSON.stringify(links().filter(x=>x.id!=id)));render()}
@@ -263,13 +289,27 @@ TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;if(isTax(x)){txp-=x.amt
 S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp,tax:txp}}
 
 /* ---------- storage & merge ---------- */
-function persist(){try{localStorage.setItem(K,JSON.stringify(S));return true}catch(e){return false}}
-function save(){txDirty();if(!persist())setStatus('⚠ Phone storage is full. Changes are kept for now and synced to your Google Sheet; remove uploaded logos to free space.');render();clearTimeout(timer);timer=setTimeout(sync,1500)}
+function persist(){try{localStorage.setItem(K,JSON.stringify(ME||S));return true}catch(e){return false}}
+let PT=null;function flush(){if(!PT)return true;clearTimeout(PT);PT=null;const ok=persist();if(!ok){setStatus('⚠ Phone storage is full. Changes are kept for now and synced to your Google Sheet; remove uploaded logos to free space.');logErr&&logErr('storage','Phone storage is full — could not save on this device')}return ok}
+addEventListener('pagehide',()=>flush());document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+function save(){txDirty();clearTimeout(PT);PT=setTimeout(flush,400);render();clearTimeout(timer);timer=setTimeout(sync,1500)}
 function put(k,x){if(RO())return setStatus('👁 View only');const i=S[k].findIndex(y=>y.id==x.id);x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
 function rm(k,id){if(RO())return setStatus('👁 View only');S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
 function cfg(f,v){if(RO())return setStatus('👁 View only');S.cfg[f]=v;S.cfg.u=now();save()}
-function merge(r){const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
+const SAFEID=/[^\w:.|@-]/g,isCol=v=>typeof v=='string'&&/^#[0-9a-f]{3,8}$/i.test(v);
+const safeUrl=u=>/^https:\/\/[^\s"'<>]+$/i.test(String(u||''))?String(u):'';
+// strips anything that could break out of the page: ids and colours end up inside onclick and style attributes
+function clean(d,strict){if(!d||typeof d!='object')return d;const fx=s=>String(s).replace(/[<>]/g,c=>c=='<'?'‹':'›').replace(/"/g,'”').replace(/'/g,'’').replace(/`/g,'ʼ');
+const walk=(o,dep)=>{if(!o||typeof o!='object'||dep>6)return;for(const k in o){const v=o[k];if(v&&typeof v=='object'){walk(v,dep+1);continue}if(typeof v!='string')continue;
+if(/^(id|acc|to|cat|shop|fid|p|set|rcn)$/.test(k)){if(strict||/[<>"'`\\\s]/.test(v))o[k]=v.replace(SAFEID,'')}
+else if((k=='color'||k=='c'&&v[0]=='#')&&v&&!isCol(v))o[k]='#94a3b8';
+else if(k=='logo')o[k]=/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(v)?v:'';
+else if(k=='link'||k=='url')o[k]=safeUrl(v);
+else if(k=='i')o[k]=v.replace(/[<>"'`&\\]/g,'').slice(0,24);
+else if(strict)o[k]=fx(v)}};
+walk(d,0);return d}
+function merge(r){clean(r);const del={...S.del};for(const k in r.del||{})del[k]=Math.max(del[k]||0,r.del[k]);
 for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay','rcm','recs','goals']){const m=new Map();for(const x of[...S[k],...(r[k]||[])]){const o=m.get(x.id);if(!o||x.u>o.u)m.set(x.id,x)}S[k]=[...m.values()].filter(x=>!(del[x.id]>=x.u))}
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
 
@@ -287,7 +327,7 @@ return((await(await api(D+'?fields=files(id)&q='+encodeURIComponent(qs))).json()
 async function folder(name,parent){let id=await find(name,parent,FM);if(id)return id;
 return(await(await api(D+'?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,mimeType:FM,...(parent?{parents:[parent]}:{})})})).json()).id}
 async function path(...p){let id=null;for(const n of p)id=await folder(n,id);return id}
-async function upload(file,parent,name,existing){const fd=new FormData();
+async function upload(file,parent,name,existing){if(file&&file.type&&file.type.startsWith('image/')){const f2=await shrinkImg(file);if(f2!==file){name=String(name).replace(/\.(png|jpe?g|webp)$/i,'')+'.jpg';file=f2}}const fd=new FormData();
 fd.append('metadata',new Blob([JSON.stringify({name,...(existing?{}:{parents:[parent]})})],{type:'application/json'}));fd.append('file',file);
 return(await api(`https://www.googleapis.com/upload/drive/v3/files${existing?'/'+existing:''}?uploadType=multipart&fields=id,webViewLink`,{method:existing?'PATCH':'POST',body:fd})).json()}
 async function blobOf(id){const u=localStorage.getItem(SU);
@@ -296,15 +336,25 @@ const b=atob(r.data),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=
 return await(await api(`${D}/${id}?alt=media`)).blob()}
 async function pv(id){const p=$('#p'),cl=`<button class="s" onclick="$('#p').className='modal'">Close</button>`;p.className='modal show';p.innerHTML='<div><small>Loading preview…</small></div>';
 try{const b=await blobOf(id),u=URL.createObjectURL(b),t=b.type;
-p.innerHTML=`<div style="max-width:720px">${t.startsWith('image/')?`<img src="${u}" style="width:100%;border-radius:8px">`:t=='application/pdf'?`<iframe src="${u}" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>`:`<a href="${u}" download>Download file</a>`}${cl}</div>`}
+p.innerHTML=`<div style="max-width:720px">${t.startsWith('image/')?`<img src="${u}" alt="Attachment preview" style="width:100%;border-radius:8px">`:t=='application/pdf'?`<iframe src="${u}" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>`:`<a href="${u}" download>Download file</a>`}${cl}</div>`}
 catch(e){p.innerHTML=`<div><small>Preview failed: ${esc(e.message)}</small>${cl}</div>`}}
 function logoUp(k,id,f){if(!f)return;const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d'),m=Math.min(im.width,im.height);
-x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,96,96);upd(k,id,'logo',c.toDataURL('image/png'))};im.src=URL.createObjectURL(f)}
+x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,96,96);upd(k,id,'logo',small(c))};im.onerror=()=>setStatus('Could not read that picture — try a PNG or JPG');im.src=URL.createObjectURL(f)}
+// logos are kept as small WebP pictures (PNG where the browser cannot make WebP)
+const small=c=>{const w=c.toDataURL('image/webp',0.82);return /^data:image\/webp/.test(w)?w:c.toDataURL('image/png')};
+function logoSize(){return[...S.accs,...S.shops].reduce((a,x)=>a+(x.logo?x.logo.length:0),0)}
+async function shrinkLogos(){let n=0,b0=logoSize();for(const k of['accs','shops'])for(const x of S[k]){if(!x.logo||x.logo.length<5000)continue;
+await new Promise(ok=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;c.getContext('2d').drawImage(im,0,0,96,96);const v=small(c);if(v.length<x.logo.length){x.logo=v;x.u=now();n++}ok()};im.onerror=ok;im.src=x.logo})}
+save();setStatus(n?`${n} logos made smaller · saved ${Math.round((b0-logoSize())/1024)} KB`:'Logos are already small')}
+// photos of receipts are scaled down to 2000 px before they go to Drive (PDFs are left alone)
+function shrinkImg(f){return new Promise(ok=>{if(!f||!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size<900000)return ok(f);const u=URL.createObjectURL(f),im=new Image();
+im.onload=()=>{const r=Math.min(1,2000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
+c.toBlob(b=>ok(b&&b.size<f.size?new File([b],f.name.replace(/\.(png|jpe?g|webp)$/i,'')+'.jpg',{type:'image/jpeg'}):f),'image/jpeg',0.82)};im.onerror=()=>{URL.revokeObjectURL(u);ok(f)};im.src=u})}
 function shopId(){const n=($('#f_shop').value||'').trim();if(!n)return'';let h=S.shops.find(x=>x.name.toLowerCase()==n.toLowerCase());
 if(!h){h={id:uid(),name:n,i:'🏷️',color:'#94a3b8',u:now()};S.shops.push(h)}return h.id}
 const SU='ledger.sheet',SK='ledger.key';
 /* ===== SYNC ===== */
-let LASTERR='';const SCRIPT_V='2026-11-14.4';let oldScript=false;
+let LASTERR='';const SCRIPT_V='2026-11-15.1';let oldScript=false;
 async function post(u,body){let r;try{r=await fetch(u,{method:'POST',body:JSON.stringify(body)})}catch(e){throw new Error('No connection to the script. Check the internet and that the Web App URL is right.')}
 const t=await r.text();
 if(/^\s*</.test(t)){if(/accounts\.google\.com|Sign in/i.test(t))throw new Error('The script asked for a Google sign-in. Redeploy it with "Who has access: Anyone".');
@@ -315,6 +365,9 @@ throw new Error('The script replied with a web page instead of data. Redeploy it
 let j;try{j=JSON.parse(t)}catch(e){throw new Error('The script replied with something unreadable: '+t.slice(0,80))}
 if(j.error)throw new Error(String(j.error).slice(0,160));return j}
 const SKEYS=['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay','rcm','recs','goals'];
+const unsentLog=()=>{const t=+(localStorage.getItem('ledger.logsent')||0);return logs().filter(x=>x.t>t).slice(-50)};
+const scriptReq=async(action,extra)=>{const u=localStorage.getItem(SU);if(!u)throw new Error('Set up Google Sheet sync first (Settings › Google Sheet sync)');
+try{return await post(u,{key:localStorage.getItem(SK)||'',action,...(extra||{})})}catch(e){if(/Unknown request/i.test(e.message))throw new Error('Your Google script is older than the app. Paste the new ledger-sync.gs and deploy a New version.');throw e}};
 function delta(since){const d={cfg:S.cfg,del:{}};SKEYS.forEach(k=>d[k]=(S[k]||[]).filter(x=>since<0||(x.u||0)>since));for(const k in S.del)if(since<0||S.del[k]>since)d.del[k]=S.del[k];return d}
 function pieces(d,max){const all=[];SKEYS.forEach(k=>d[k].forEach(x=>all.push([k,x])));const out=[];let cur={cfg:d.cfg,del:d.del},size=JSON.stringify(cur).length;
 const fresh=()=>{const c={cfg:d.cfg,del:{}};SKEYS.forEach(k=>c[k]=[]);return c};cur=fresh();cur.del=d.del;
@@ -323,15 +376,15 @@ async function sync(){const u=localStorage.getItem(SU);if(RO()||busy||!(u||local
 let ge='';try{if(u){const key=localStorage.getItem(SK)||'',sent=+(localStorage.getItem('ledger.sent')||-1),rev=+(localStorage.getItem('ledger.rev')||0),t0=now(),
 cfgChanged=sent<0||(S.cfg.u||0)>sent,d=delta(sent),wantG=Date.now()-(+(localStorage.getItem('ledger.gt')||0))>600000,parts=pieces(d,250000);let r;
 for(let i=0;i<parts.length;i++){const last=i==parts.length-1;if(parts.length>1)setStatus('Syncing… '+(i+1)+'/'+parts.length);
-try{r=await post(u,{key,action:'sync',data:parts[i],since:rev,full:sent<0?1:0,cfgChanged:cfgChanged&&i==0,part:last?'last':'more',garage:last&&wantG?1:0})}
+const lg_=last?unsentLog():[];try{r=await post(u,{key,action:'sync',data:parts[i],since:rev,full:sent<0?1:0,cfgChanged:cfgChanged&&i==0,part:last?'last':'more',garage:last&&wantG?1:0,...(lg_.length?{log:lg_}:{})});if(lg_.length&&!r.legacy)localStorage.setItem('ledger.logsent',String(lg_[lg_.length-1].t))}
 catch(e){if(!/Unknown request: sync/i.test(e.message))throw e;setStatus('Syncing (old script)…');r=await post(u,{key,data:S});r.legacy=1;break}
 if(r.busy)throw new Error(r.error);if(r.resend||(r.rev!=null&&r.rev<rev)){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev');busy=false;return sync()}}
-oldScript=!r.v||r.v<SCRIPT_V;if(r.data)merge(r.data);if(r.legacy){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}else{if(r.rev!=null)localStorage.setItem('ledger.rev',String(r.rev));localStorage.setItem('ledger.sent',String(t0))}
+oldScript=!r.v||r.v<SCRIPT_V;if(r.lbk)localStorage.setItem('ledger.lbk',String(r.lbk));if(r.ep!=null&&!r.legacy){const le=localStorage.getItem('ledger.ep');if(le==null)localStorage.setItem('ledger.ep',r.ep);else if(le!==r.ep){busy=false;await reloadAll(r.ep,'Your ledger was restored from a backup on another device. Loading it…');return}}if(r.data)merge(r.data);if(r.legacy){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}else{if(r.rev!=null)localStorage.setItem('ledger.rev',String(r.rev));localStorage.setItem('ledger.sent',String(t0))}
 ge=r.gerr||'';if(r.garage){localStorage.setItem('ledger.g',JSON.stringify(r.garage));localStorage.setItem('ledger.gt',String(Date.now()))}}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
 if(autoRec())setTimeout(save,300);persist();LASTERR='';lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'')+(oldScript?' · ⚠ Google script out of date':'');setStatus(lastSync,1)}
-catch(e){LASTERR=String(e.message||e);const b=/another device is syncing/i.test(LASTERR);setStatus(b?'Waiting for your other device — will retry':'Sync failed — tap More › Settings › Sync › Why did it fail?',b);if(b)setTimeout(()=>pull(1),20000);console.warn(e)}busy=false;render()}
+catch(e){LASTERR=String(e.message||e);const b=/another device is syncing/i.test(LASTERR);if(!b)logErr('sync',LASTERR,'online: '+navigator.onLine);setStatus(b?'Waiting for your other device — will retry':'Sync failed — tap More › Settings › Sync › Why did it fail?',b);if(b)setTimeout(()=>pull(1),20000);console.warn(e)}busy=false;render()}
 function sizeReport(){const z=x=>JSON.stringify(x||'').length,rows=SKEYS.map(k=>[k,(S[k]||[]).length,z(S[k])]),logos=[...S.accs,...S.shops].reduce((a,x)=>a+(x.logo?x.logo.length:0),0),
 N={tx:'Transactions',stm:'Statements',cats:'Categories',accs:'Accounts (incl. logos)',shops:'Shops (incl. logos)',bills:'Bills',buds:'Budgets',govr:'Garage edits',fixed:'Fixed assets',rec:'Recurring',pay:'Payslips',rcm:'Reconciliation ticks',recs:'Reconciliations',goals:'Goals'};
 return rows.filter(r=>r[2]>2000).sort((a,b)=>b[2]-a[2]).slice(0,5).map(r=>`${N[r[0]]}: ${r[1]} · ${Math.round(r[2]/1024)} KB`).join(' · ')+(logos>20000?` · uploaded logos ${Math.round(logos/1024)} KB`:'')}
@@ -371,13 +424,15 @@ rm('stm',id)}
 
 /* ---------- views ---------- */
 let ANIM=1;const haptic=n=>{try{navigator.vibrate&&navigator.vibrate(n||8)}catch(e){}};
-const go=k=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;render();scrollTo(0,0)};
+const RT={ov:'overview',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
+TABN={ov:'Overview',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings'};
+const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v={ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett}[tab]();
-const A_=ANIM;ANIM=0;$('#app').innerHTML=`<header><b>${esc(S.cfg.name)}</b>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat" onclick="pull(1)" style="cursor:pointer" title="Tap to sync now">${esc(status)}</span></header><main>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main><div id="toast"></div><div id="ptr">↻</div>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="go('${k}')">${i}<small>${l}</small></a>`).join('')}</nav>
-${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" onclick="haptic(12);edit()">+</button>':''}`;if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
+const A_=ANIM;ANIM=0;$('#app').innerHTML=`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<span id="stat" onclick="pull(1)" style="cursor:pointer" title="Tap to sync now">${esc(status)}</span></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main><div id="toast"></div><div id="ptr">↻</div>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small></a>`).join('')}</nav>
+${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`;if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 function streak(){const d=new Set(S.tx.map(t=>t.date)),t=new Date(today()+'T00:00:00');let n=0,i=d.has(today())?0:1;for(;i<400;i++){const x=new Date(t);x.setDate(x.getDate()-i);if(d.has(x.toLocaleDateString('en-CA')))n++;else break}return{n,today:d.has(today())}}
@@ -395,9 +450,9 @@ const due=S.accs.map(a=>({a,i:dueInfo(a)})).filter(x=>x.i&&x.i.amt>0&&x.i.status
 const bl=BL().filter(b=>b.per=='m'&&b.amt>0).map(b=>({b,s:bspent(b,t.slice(0,7))})).filter(x=>x.s/x.b.amt>=.8).sort((a,b)=>b.s/b.b.amt-a.s/a.b.amt)[0];if(bl)out.push(['🎯',`<b>${esc(bl.b.name)}</b> budget is ${Math.round(bl.s/bl.b.amt*100)}% used.`]);
 const g=gAll().filter(x=>!x.g.done&&x.target>0).sort((a,b)=>b.pct-a.pct)[0];if(g)out.push(['🐷',`<b>${esc(g.g.name)}</b> is ${Math.round(g.pct)}% funded.`]);
 return out.length?`<div class="ins">${out.slice(0,4).map(([i,x])=>`<div class="card"><span>${i}</span><small>${x}</small></div>`).join('')}</div>`:''}
-function recentHtml(){const l=TX().filter(t=>t.date<=today()).sort((a,b)=>b.date.localeCompare(a.date)||b.u-a.u).slice(0,6);if(!l.length)return`<div class="card empty"><span>👋</span><b>Welcome to ${esc(S.cfg.name)}</b><small>Tap + to record your first expense or income.</small></div>`;
+function recentHtml(){const td=today(),l=[];for(const t of TXD()){if(t.date<=td)l.push(t);if(l.length==6)break}if(!l.length)return`<div class="card empty"><span>👋</span><b>Welcome to ${esc(S.cfg.name)}</b><small>Tap + to record your first expense or income.</small></div>`;
 return`<div class="fl" style="margin:14px 4px 4px"><b>Recent records</b><a onclick="rv='r';rmode='a';fa='';fc='';q='';go('tx')">See all ›</a></div>${recordsHtml(l,'',l.length)}`}
-function ov(){const tm=TX().filter(t=>t.date.startsWith(ym)&&isTax(t)).reduce((a,t)=>a-t.amt,0),m=TX().filter(t=>t.date.startsWith(ym)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
+function ov(){const tm=TXM(ym).filter(t=>isTax(t)).reduce((a,t)=>a-t.amt,0),m=TXM(ym).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
 return`${heroHtml(inc,exp,tm)}${quickHtml()}${insightsHtml()}${recentHtml()}<div class="mn"><a onclick="mo(-1)">‹</a><b>${MN[+ym.slice(5)-1]} ${ym.slice(0,4)}</b><a onclick="mo(1)">›</a></div>
 <div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp-tm)}</h3></div></div>${tm?`<small>Tax &amp; zakat paid ${money(tm)} — taken off Net but not counted as spending.</small>`:''}
@@ -413,7 +468,7 @@ return`<div class="dh"><b>${dayLbl(g.d)}</b><small class="${net<0?'r':net>0?'g':
 k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name,color:'#94a3b8'}:t.f?{i:'🏗️',name:'Fixed asset',color:'#94a3b8'}:t.set?{i:'💵',name:'Bill payment',color:'#94a3b8'}:cat(t.cat),h=S.shops.find(y=>y.id==t.shop),a=acc(t.acc);
 return`<div class="rr" onclick="edit('${t.id}')"><span class="ibt" onclick="event.stopPropagation();${!t.tr&&!t.f&&!t.set&&S.cats.find(c=>c.id==t.cat)?`catIco('${t.cat}','${t.g?'':t.id}')`:`edit('${t.id}')`}">${cbadge(k,38)}</span><div class="rrm"><b>${esc(k.name)}</b><small>${h?lg(h)+' '+esc(h.name)+' · ':''}${t.desc&&t.desc!=k.name?esc(t.desc)+' · ':''}${lg(a)} ${esc(a.name)}${t.g?' · 🔗':''}${t.rc?' · 🔁':''}${t.adj?' · ⚖️':''}${isRecd(t)?' · 🔒':''}${t.att&&t.att.length?' · 📎':''}</small></div><span style="text-align:right"><b class="${t.tr?'':v<0?'r':'g'}">${money(v)}</b>${run!=null?`<br><small>${money(run)}</small>`:''}</span></div>`}).join('')}</div>`}).join('')+(total>300?`<small>Showing the newest 300 of ${total}.</small>`:'')}
 function reg(){let run=null;if(fa){const A=acc(fa);run=isL(A)?-(A.open||0):(A.open||0)}
-const all=TX().filter(t=>!fa||t.acc==fa||t.to==fa).sort((a,b)=>a.date.localeCompare(b.date)||a.u-b.u).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
+const all=TXA().filter(t=>!fa||t.acc==fa||t.to==fa).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
 const inP=t=>rmode=='a'||(rmode=='m'&&t.date.startsWith(ym))||(rmode=='r'&&inR(t.date,xf,xt)),
 rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||(t.desc+t.note).toLowerCase().includes(q.toLowerCase()))),
 ids=(LASTIDS=rows.map(x=>x.t).filter(t=>!t.g&&!t.f).map(t=>t.id)),tm=rows.map(x=>x.t).filter(isTax).reduce((a,t)=>a-t.amt,0),cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
@@ -438,7 +493,7 @@ ${miss.length?`<small>No statement for ${MN[+sm-1]} ${sy}: ${miss.map(a=>esc(a.n
 <h4>Filter</h4><div class="two"><select onchange="sy=this.value;render()">${yOpts(sy,1)}</select><select onchange="sm=this.value;render()">${mOpts(sm,1)}</select></div><select onchange="sa=this.value;render()"><option value="">All accounts</option>${opts(stAcc(),sa,a=>esc(a.name))}</select>
 <h4>Upload bank statement</h4><div class="card"><select id="s_acc">${opts(stAcc(),sa,a=>esc(a.name))}</select><div class="two"><select id="s_m">${mOpts(sm||today().slice(5,7))}</select><select id="s_y">${yOpts(sy||today().slice(0,4))}</select></div>
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button><small>Cash accounts don't need statements.</small></div>
-<h4>Statements</h4>${[...l].sort((a,b)=>stM(b).localeCompare(stM(a))).map(x=>`<div class="card fl"><a onclick="pv('${fid(x)}')">📄 ${esc(x.name)}</a><a href="${esc(x.link)}" target="_blank" rel="noopener">↗</a><small>${esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small><a onclick="rcStart('${x.acc}','${stM(x)}')" title="Reconcile with this statement">✔</a><a onclick="stEd('${x.id}')">✏️</a><a onclick="delStm('${x.id}')">🗑</a></div>`).join('')||'<small>No statements for this filter</small>'}`}
+<h4>Statements</h4>${[...l].sort((a,b)=>stM(b).localeCompare(stM(a))).map(x=>`<div class="card fl"><a onclick="pv('${fid(x)}')">📄 ${esc(x.name)}</a><a href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">↗</a><small>${esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small><a onclick="rcStart('${x.acc}','${stM(x)}')" title="Reconcile with this statement">✔</a><a onclick="stEd('${x.id}')">✏️</a><a onclick="delStm('${x.id}')">🗑</a></div>`).join('')||'<small>No statements for this filter</small>'}`}
 function stEd(id){const x=S.stm.find(y=>y.id==id),m=stM(x);
 $('#m').innerHTML=`<div><h3>Edit statement</h3><small>Name</small><input id="e_n" value="${esc(x.name)}"><small>Account (change it if you picked the wrong one)</small><select id="e_a">${opts(S.accs.filter(a=>a.t!='cash'||a.id==x.acc),x.acc,a=>esc(a.name))}</select>
 <div class="two"><div><small>Month</small><select id="e_m">${mOpts(m.slice(5,7))}</select></div><div><small>Year</small><select id="e_y">${yOpts(m.slice(0,4))}</select></div></div>
@@ -524,7 +579,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, budget settings, shops, appearance, backup']];
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, security, backup, error log, shops, appearance']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="${k=='fxa'?"rt='fa';go('rp')":`go('${k}')`}" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
@@ -663,7 +718,7 @@ if(!bl.length)return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="
 const top=bl.filter(x=>x.b.amt>0).sort((a,b)=>b.sp/b.b.amt-a.sp/a.b.amt).slice(0,4);
 return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer"><div class="fl"><span>Monthly budget ${money(tb)}</span><span class="${ts>tb?'r':''}">${tb-ts<0?'Over by '+money(ts-tb):'Left '+money(tb-ts)}</span></div>${barRow(ts,tb)}${top.map(x=>`<div class="fl" style="margin-top:10px"><small>${esc(x.b.name)}</small><small>${money(x.sp)} / ${money(x.b.amt)}</small></div>${barRow(x.sp,x.b.amt)}`).join('')}</div>`}
 function chv(){const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(+ym.slice(0,4),+ym.slice(5)-1-i,1).toLocaleDateString('en-CA').slice(0,7));
-const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)+fxNBV(m+'-31')),by={};
+const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TXM(m).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)+fxNBV(m+'-31')),by={};
 cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
 let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8]}));
 if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
@@ -1310,7 +1365,8 @@ function gItemSave(id,k){const g=S.goals.find(x=>x.id==id),it=[...g.items];it[k]
 function gItemDel(id,k){const g=S.goals.find(x=>x.id==id);put('goals',{...g,items:g.items.filter((_,j)=>j!=k)});closeM()}
 /* ===== SETTINGS ===== */
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
-return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="if(this.value.trim()!=(localStorage.getItem(SU)||'')){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><input value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim())"><button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>`)
+return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="if(this.value.trim()!=(localStorage.getItem(SU)||'')){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><div class="fl"><input id="sk_in" type="password" autocomplete="off" value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim());render()"><a onclick="const e=$('#sk_in');e.type=e.type=='password'?'text':'password'">Show</a></div>${localStorage.getItem(SU)&&!keyInfo(localStorage.getItem(SK)).ok?`<small class="r">⚠ ${keyInfo(localStorage.getItem(SK)).t}</small><button class="s" onclick="newKey()">🔑 Make a strong key</button>`:''}<button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>
+<div class="two"><button class="s" onclick="setupCode()">Setup code for a new device</button><input placeholder="Paste a setup code" onchange="useCode(this.value)"></div>`)
 +det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
 +det('ap','🎨 Appearance',`<small>App name</small>${inp('name')}<small>Your name (for the greeting on Overview)</small>${inp('who')}<div class="two"><div><small>Currency symbol</small>${inp('cur')}</div><div><small>Accent colour</small>${inp('accent','color')}</div></div><small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select>`)
 +det('bu','🎯 Budget settings',`<button class="s" onclick="budEd('')">+ Add custom budget</button>${S.buds.filter(b=>!b.cat).map(b=>`<div class="fl" onclick="budEd('${b.id}')" style="cursor:pointer;margin:8px 0"><span>${esc(b.name)}</span><span>${money(b.amt)}</span></div>`).join('')}<small>Warn when spending reaches (%)</small><input type="number" value="${S.cfg.bw||80}" onchange="cfg('bw',parseFloat(this.value)||80)"><small>Monthly budget per expense category (repeats every month)</small>${catsOf('e').map(c=>`<div class="fl"><span>${isMain(c)?'':'　↳ '}<span class="ibt" onclick="catIco('${c.id}')">${cbadge(c,22)}</span> ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${(S.buds.find(b=>b.cat==c.id)||{}).amt||''}" style="width:120px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>`).join('')}<small>Manage categories in More › Category manager.</small>`)
@@ -1321,7 +1377,14 @@ return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(
 +det('lk','👥 Linked ledgers (monitor each other)',`${links().map(l=>`<div class="fl" style="margin:6px 0"><span>👁 ${esc(l.name)}</span><a onclick="delLink('${l.id}')">✕</a></div>`).join('')||'<small>No linked ledgers yet</small>'}<h4>Add a ledger</h4><input id="lk_n" placeholder="Name (e.g. Aisyah)"><input id="lk_u" placeholder="Their Web App URL"><input id="lk_k" placeholder="Their view key"><button class="s" onclick="addLink()">Add</button><small>They set up their own copy of the app and share the Web App URL and view key with you. You can view their ledger from the switch at the top; it is read only.</small>`)
 +det('sh',`🛒 Shops &amp; brands (${S.shops.length})`,S.shops.map(x=>`<div class="row5" style="grid-template-columns:44px 1fr 64px 36px"><span class="lgl ibt" title="Choose an icon" onclick="shopIco('${x.id}')">${lg(x)}</span><input value="${esc(x.name)}" onchange="upd('shops','${x.id}','name',this.value)"><label class="s" style="font-size:11px;text-align:center;cursor:pointer;color:var(--acc)">Logo…<input type="file" accept="image/*" hidden onchange="logoUp('shops','${x.id}',this.files[0])"></label><button class="d" onclick="rm('shops','${x.id}')">×</button></div>`).join('')+`<button class="s" onclick="put('shops',{id:uid(),name:'New shop',i:'🏷️',color:'#94a3b8'})">+ Add shop</button>`)
 +det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${catOpts('e',S.cfg.gFuel||'c8')}</select><select onchange="cfg('gSvc',this.value)">${catOpts('e',S.cfg.gSvc||'c9')}</select></div><small>Fuel category · service category</small><small>Tap a 🔗 entry in the Register to edit it here without changing Garage.</small>${S.govr.some(o=>o.h)?`<button class="s" onclick="gRestore()">Restore ${S.govr.filter(o=>o.h).length} hidden</button>`:''}`)
-+det('bk','💾 Backup',`<button class="s" onclick="exp()">Export JSON</button><input type="file" accept=".json" onchange="imp(this.files[0])">`)}
++det('se','🛡️ Security &amp; privacy',`<button onclick="secView()">Run the security check</button>
+<div class="fl"><span>🔒 PIN lock on this device</span>${pinRec()?'<a onclick="pinOff()">Turn off</a>':'<a onclick="pinSet()">Turn on</a>'}</div>${pinRec()?`<small>Lock after the app has been in the background for</small><select onchange="pinAfter(this.value)">${[[0,'Straight away'],[1,'1 minute'],[5,'5 minutes'],[15,'15 minutes']].map(([v,n])=>`<option value="${v}" ${(pinRec().after??1)==v?'selected':''}>${n}</option>`).join('')}</select><button class="s" onclick="pinSet()">Change PIN</button>`:''}
+<button class="d" onclick="signOut()">Sign out of this device</button><small>Removes the ledger, keys and Google access from this device only.</small>`)
++det('bk','💾 Backup &amp; restore',`<small>${localStorage.getItem('ledger.lbk')?'Last Google Drive backup: '+ago(+localStorage.getItem('ledger.lbk')):'Your Google script makes a daily backup once it is updated.'}</small>
+<button onclick="bkView()">Backups &amp; restore</button><div class="two"><button class="s" onclick="exp()">Download (JSON)</button><button class="s" onclick="csvTx()">Transactions (CSV)</button></div>
+<small>Lost or reset phone? Install the app, then enter your Web App URL and secret key (or paste a setup code) — everything syncs back from your Google Sheet.</small>
+${logoSize()>15000?`<button class="s" onclick="shrinkLogos()">Make uploaded logos smaller (${Math.round(logoSize()/1024)} KB)</button>`:''}`)
++det('lg',`🪵 Error log (${logs().length})`,`<button class="s" onclick="logView()">Open the error log</button><button class="s" onclick="fileCheck()">📎 Check receipt &amp; statement links</button><small>Finds attached files that were deleted or moved to the Drive trash.</small>`)}
 
 /* ---------- transaction form ---------- */
 function edit(id,pre){const t=TX().find(x=>x.id==id);
@@ -1337,7 +1400,7 @@ $('#m').innerHTML=`<div><h3>${t?'Edit':'New'} transaction</h3>${!t&&RCADD?`<smal
 <label class="fl"><span>Already owned (don't take it from an account)</span><input type="checkbox" id="fx_own" style="width:auto"></label></div>
 <select id="f_tag"><option value="">Tax relief: none</option>${RLS.filter(r=>r.tag).map(r=>`<option value="${r.k}" ${cur.tag==r.k?'selected':''}>${esc(r.n)}</option>`).join('')}<option value="don" ${cur.tag=='don'?'selected':''}>Donation to an approved institution</option><option value="zakat" ${cur.tag=='zakat'?'selected':''}>Zakat / fitrah</option></select>
 <input id="f_note" placeholder="Note" value="${esc(cur.note)}">
-${cur.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(a.link)}" target="_blank" rel="noopener">↗</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
+${cur.att.map(a=>`<div class="fl"><a onclick="pv('${a.id}')">📎 ${esc(a.name)}</a><a href="${esc(safeUrl(a.link))}" target="_blank" rel="noopener noreferrer">↗</a><a onclick="cur.rem.push('${a.id}');cur.att=cur.att.filter(x=>x.id!='${a.id}');event.target.parentElement.remove()">✕</a></div>`).join('')}
 <small>Attach receipts (PDF or image) — saved to Google Drive</small><input id="f_files" type="file" multiple accept="image/*,application/pdf">
 <button onclick="saveTx('${cur.id}')">Save</button>${t&&t.g?`<button class="s" onclick="gReset('${cur.id}')">Reset to Garage</button><button class="d" onclick="gHide('${cur.id}')">Hide from Ledger</button>`:t?`<button class="d" onclick="delTx('${cur.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;
 $('#m').className='modal show';tg()}
@@ -1362,8 +1425,112 @@ async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,
 try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
 for(const x of files){const r=await upload(x,d,safe(`${y}-${m}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a,month:y+'-'+m,name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
 catch(e){setStatus('Upload failed: '+e.message)}}
-function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='ledger-backup.json';a.click()}
-async function imp(f){if(!f)return;try{merge(JSON.parse(await f.text()));save()}catch(e){setStatus('Bad file')}}
+function dl_(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function exp(){dl_(new Blob([JSON.stringify(ME||S)],{type:'application/json'}),'ledger-'+today()+'.json')}
+// CSV of every transaction, for Excel / Google Sheets / an accountant
+function csvTx(){const q=v=>{v=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(v)&&isNaN(+v))v="'"+v;return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const rows=[['Date','Description','Amount','Type','Category','Main category','Account','To account','Shop','Note','Receipts']].concat(TXA().map(t=>[t.date,t.desc,t.amt.toFixed(2),t.tr?'Transfer':t.amt<0?'Expense':'Income',t.tr?'':cat(t.cat).name,t.tr?'':cat(mainOf(t.cat)).name,acc(t.acc).name,t.to?acc(t.to).name:'',(S.shops.find(x=>x.id==t.shop)||{}).name||'',t.note||'',(t.att||[]).map(a=>a.link).join(' ')]));
+dl_(new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}),'ledger-transactions-'+today()+'.csv');setStatus(TXA().length+' transactions exported')}
+/* safety copies kept on this device (IndexedDB) before anything replaces the local ledger */
+const idb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('ledger-safe',1);r.onupgradeneeded=()=>r.result.createObjectStore('copies',{keyPath:'t'});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
+async function safeCopy(why){try{const db=await idb(),d=JSON.parse(JSON.stringify(ME||S));await new Promise((ok,no)=>{const tx=db.transaction('copies','readwrite'),st=tx.objectStore('copies');st.put({t:Date.now(),why,n:d.tx.length,d});
+const ks=st.getAllKeys();ks.onsuccess=()=>{ks.result.sort((a,b)=>b-a).slice(5).forEach(k=>st.delete(k))};tx.oncomplete=ok;tx.onerror=()=>no(tx.error)});return true}catch(e){logErr('backup','Could not keep a safety copy on this device',e.message);return false}}
+async function safeList(){try{const db=await idb();return await new Promise(ok=>{const r=db.transaction('copies').objectStore('copies').getAll();r.onsuccess=()=>ok(r.result.sort((a,b)=>b.t-a.t));r.onerror=()=>ok([])})}catch(e){return[]}}
+async function safeGet(t){const l=await safeList(),x=l.find(c=>c.t==t);if(x)dl_(new Blob([JSON.stringify(x.d)],{type:'application/json'}),'ledger-safety-copy-'+new Date(t).toLocaleDateString('en-CA')+'.json')}
+// a restore happened: keep a copy of what is here, empty the local ledger and download everything again
+async function reloadAll(ep,msg){await safeCopy('before loading a restored ledger');setStatus(msg);const c=S.cfg;S=norm({cfg:{...c,u:0}});txDirty();
+['ledger.sent','ledger.rev'].forEach(k=>localStorage.removeItem(k));localStorage.setItem('ledger.ep',ep);persist();render();await sync()}
+const fmtT=t=>new Date(t).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),ago=t=>{const h=(Date.now()-t)/36e5;return h<1?'less than an hour ago':h<48?Math.round(h)+' hours ago':Math.round(h/24)+' days ago'};
+async function bkView(){const m=$('#m');m.className='modal show';m.innerHTML='<div><small>Loading your backups…</small></div>';let l=[],err='';
+try{l=(await scriptReq('backups')).list||[]}catch(e){err=e.message}const sc=await safeList();
+m.innerHTML=`<div style="max-width:560px"><h3>💾 Backups</h3><small>Your Google script keeps one copy of the whole ledger per day in Google Drive › <b>Ledger backups</b> (the newest 60). Restoring puts that copy back on <b>every</b> device; a copy of the current ledger is saved first, so a restore can be undone.</small>
+${err?`<div class="card r">${esc(err)}</div>`:''}<button onclick="bkNow()">Back up to Google Drive now</button>
+<h4>In Google Drive (${l.length})</h4>${l.map(b=>`<div class="card fl"><span><b>${fmtT(b.t)}</b><br><small>${esc(b.info||'')} · ${Math.round(b.size/1024)} KB · ${esc((b.name.match(/-(auto|daily|manual|first|before-restore)\.json/)||[])[1]||'')}</small></span><button class="s" style="width:auto" onclick="bkRestore('${String(b.id).replace(SAFEID,'')}','${fmtT(b.t)}')">Restore</button></div>`).join('')||(err?'':'<small>No backups yet — tap “Back up to Google Drive now”.</small>')}
+<h4>Safety copies on this device (${sc.length})</h4><small>Made automatically before a restore replaces what is here.</small>${sc.map(c=>`<div class="card fl"><span><b>${fmtT(c.t)}</b><br><small>${esc(c.why)} · ${c.n} transactions</small></span><button class="s" style="width:auto" onclick="safeGet(${c.t})">Download</button></div>`).join('')}
+<h4>From a file</h4><small>A .json file downloaded from Ledger (Settings › Backup › Download).</small><input type="file" accept=".json,application/json" onchange="fileRestore(this.files[0])">
+<button class="s" onclick="closeM()">Close</button></div>`}
+async function bkNow(){setStatus('Backing up…');try{await scriptReq('backup');localStorage.setItem('ledger.lbk',String(Date.now()));setStatus('Backed up to Google Drive');bkView()}catch(e){setStatus('Backup failed: '+e.message)}}
+async function bkRestore(id,when){if(!confirm(`Restore the ledger from ${when}?\n\nEverything recorded after that time will be replaced on all your devices. A copy of the current ledger is saved first, so you can undo this.`))return;
+setStatus('Restoring…');try{flush();await safeCopy('before restoring '+when);const r=await scriptReq('restore',{fid:id});closeM();await reloadAll(r.ep,'Restored '+r.n+' transactions from '+when)}catch(e){setStatus('Restore failed: '+e.message)}}
+async function fileRestore(f){if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(e){return setStatus('Bad file — that is not a Ledger backup')}
+if(!d||!d.cfg||!Array.isArray(d.tx))return setStatus('Bad file — that is not a Ledger backup');
+if(!confirm(`Restore ${d.tx.length} transactions from “${f.name}”?\n\nThis replaces the ledger${localStorage.getItem(SU)?' on all your devices':' on this device'}. A copy of the current ledger is saved first.`))return;
+flush();await safeCopy('before restoring '+f.name);clean(d);
+if(localStorage.getItem(SU)){try{setStatus('Restoring…');const r=await scriptReq('restore',{data:d});closeM();await reloadAll(r.ep,'Restored '+r.n+' transactions from the file')}catch(e){setStatus('Restore failed: '+e.message)}return}
+S=norm(d);txDirty();persist();closeM();render();setStatus('Restored '+d.tx.length+' transactions')}
+async function imp(f){return fileRestore(f)}
+/* a setup code moves the sync settings to a new phone in one paste (it contains the secret key) */
+function setupCode(){const c='LEDGER1:'+btoa(unescape(encodeURIComponent(JSON.stringify({u:localStorage.getItem(SU)||'',k:localStorage.getItem(SK)||'',c:localStorage.getItem(CID)||''}))));
+$('#p').className='modal show';$('#p').innerHTML=`<div><h3>Setup code</h3><small>Paste this on a new phone or computer (Settings › Google Sheet sync › Paste a setup code) and it syncs your ledger straight away. <b class="r">It contains your secret key — keep it in a password manager, never in a chat or e-mail.</b></small><textarea rows="4" readonly onclick="this.select()">${esc(c)}</textarea><button onclick="navigator.clipboard&&navigator.clipboard.writeText('${c}').then(()=>setStatus('Copied'))">Copy</button><button class="s" onclick="$('#p').className='modal'">Close</button></div>`}
+function useCode(v){v=String(v||'').trim();if(!v)return;try{const j=JSON.parse(decodeURIComponent(escape(atob(v.replace(/^LEDGER1:/,'')))));if(!j.u)throw 0;
+localStorage.setItem(SU,j.u);localStorage.setItem(SK,j.k||'');if(j.c)localStorage.setItem(CID,j.c);['ledger.sent','ledger.rev'].forEach(k=>localStorage.removeItem(k));setStatus('Setup code accepted — syncing');render();sync()}catch(e){setStatus('That setup code is not valid')}}
+/* secret key strength */
+function keyInfo(k){k=k||'';const kinds=[/[a-z]/,/[A-Z]/,/\d/,/[^\w]/].filter(r=>r.test(k)).length;if(!k)return{ok:0,t:'No secret key set'};if(k.length<12||(k.length<20&&kinds<3))return{ok:0,t:`Your secret key is easy to guess (${k.length} characters). Anyone who guesses it can read and change your ledger.`};return{ok:1,t:'Secret key is strong'}}
+function newKey(){const a=new Uint8Array(18);crypto.getRandomValues(a);const k=btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_');
+$('#p').className='modal show';$('#p').innerHTML=`<div><h3>🔑 A strong secret key</h3><input value="${k}" readonly onclick="this.select()"><button class="s" onclick="navigator.clipboard&&navigator.clipboard.writeText('${k}').then(()=>setStatus('Copied'))">Copy key</button>
+<div class="card"><small><b>1.</b> In the Apps Script editor, replace the text between the quotes in <code>const KEY = '…'</code> with this key.<br><b>2.</b> Deploy › Manage deployments › ✏️ › Version: <b>New version</b> › Deploy.<br><b>3.</b> Tap the button below on this device.<br><b>4.</b> On your other devices, paste the new key in Settings › Google Sheet sync (or use a setup code).</small></div>
+<button onclick="localStorage.setItem(SK,'${k}');$('#p').className='modal';setStatus('New key saved on this device');render();sync()">I've updated the script — use this key here</button><button class="s" onclick="$('#p').className='modal'">Cancel</button></div>`}
+/* app PIN: a lock screen on this device. It hides the app; it does not encrypt the data. */
+const pinRec=()=>{try{return JSON.parse(localStorage.getItem('ledger.pin')||'null')}catch(e){return null}};
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+let PINBAD=0,PINWAIT=0,HIDT=0;
+function lockNow(){if(!pinRec())return;const l=$('#lock');l.className='show';document.body.classList.remove('blur');const i=$('#pin_in');i.value='';$('#pin_msg').textContent='';setTimeout(()=>i.focus(),50)}
+async function unlock(v){if(Date.now()<PINWAIT){$('#pin_msg').textContent='Wait a moment, then try again';return}const p=pinRec();if(!p)return;
+if(await sha(p.s+v)==p.h){PINBAD=0;$('#lock').className='';$('#pin_in').value='';pull(1);return}
+if(v.length>=(p.n||4)){PINBAD++;$('#pin_in').value='';if(PINBAD>=5){PINWAIT=Date.now()+30000*(PINBAD-4);$('#pin_msg').textContent='Too many tries — wait '+30*(PINBAD-4)+' seconds'}else $('#pin_msg').textContent='Wrong PIN'}}
+async function pinSet(){const a=prompt('Choose a PIN (4–8 digits)');if(a==null)return;if(!/^\d{4,8}$/.test(a))return setStatus('The PIN must be 4 to 8 digits');const b=prompt('Type the PIN again');if(b!==a)return setStatus('The PINs did not match');
+const a8=new Uint8Array(8);crypto.getRandomValues(a8);const salt=[...a8].map(x=>x.toString(16)).join('');localStorage.setItem('ledger.pin',JSON.stringify({s:salt,h:await sha(salt+a),n:a.length,after:+(pinRec()||{}).after||1}));setStatus('PIN lock is on for this device');render()}
+function pinOff(){if(!confirm('Turn off the PIN lock on this device?'))return;localStorage.removeItem('ledger.pin');setStatus('PIN lock is off');render()}
+function pinAfter(v){const p=pinRec();if(!p)return;p.after=+v;localStorage.setItem('ledger.pin',JSON.stringify(p))}
+function pinForgot(){if(!confirm('Forgot your PIN?\n\nThe only way in is to sign this device out. Your ledger stays safe in your Google Sheet: after signing out, enter your Web App URL and secret key (or a setup code) and it syncs back. Changes made on this device since the last sync are lost.\n\nSign out this device now?'))return;signOut(1)}
+document.addEventListener('visibilitychange',()=>{const p=pinRec();if(!p)return;if(document.hidden){HIDT=Date.now();document.body.classList.add('blur')}else{document.body.classList.remove('blur');if(Date.now()-HIDT>=(p.after??1)*60000)lockNow()}});
+/* sign out: removes the ledger, keys and Google access from this device only */
+async function signOut(force){if(!force&&!confirm('Sign out of this device?\n\nThis removes your ledger, sync key and Google access from this device only. Your data stays in your Google Sheet and on your other devices.'))return;
+if(!force&&localStorage.getItem(SU)){flush();try{await sync()}catch(e){}if(LASTERR&&!confirm('The last sync failed, so recent changes on this device may not be in your Sheet yet. Sign out anyway?'))return}
+try{if(tok&&window.google)google.accounts.oauth2.revoke(tok,()=>{})}catch(e){}tok=null;clearTimeout(PT);PT=null;
+Object.keys(localStorage).filter(k=>k.startsWith('ledger.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe')}catch(e){}
+try{caches&&caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)))}catch(e){}location.replace(location.pathname)}
+/* security check */
+async function secView(){const k=keyInfo(localStorage.getItem(SK)),lbk=+(localStorage.getItem('ledger.lbk')||0),pin=!!pinRec(),u=localStorage.getItem(SU),L=logs().filter(x=>Date.now()-x.t<7*864e5),
+pers=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted().catch(()=>false):false,used=(localStorage.getItem(K)||'').length,
+I=(ok,t,d,b)=>`<div class="chk"><span>${ok==1?'✅':ok==2?'ℹ️':'⚠️'}</span><div><b>${t}</b>${d?`<small>${d}</small>`:''}${b||''}</div></div>`;
+$('#m').className='modal show';$('#m').innerHTML=`<div style="max-width:560px"><h3>🛡️ Security check</h3>
+${I(location.protocol=='https:'?1:0,location.protocol=='https:'?'Secure connection (HTTPS)':'Not using HTTPS','In GitHub › your repository › Settings › Pages, tick <b>Enforce HTTPS</b>. The app also switches itself to HTTPS.')}
+${I(u?k.ok:2,u?k.t:'Google Sheet sync is not set up',u&&!k.ok?'Use a long random key. Change it in the script and on every device.':'',u&&!k.ok?'<button class="s" onclick="newKey()">Make a strong key</button>':'')}
+${I(u?(oldScript?0:1):2,u?(oldScript?'Your Google script is out of date':'Google script is up to date'):'No Google script','The newest script adds backups and slows down key guessing.')}
+${I(lbk&&Date.now()-lbk<2*864e5?1:0,lbk?'Last backup in Google Drive: '+ago(lbk):'No backup in Google Drive yet','Backups are made once a day by your Google script. Run <b>authorize</b> once in the Apps Script editor to switch on the daily backup.','<button class="s" onclick="bkView()">Backups</button>')}
+${I(pin?1:0,pin?'PIN lock is on for this device':'No PIN lock on this device','Anyone who picks up your unlocked phone can open the app. A PIN hides it; it does not replace your phone lock.',pin?'':'<button class="s" onclick="pinSet()">Turn on PIN lock</button>')}
+${I(pers?1:2,pers?'This browser keeps your data even when storage is low':'The browser may clear this app’s storage when the phone is low on space','Your data is safe in the Google Sheet and comes back on the next sync. Installing the app on the home screen makes clearing less likely.')}
+${I(1,'Google Drive access is limited','Ledger only sees files it created in your Drive (drive.file permission) and keeps the sign-in in memory, never on disk.')}
+${I(links().length?2:1,'Linked ledgers: '+links().length,'Your own VIEW_KEY lets people read your whole ledger. Share it only with people you trust, and change it in the script if it leaks.')}
+${I(document.querySelector('meta[http-equiv="Content-Security-Policy"]')?1:0,'Content security policy is active','The app only talks to Google, the PDF reader and the gold price service.')}
+${I(used<3.5e6?1:0,'Storage used on this device: '+Math.round(used/1024)+' KB',used<3.5e6?'':'Close to the browser limit (about 5 MB). Make uploaded logos smaller in Settings › Backup.')}
+${I(L.length?0:1,L.length?L.length+' errors in the last 7 days':'No errors in the last 7 days','',L.length?'<button class="s" onclick="logView()">See the error log</button>':'')}
+<button class="d" onclick="signOut()">Sign out of this device</button><button class="s" onclick="closeM()">Close</button></div>`}
+/* error log viewer */
+function logView(){const l=logs().slice().reverse(),by={};l.forEach(x=>by[x.a]=(by[x.a]||0)+1);
+$('#m').className='modal show';$('#m').innerHTML=`<div style="max-width:620px"><h3>🪵 Error log</h3><small>The last ${l.length} problems on this device (${dev()}). They are also sent to the <b>Log</b> tab of your Google Sheet when you sync, so you can see problems from every device in one place.</small>
+<div class="seg">${Object.entries(by).map(([a,n])=>`<a>${esc(a)} · ${n}</a>`).join('')}</div>
+${l.slice(0,100).map(x=>`<div class="logl"><b>${fmtT(x.t)}</b> · <span class="chip">${esc(x.a)}</span><br>${esc(x.m)}${x.d?`<br><small>${esc(x.d)}</small>`:''}</div>`).join('')||'<small>No errors recorded. 🎉</small>'}
+<button class="s" onclick="navigator.clipboard&&navigator.clipboard.writeText(logs().map(x=>new Date(x.t).toISOString()+' ['+x.a+'] '+x.m+(x.d?' — '+x.d:'')).join('\\n')).then(()=>setStatus('Copied'))">Copy all</button>
+<button class="s" onclick="if(confirm('Clear the error log on this device?')){localStorage.removeItem(LOGK);logView()}">Clear</button><button class="s" onclick="closeM()">Close</button></div>`}
+/* checks every receipt, statement and payslip link against Google Drive */
+function fileRefs(){const o=[],add=(id,where,fix)=>{if(id)o.push({id:String(id),where,fix})};
+S.tx.forEach(t=>(t.att||[]).forEach(a=>add(a.id,{k:'tx',id:t.id,t:fmtD(t.date)+' · '+(t.desc||'transaction')},{k:'tx',p:t.id,a:a.id})));
+S.stm.forEach(x=>add(fid(x),{k:'stm',id:x.id,t:'Statement · '+(x.name||'')},{k:'stm',p:x.id}));
+S.pay.forEach(p=>(p.att||[]).forEach(a=>add(a.id,{k:'pay',id:p.id,t:'Payslip · '+(p.date||'')},{k:'pay',p:p.id,a:a.id})));
+GT.forEach(t=>(t.att||[]).forEach(a=>add(a.id,{k:'g',id:t.id,t:'Garage · '+fmtD(t.date)+' · '+t.desc},null)));return o}
+let FCK=null;
+async function fileCheck(){const refs=fileRefs(),ids=[...new Set(refs.map(r=>r.id))],bad={};if(!ids.length)return setStatus('No attached files to check');
+const m=$('#m');m.className='modal show';try{for(let i=0;i<ids.length;i+=100){m.innerHTML=`<div><h3>Checking files…</h3><small>${Math.min(i+100,ids.length)} of ${ids.length}</small></div>`;Object.assign(bad,(await scriptReq('check',{fids:ids.slice(i,i+100)})).bad||{})}}
+catch(e){m.innerHTML=`<div><h3>File check</h3><p class="r">${esc(e.message)}</p><button class="s" onclick="closeM()">Close</button></div>`;return}
+FCK=refs.filter(r=>bad[r.id]).map(r=>({...r,why:bad[r.id]}));if(FCK.length)logErr('drive',FCK.length+' attached files are missing or in the Drive trash');fileDraw(ids.length)}
+function fileDraw(n){const l=FCK||[],W={missing:'deleted or not shared with you',trash:'in the Drive trash',bad:'not a Drive file'};
+$('#m').innerHTML=`<div style="max-width:560px"><h3>📎 File check</h3>${l.length?`<small>${l.length} of ${n||'your'} linked files cannot be opened. Restore them from the Drive trash, or remove the broken link.</small>`:`<p class="g">✔ All ${n||''} linked files are fine.</p>`}
+${l.map((r,i)=>`<div class="card"><b>${esc(r.where.t)}</b><br><small class="r">${W[r.why]||r.why}</small><div class="fl">${r.where.k=='tx'?`<a onclick="closeM();edit('${r.where.id}')">Open entry</a>`:'<span></span>'}${r.fix?`<a onclick="fileFix(${i})">Remove link</a>`:'<small>Fix it in Garage</small>'}</div></div>`).join('')}
+${l.filter(r=>r.fix).length>1?`<button class="s" onclick="fileFix(-1)">Remove all ${l.filter(r=>r.fix).length} broken links</button>`:''}<button class="s" onclick="closeM()">Close</button></div>`}
+function fileFix(i){const L=i<0?FCK.filter(r=>r.fix):[FCK[i]];L.forEach(r=>{const f=r.fix,x=S[f.k].find(y=>y.id==f.p);if(!x)return;if(f.k=='stm'){x.fid='';x.link='';x.u=now()}else{x.att=(x.att||[]).filter(a=>a.id!=f.a);x.u=now()}});
+FCK=FCK.filter(r=>!L.includes(r));save();setStatus(L.length+' broken link'+(L.length==1?'':'s')+' removed');$('#m').className='modal show';fileDraw()}
 
 (()=>{const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d'),A='#4f8cff';x.fillStyle='#000';x.fillRect(0,0,180,180);
 x.strokeStyle=A;x.lineWidth=8;x.lineJoin=x.lineCap='round';const rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,h,r):x.rect(a,b,w,h)};
@@ -1378,8 +1545,13 @@ if(window.innerWidth<700)rv='r';
 document.addEventListener('touchstart',e=>{y0=window.scrollY<=0&&!document.querySelector('.modal.show')?e.touches[0].clientY:null;pulled=0},{passive:true});
 document.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0,el=ind();if(!el)return;if(d>10){pulled=d;el.style.transform=`translate(-50%,${Math.min(d,90)-40}px) rotate(${d*3}deg)`;el.style.opacity=Math.min(1,d/70)}},{passive:true});
 document.addEventListener('touchend',()=>{const el=ind();if(el){el.style.transform='';el.style.opacity=0}if(y0!=null&&pulled>70){haptic(15);toast('Syncing…');pull(1)}y0=null;pulled=0})})();
-const APP_V='2026-11-15.1';let lastPull=0;
+let lastPull=0;
 function pull(force){if(!localStorage.getItem(SU)||RO()||busy||document.hidden)return;if(!force&&Date.now()-lastPull<20000)return;lastPull=Date.now();sync()}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});window.addEventListener('focus',()=>pull());window.addEventListener('pageshow',()=>pull());window.addEventListener('online',()=>pull(1));setInterval(()=>pull(),120000);
+{const k0=RTI[location.hash.slice(1)];if(k0)tab=k0;else try{history.replaceState({t:tab},'','#'+RT[tab])}catch(e){}}
+addEventListener('popstate',()=>{const m=$('#p.show')||$('#m.show');if(m){MBACK=1;m.className='modal';return}const k=RTI[location.hash.slice(1)];if(k&&k!=tab)go(k,1)});
+let MBACK=0;try{const was={};new MutationObserver(()=>{['m','p'].forEach(id=>{const o=document.getElementById(id).classList.contains('show');if(o&&!was[id]){try{history.pushState({m:id},'',location.href)}catch(e){}}
+else if(!o&&was[id]){if(MBACK)MBACK=0;else if(history.state&&history.state.m==id)try{history.back()}catch(e){}}was[id]=o})}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}catch(e){}
+if(pinRec())lockNow();
 render();setTimeout(goldAuto,1500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}
 </script></body></html>
