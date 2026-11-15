@@ -261,7 +261,7 @@ ${O.mode=='type'?sel('type','Type column'):''}${O.mode=='dc'?sel('deb','Debit (m
 <h4>Preview</h4><div class="tw"><table><tr><th>Date<th>Description<th>Category<th>Account<th class="n">Amount</tr>${all.slice(0,5).map(x=>x?`<tr><td>${x.date}<td>${esc(x.desc)}<td>${esc(x.cat)}<td>${esc(x.acc||'(default)')}<td class="n ${x.amt<0?'r':'g'}">${money(x.amt)}`:'<tr><td colspan="5"><small>row skipped</small>').join('')}</table></div>
 <small>${okN} of ${IM.rows.length} rows can be imported.</small>${O.go=='rec'?`<button onclick="imMatch()" ${okN?'':'disabled'}>Match ${okN} lines against ${esc(acc(O.racc).name)}</button><small>Nothing is imported. Lines that match a transaction are ticked; lines that don't are listed so you can add them.</small>`:`<button onclick="imGo()" ${okN?'':'disabled'}>Import ${okN} transactions</button>`}<button class="s" onclick="IM=null;render()">Cancel</button>`}
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],PAL=['#4f8cff','#34c38f','#f59e0b','#f46a6a','#a855f7','#14b8a6','#ec4899','#94a3b8'];
-const stM=s=>s.month||(s.from||'').slice(0,7),stAcc=()=>S.accs.filter(a=>a.t!='cash');
+const stFor=(x,id)=>x.acc==id||(x.also||[]).includes(id),stNames=x=>[x.acc,...(x.also||[])].map(id=>acc(id).name).join(' + '),stM=s=>s.month||(s.from||'').slice(0,7),stAcc=()=>S.accs.filter(a=>a.t!='cash');
 const yrs=()=>{const y=new Date().getFullYear(),a=S.stm.map(s=>+stM(s).slice(0,4)).filter(Boolean),lo=Math.min(y-2,...a),o=[];for(let i=y+1;i>=lo;i--)o.push(i);return o};
 const mOpts=(sel,all)=>(all?'<option value="">All months</option>':'')+MN.map((n,i)=>{const v=String(i+1).padStart(2,'0');return`<option value="${v}" ${sel==v?'selected':''}>${n}</option>`}).join('');
 const yOpts=(sel,all)=>(all?'<option value="">All years</option>':'')+yrs().map(y=>`<option value="${y}" ${sel==y?'selected':''}>${y}</option>`).join('');
@@ -499,7 +499,7 @@ const tf=act.reduce((a,x)=>a+x.funded,0),tt=act.reduce((a,x)=>a+x.target,0),nx=a
 return pulse({k:'Saved towards your goals',v:money(tf),chip:`<span class="tc up">${Math.round(tt?tf/tt*100:0)}% of ${money(tt)}</span>`,sub:(nx?`Next: ${esc(nx.g.name)} — ${money(nx.target-nx.funded)} to go${nx.g.date?' by '+fmtD(nx.g.date):''}`:'All goals funded 🎉')+(r.i>0?` · This month you kept ${Math.round(r.s/r.i*100)}% of your income`:''),viz:ring(tt?tf/tt:0,'var(--g)',66)})}
 function avP(){const P=planCalc(ym),free=Math.max(0,P.inc-P.com-P.sav-P.bud),cur=ym==today().slice(0,7),left=cur?dim(ym)-+today().slice(8)+1:dim(ym);
 return pulse({k:'Free to spend this month',v:money(free),chip:P.inc>0?`<span class="tc ${free/P.inc>=0.1?'up':'dn'}">${Math.round(free/P.inc*100)}% of income</span>`:'',sub:`About ${money(free/Math.max(1,left))} a day${cur?' for the rest of the month':''} after commitments, savings and budgets`,viz:ring(P.inc>0?free/P.inc:0,'var(--g)',66)})}
-const PUL={tx:regP,ac:acP,rc:rcP,rp:rpP,bd:bdP,sv:()=>GV?'':svP(),avl:avP};
+const PUL={rcn:cmbBanner,tx:regP,ac:acP,rc:rcP,rp:rpP,bd:bdP,sv:()=>GV?'':svP(),avl:avP};
 function pulseFor(k){if(RO()||!PUL[k])return'';try{return PUL[k]()}catch(e){logErr('app','Summary card failed: '+e.message,k);return''}}
 
 /* ===== ACHIEVEMENTS ===== */
@@ -584,14 +584,14 @@ if(rv=='r')return head+recordsHtml(rows.slice().reverse().slice(0,300),fa,rows.l
 return head+(selMode?selInfo(ids,rows.length):'')+`<div class="tw"><table><tr>${selMode?`<th><input type="checkbox" onclick="selAll(this.checked)" ${ids.length&&ids.every(i=>SELS.has(i))?'checked':''} style="width:auto;margin:0">`:''}<th>Date<th>Description<th>Category<th>Shop<th>Account<th class="n">Amount<th class="n">${fa?'Balance':''}</tr>
 ${rows.slice().reverse().slice(0,300).map(({t,run})=>{const k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name}:t.f?{i:'🏗️',name:'Fixed asset'}:t.set?{i:'💵',name:'Bill payment'}:cat(t.cat),h=S.shops.find(x=>x.id==t.shop),a=acc(t.acc),v=t.tr&&fa?dl(t,fa):t.amt;
 return`<tr onclick="${selMode&&!t.g&&!t.f?`selTog('${t.id}')`:`edit('${t.id}')`}">${selMode?(!t.g&&!t.f?`<td><input type="checkbox" ${SELS.has(t.id)?'checked':''} onclick="event.stopPropagation();selTog('${t.id}')" style="width:auto;margin:0">`:'<td>'):''}<td>${t.date}<td>${t.g?(t.ov?'🔗✏️ ':'🔗 '):''}${t.rc?'🔁 ':''}${t.adj?'⚖️ ':''}${isRecd(t)?'🔒 ':''}${h&&(h.logo||logoDom(h.name))?'':ico(t.desc)}${esc(t.desc)} ${t.att&&t.att.length?'📎':''}<td>${!t.tr&&!t.f&&!t.set&&S.cats.find(c=>c.id==t.cat)?`<span class="ibt" title="Change icon" onclick="event.stopPropagation();catIco('${t.cat}','${t.g||t.f?'':t.id}')">${cbadge(k,24)}</span>`:k.i} ${esc(k.name)}<td>${h?`<span class="ibt" title="Change icon" onclick="event.stopPropagation();shopIco('${h.id}')">${lg(h)}</span> `+esc(h.name):''}<td><span class="ibt" title="Change icon" onclick="event.stopPropagation();accIco('${a.id}')">${lg(a)}</span> ${esc(a.name)}<td class="n ${t.tr?'':v<0?'r':'g'}">${money(v)}<td class="n">${run!==null?money(run):''}`}).join('')||'<tr><td colspan="7"><small>No transactions in this period — tap +</small>'}</table></div>${selMode?selBar():''}`}
-function stv(){const l=S.stm.filter(x=>{const m=stM(x);return(!sy||m.slice(0,4)==sy)&&(!sm||m.slice(5,7)==sm)&&(!sa||x.acc==sa)}),
-miss=sy&&sm?stAcc().filter(a=>['debit','credit'].includes(grp(a))&&!S.stm.some(x=>x.acc==a.id&&stM(x)==sy+'-'+sm)):[];
+function stv(){const l=S.stm.filter(x=>{const m=stM(x);return(!sy||m.slice(0,4)==sy)&&(!sm||m.slice(5,7)==sm)&&(!sa||stFor(x,sa))}),
+miss=sy&&sm?stAcc().filter(a=>['debit','credit'].includes(grp(a))&&!S.stm.some(x=>stFor(x,a.id)&&stM(x)==sy+'-'+sm)):[];
 return`<div class="row3"><div class="card">Statements<h3>${l.length}</h3></div><div class="card">Accounts covered<h3>${new Set(l.map(x=>x.acc)).size}</h3></div><div class="card">Missing<h3 class="${miss.length?'r':''}">${sy&&sm?miss.length:'–'}</h3></div></div>
 ${miss.length?`<small>No statement for ${MN[+sm-1]} ${sy}: ${miss.map(a=>esc(a.name)).join(', ')}</small>`:''}
 <h4>Filter</h4><div class="two"><select onchange="sy=this.value;render()">${yOpts(sy,1)}</select><select onchange="sm=this.value;render()">${mOpts(sm,1)}</select></div><select onchange="sa=this.value;render()"><option value="">All accounts</option>${opts(stAcc(),sa,a=>esc(a.name))}</select>
 <h4>Upload bank statement</h4><div class="card"><select id="s_acc">${opts(stAcc(),sa,a=>esc(a.name))}</select><div class="two"><select id="s_m">${mOpts(sm||today().slice(5,7))}</select><select id="s_y">${yOpts(sy||today().slice(0,4))}</select></div>
 <input id="s_files" type="file" multiple accept="application/pdf,image/*,.csv,.xlsx"><button onclick="upStm()">Upload to Google Drive</button><small>Cash accounts don't need statements.</small></div>
-<h4>Statements</h4>${[...l].sort((a,b)=>stM(b).localeCompare(stM(a))).map(x=>`<div class="card fl"><a onclick="pv('${fid(x)}')">📄 ${esc(x.name)}</a><a href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">↗</a><small>${esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small><a onclick="rcStart('${x.acc}','${stM(x)}')" title="Reconcile with this statement">✔</a><a onclick="stEd('${x.id}')">✏️</a><a onclick="delStm('${x.id}')">🗑</a></div>`).join('')||'<small>No statements for this filter</small>'}`}
+<h4>Statements</h4>${[...l].sort((a,b)=>stM(b).localeCompare(stM(a))).map(x=>`<div class="card fl"><a onclick="pv('${fid(x)}')">📄 ${esc(x.name)}</a><a href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">↗</a><small>${x.also&&x.also.length?'🔗 '+esc(stNames(x)):esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small><a onclick="rcStart('${sa&&stFor(x,sa)?sa:x.acc}','${stM(x)}')" title="Reconcile with this statement">✔</a><a onclick="stEd('${x.id}')">✏️</a><a onclick="delStm('${x.id}')">🗑</a></div>`).join('')||'<small>No statements for this filter</small>'}`}
 function stEd(id){const x=S.stm.find(y=>y.id==id),m=stM(x);
 $('#m').innerHTML=`<div><h3>Edit statement</h3><small>Name</small><input id="e_n" value="${esc(x.name)}"><small>Account (change it if you picked the wrong one)</small><select id="e_a">${opts(S.accs.filter(a=>a.t!='cash'||a.id==x.acc),x.acc,a=>esc(a.name))}</select>
 <div class="two"><div><small>Month</small><select id="e_m">${mOpts(m.slice(5,7))}</select></div><div><small>Year</small><select id="e_y">${yOpts(m.slice(0,4))}</select></div></div>
@@ -1227,7 +1227,7 @@ setStatus('Moved '+money(Math.abs(diff))+' to Balance adjustment, dated '+fmtD(e
 function rcFinish(adj){const a=acc(RCX.acc),end=RCX.end||today(),v=parseFloat(RCX.bal);if(isNaN(v))return setStatus('Enter the statement balance');
 const sb=isL(a)?-v:v,cb=recBal(a)+rcItems(a.id,end).filter(t=>rst(t,a.id).cl).reduce((s,t)=>s+dl(t,a.id),0),diff=+(sb-cb).toFixed(2);
 if(Math.abs(diff)>=0.005){if(!adj)return setStatus('The difference must be zero to finish');const t={id:uid(),u:now(),date:end,desc:'Reconciliation adjustment',amt:diff,cat:'cadj',acc:a.id,shop:'',note:'Difference when reconciling to the statement',att:[],adj:1,tr:0,to:''};S.tx.push(t);txDirty();rcSet(t,a.id,{cl:1})}
-const id=uid(),items=rcItems(a.id,end).filter(t=>rst(t,a.id).cl);items.forEach(t=>rcSet(t,a.id,{rcn:id}));const f=S.stm.find(x=>x.acc==a.id&&stM(x)==end.slice(0,7));
+const id=uid(),items=rcItems(a.id,end).filter(t=>rst(t,a.id).cl);items.forEach(t=>rcSet(t,a.id,{rcn:id}));const f=S.stm.find(x=>stFor(x,a.id)&&stM(x)==end.slice(0,7));
 const M=RCX.meta||{};S.recs.push({id,u:now(),acc:a.id,end,bal:sb,n:items.length,adj:+items.filter(t=>t.adj).reduce((s_,t)=>s_+dl(t,a.id),0).toFixed(2),fid:f?fid(f):'',fname:f?f.name:'',dueD:M.dueD||'',minp:M.minp==null?null:M.minp});RCX={acc:a.id,end:'',bal:'',bank:[]};save();setTimeout(()=>recDone(id),50);setStatus('Reconciled ✔ '+items.length+' transactions locked'+(Math.abs(diff)>=0.005?' · adjustment '+money(Math.abs(diff))+' recorded on '+fmtD(end)+' under Balance adjustment':''))}
 function rcUndo(id){if(!confirm('Undo this reconciliation? Its transactions stay ticked so you can redo it.'))return;S.rcm.filter(x=>x.rcn==id).forEach(x=>{x.rcn='';x.cl=1;x.u=now()});S.del[id]=now();S.recs=S.recs.filter(r=>r.id!=id);RMC=null;save()}
 function stmtOnAfter(a,d){if(!a.stmt)return d;let y=+d.slice(0,4),m=+d.slice(5,7),s_=dueOn(y,m,+a.stmt);if(s_<d)s_=dueOn(y,m+1,+a.stmt);return s_}
@@ -1270,6 +1270,7 @@ const sd=full.sort().slice(-1)[0]||new Date().toLocaleDateString('en-CA'),sy=+sd
 const dateAt=W=>{if(!W.length)return null;let m,a=W[0].s;
 if(m=a.match(/^(\d{4})-(\d{2})-(\d{2})$/))return{d:a,n:1};
 if(m=a.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/)){const y=m[3].length==2?2000+ +m[3]:+m[3];if(+m[2]<1||+m[2]>12)return null;return{d:y+'-'+P(m[2])+'-'+P(m[1]),n:1}}
+if(m=a.match(/^(\d{1,2})[\/-](\d{1,2})$/)){const mo=+m[2];if(mo<1||mo>12||+m[1]>31)return null;const y=mo>sm?sy-1:sy;return{d:y+'-'+P(mo)+'-'+P(m[1]),n:1}}
 if(m=a.match(/^(\d{1,2})[\/.-]?([A-Za-z]{3,4})[\/.-]?(\d{2,4})?$/)){const mo=MONS[m[2].toLowerCase()];if(!mo)return null;let y=m[3]?(m[3].length==2?2000+ +m[3]:+m[3]):0,n=1;
 if(!y&&W[1]&&/^(20)?\d{2}$/.test(W[1].s)&&W[1].s.length==4){y=+W[1].s;n=2}if(!y)y=mo>sm?sy-1:sy;return{d:y+'-'+P(mo)+'-'+P(m[1]),n}}
 if(m=a.match(/^(\d{1,2})$/)&&W[1]){const mo=MONS[W[1].s.toLowerCase().replace(/[^a-z]/g,'')];if(!mo)return null;let y=0,n=2;if(W[2]&&/^20\d{2}$/.test(W[2].s)){y=+W[2].s;n=3}if(!y)y=mo>sm?sy-1:sy;return{d:y+'-'+P(mo)+'-'+P(+a),n}}
@@ -1291,7 +1292,8 @@ if(card&&a.sg==1)sg=1;if(card&&a.sg==-1&&how=='marker')sg=-1;
 cur={date:x.d,desc:desc.trim(),amt:+(sg*a.v).toFixed(2),bal,how};L.push(cur);if(bal!=null)prev=bal;return true};
 let sdt='',dueD='',minp=null,climit=null;const findD=W=>{for(let k=0;k<W.length;k++){const d=dateAt(W.slice(k));if(d)return d.d}return''},lastAmt=W=>{const A=amts(W);return A.length?A[A.length-1].v:null};
 for(const l of lines){const W=words(l),t=W.map(w=>w.s).join(' ');if(!W.length)continue;
-if(/(payment due date|due date|tarikh (akhir )?bayaran|tarikh matang|pay(ment)? by)/i.test(t)&&!dateAt(W)){const d=findD(W);if(d&&!dueD)dueD=d;const m=/(minimum|bayaran minimum)/i.test(t)?lastAmt(W):null;if(m!=null&&minp==null)minp=m;continue}
+if(/(payment due date|due date|tarikh (akhir )?bayaran|tarikh matang|pay(ment)? by)/i.test(t)&&!dateAt(W)){const k=W.findIndex((w,i)=>/^(due|bayaran|matang)$/i.test(w.s)||(/^by$/i.test(w.s)&&i>0&&/^pay/i.test(W[i-1].s))),d=findD(k>=0?W.slice(k):W);if(d&&!dueD)dueD=d;
+if(/(statement date|tarikh penyata)/i.test(t)&&!sdt){const k2=W.findIndex(w=>/^(statement|penyata)$/i.test(w.s)),d2=findD(W.slice(Math.max(0,k2),k>k2?k:undefined));if(d2)sdt=d2}const m=/(minimum|bayaran minimum)/i.test(t)?lastAmt(W):null;if(m!=null&&minp==null)minp=m;continue}
 if(/(minimum (payment|amount|due)|bayaran minimum)/i.test(t)&&!dateAt(W)){const m=lastAmt(W);if(m!=null&&minp==null)minp=m;continue}
 if(/(statement date|tarikh penyata)/i.test(t)&&!dateAt(W)){const d=findD(W);if(d&&!sdt)sdt=d;if(!OPEN.test(t)&&!CLOSE.test(t))continue}
 if(/(credit limit|had kredit)/i.test(t)&&!dateAt(W)&&!OPEN.test(t)&&!CLOSE.test(t)){const m=lastAmt(W);if(m!=null&&climit==null)climit=m;continue}
@@ -1313,6 +1315,17 @@ return{lines:L,open,close,exp,ok,guess,card,sdt,dueD,minp,climit,from:L.length?L
 
 let SPR=null;
 let SPL=null;
+/* ===== COMBINED CARD STATEMENTS: one PDF with several cards (e.g. Visa + Mastercard on one Maybank statement) ===== */
+const CARDNO=/(?:\b\d{4}|[Xx*•]{4})[\s-]*(?:[\dXx*•]{4}[\s-]*){2}(\d{4})\b|[Xx*•]{4,}[\s-]*(\d{4})\b|(?:card )?(?:ending|ends with|berakhir dengan)\s*(?:in\s*)?:?\s*(\d{4})\b/i;
+function cardSplit(L){const sec={},order=[];let cur=null;const pre=[];
+L.forEach(row=>{const t=row.map(i=>i.s).join(' '),m=t.match(CARDNO);if(m){const l4=m[1]||m[2]||m[3],known=S.accs.some(a=>isL(a)&&a.no4==l4);if(l4&&(/[Xx*•]|ending|ends|berakhir/i.test(m[0])||known)){cur=l4;if(!sec[l4]){sec[l4]=[];order.push(l4)}}}
+(cur?sec[cur]:pre).push(row)});
+if(order.length<2)return[];
+const used=new Set(),parts=order.map(l4=>{const a=S.accs.find(x=>isL(x)&&x.no4==l4);if(a)used.add(a.id);return{l4,acc:a?a.id:'',r:stParse(sec[l4],'card')}}).filter(p=>p.r.lines.length||p.r.close!=null);
+// cards without their last 4 digits saved: guess from the shared-limit group of a card that was found
+const lead=parts.find(p=>p.acc),grp_=lead&&limGrp(acc(lead.acc)),free=grp_?grp_.mem.filter(x=>!used.has(x.id)&&!x.no4):[];
+parts.filter(p=>!p.acc).forEach(p=>{const x=free.shift();if(x){p.acc=x.id;p.guess=1}});
+return parts.length>=2?parts:[]}
 function detectAcc(L,hint){const head=L.slice(0,14).map(l=>l.map(i=>i.s).join(' ')).join(' \n '),all=L.map(l=>l.map(i=>i.s).join(' ')).join(' \n '),low=' '+head.toLowerCase()+' ',
 cardish=/(credit card|card statement|kad kredit|card number|card no|visa|mastercard|amex|american express|minimum payment|payment due)/i.test(head),
 banks=new Set(BANKS.filter(([r])=>r.test(low)).map(b=>b[1])),C=S.accs.filter(a=>stmtOk(a));
@@ -1325,8 +1338,31 @@ const L=await pdfLines(lib,buf,again=>prompt(again?'That password did not work. 
 setStatus(lastSync,1);const sm=stmId&&S.stm.find(x=>x.id==stmId),hint=RCX.acc||(sm&&sm.acc)||'',det=detectAcc(L,hint),aid=det.id||hint||(S.accs.find(a=>stmtOk(a))||{}).id,a=acc(aid);
 const r=stParse(L,isL(a)?'card':'bank');
 if(!r.lines.length)return stMsg(L.length?'No transactions were found in this PDF. The layout may be one the reader does not know yet — use the bank\'s CSV, or tick manually.':'This PDF has no readable text — it is probably a scan or a photo. Use the bank\'s CSV, or tick manually.');
-SPL=L;SPR={...r,acc:aid,det,hint,src:stmId||'',move:true};stRev()}catch(e){const m=String(e.message||e);setStatus(lastSync,1);stMsg(/password/i.test(m)?'No password entered, so the statement was not read.':'Could not read the statement: '+m)}}
+const parts=cardSplit(L);SPL=L;SPR={...r,acc:aid,det,hint,src:stmId||'',move:true};
+if(parts.length){const meta=stParse(L,'card');SPR.multi=parts;SPR.mmeta={sdt:meta.sdt,dueD:meta.dueD,minp:meta.minp,climit:meta.climit};const h=parts.find(p=>p.acc==hint);if(h)SPR.acc=h.acc;else if(parts[0].acc)SPR.acc=parts[0].acc}
+stRev()}catch(e){const m=String(e.message||e);setStatus(lastSync,1);stMsg(/password/i.test(m)?'No password entered, so the statement was not read.':'Could not read the statement: '+m)}}
 function stSetAcc(id){const a=acc(id),keep={acc:id,det:SPR.det,hint:SPR.hint,src:SPR.src,move:SPR.move};SPR={...stParse(SPL,isL(a)?'card':'bank'),...keep};stRev()}
+let CMBQ=[];
+function stRevM(){const P=SPR.multi,sm=SPR.src&&S.stm.find(x=>x.id==SPR.src),M=SPR.mmeta||{},cards=S.accs.filter(x=>isL(x)&&stmtOk(x)),
+part=(p,i)=>{const r=p.r,a=p.acc&&acc(p.acc);return`<div class="card"><div class="fl"><b>💳 Card ending ${esc(p.l4)}</b><small>${r.lines.length} lines</small></div>
+<select onchange="SPR.multi[${i}].acc=this.value;SPR.multi[${i}].guess=0;stRev()"><option value="">— which card is this? —</option>${opts(cards,p.acc,x=>esc(x.name)+(x.no4?' · '+esc(x.no4):''))}</select>
+${p.acc?(p.guess?`<small class="r">Guessed from the shared limit — check it. It will remember ${esc(p.l4)} for ${esc(a.name)}.</small>`:a.no4==p.l4?`<small class="g">✔ Detected: number ending ${esc(p.l4)}</small>`:`<small>${esc(a.name)} will remember the number ending ${esc(p.l4)}.</small>`):`<small class="r">Pick the card. Saving its last 4 digits makes this automatic next time.</small>`}
+<div class="row3" style="margin-top:6px"><div class="card">Previous owed<h3>${r.open!=null?money(r.open):'–'}</h3></div><div class="card">Spent / paid<h3 style="font-size:13px"><span class="r">${money(-r.lines.filter(x=>x.amt<0).reduce((s,x)=>s+x.amt,0))}</span><br><span class="g">${money(r.lines.filter(x=>x.amt>0).reduce((s,x)=>s+x.amt,0))}</span></h3></div><div class="card">Now owed<h3>${r.close!=null?money(r.close):'–'}</h3></div></div>
+${r.ok?'<small class="g">✔ The lines add up exactly to the new balance.</small>':r.open!=null&&r.close!=null?`<small class="r">⚠ Lines add up to ${money(r.exp)}, not ${money(r.close)} — check against the PDF.</small>`:''}
+<details><summary><small>Show the ${r.lines.length} lines</small></summary><div class="tw" style="max-height:35vh;overflow:auto"><table>${r.lines.map(x=>`<tr><td>${x.date}<td>${esc(x.desc)}<td class="n ${x.amt<0?'r':'g'}">${money(x.amt)}`).join('')}</table></div></details>
+<button ${p.acc?'':'disabled'} onclick="stGoPart(${i})">Reconcile ${p.acc?esc(a.name):'this card'}</button></div>`};
+$('#m').innerHTML=`<div style="max-width:640px"><h3>📄 Combined statement · ${P.length} cards</h3><small>One PDF holds several cards. Each card's lines were read separately${M.sdt?' · statement date '+fmtD(M.sdt):''}${M.dueD?' · due '+fmtD(M.dueD):''}${M.climit!=null?' · combined limit '+money(M.climit):''}.</small>
+${P.map(part).join('')}
+${sm?`<label class="fl"><span>File this statement under all ${P.length} cards in Statements</span><input type="checkbox" ${SPR.move?'checked':''} onchange="SPR.move=this.checked" style="width:auto"></label>`:''}
+${P.every(p=>p.acc)?`<button onclick="stGoPart(0,1)">Reconcile all ${P.length} cards, one after another</button>`:''}<button class="s" onclick="delete SPR.multi;stRev()">Treat it as one statement instead</button><button class="s" onclick="closeM()">Cancel</button></div>`}
+function stGoPart(i,all){const P=SPR.multi,p=P[i];if(!p||!p.acc)return setStatus('Pick the card first');const ids=[...new Set(P.map(x=>x.acc).filter(Boolean))];
+if(new Set(P.map(x=>x.acc)).size<P.length)return setStatus('Two parts point to the same card — pick a different card for one of them');
+P.forEach(x=>{const a=x.acc&&S.accs.find(y=>y.id==x.acc);if(a&&a.no4!=x.l4){a.no4=x.l4;a.u=now()}});
+const sm=SPR.src&&S.stm.find(x=>x.id==SPR.src);if(sm&&SPR.move){const main=ids.includes(sm.acc)?sm.acc:ids[0];put('stm',{...sm,acc:main,also:ids.filter(id=>id!=main),month:(SPR.mmeta.sdt||p.r.to||stM(sm)+'-01').slice(0,7),from:'',to:''})}
+const M={...SPR.mmeta,open:p.r.open};CMBQ=all?P.filter((x,j)=>j!=i).map(x=>({acc:x.acc,l4:x.l4,lines:x.r.lines,close:x.r.close,meta:{...SPR.mmeta,open:x.r.open}})):P.filter((x,j)=>j!=i&&x.acc).map(x=>({acc:x.acc,l4:x.l4,lines:x.r.lines,close:x.r.close,meta:{...SPR.mmeta,open:x.r.open},later:1}));
+closeM();rcMatch(p.acc,p.r.lines,p.r.close,M)}
+function stGoNext(k){const q=CMBQ.splice(k||0,1)[0];if(!q)return;rcMatch(q.acc,q.lines,q.close,q.meta)}
+function cmbBanner(){if(!CMBQ.length||!RCX.acc)return'';return CMBQ.map((q,k)=>`<div class="pulse" onclick="stGoNext(${k})"><div class="pm"><div class="pk">Same combined statement</div><div class="pv" style="font-size:18px">💳 ${esc(acc(q.acc).name)} · ${q.lines.length} lines</div><div class="ps">Tap to reconcile this card next ›</div></div></div>`).join('')}
 function stGo(){const sm=SPR.src&&S.stm.find(x=>x.id==SPR.src),M={sdt:SPR.sdt,dueD:SPR.dueD,minp:SPR.minp,open:SPR.open,climit:SPR.climit};
 if(sm&&SPR.move&&(sm.acc!=SPR.acc||(SPR.sdt&&stM(sm)!=SPR.sdt.slice(0,7))))put('stm',{...sm,acc:SPR.acc,month:(SPR.sdt||SPR.to||stM(sm)+'-01').slice(0,7),from:'',to:''});
 closeM();rcMatch(SPR.acc,SPR.lines,SPR.close,M)}
@@ -1334,7 +1370,7 @@ function stPick(){const cur=RCX.acc,l=[...S.stm].sort((a,b)=>(b.acc==cur)-(a.acc
 $('#m').innerHTML=`<div><h3>📄 Choose an uploaded statement</h3><small>The account is detected from the PDF, and you can change it on the next screen.</small>${l.map(x=>`<div class="card fl" style="cursor:pointer" onclick="closeM();rcPdf('${fid(x)}','${x.id}')"><span>${lg(acc(x.acc))} ${esc(x.name)}</span><small>${esc(acc(x.acc).name)} · ${MN[+stM(x).slice(5,7)-1]||''} ${stM(x).slice(0,4)}</small></div>`).join('')||'<small>No statements uploaded yet. Upload them in More › Statements.</small>'}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
 function stMsg(t){$('#m').innerHTML=`<div><h3>PDF statement</h3><p>${esc(t)}</p><button class="s" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
 function stFlip(){SPR.lines.forEach(x=>x.amt=-x.amt);if(SPR.open!=null)SPR.exp=+(SPR.open+(SPR.card?-1:1)*SPR.lines.reduce((s,x)=>s+x.amt,0)).toFixed(2);SPR.ok=SPR.close!=null&&SPR.exp!=null&&Math.abs(SPR.exp-SPR.close)<0.011;stRev()}
-function stRev(){const r=SPR,a=acc(SPR.acc),d=SPR.det||{},sm=SPR.src&&S.stm.find(x=>x.id==SPR.src),inn=r.lines.filter(x=>x.amt>0).reduce((s,x)=>s+x.amt,0),out=-r.lines.filter(x=>x.amt<0).reduce((s,x)=>s+x.amt,0);
+function stRev(){if(SPR.multi)return stRevM();const r=SPR,a=acc(SPR.acc),d=SPR.det||{},sm=SPR.src&&S.stm.find(x=>x.id==SPR.src),inn=r.lines.filter(x=>x.amt>0).reduce((s,x)=>s+x.amt,0),out=-r.lines.filter(x=>x.amt<0).reduce((s,x)=>s+x.amt,0);
 $('#m').innerHTML=`<div style="max-width:640px"><h3>📄 ${r.lines.length} lines read</h3><small>${r.from} → ${r.to}</small>
 <div class="card"><small>This statement is for</small><select onchange="stSetAcc(this.value)">${['debit','credit','bl'].map(g=>`<optgroup label="${GN[g]}">${S.accs.filter(x=>grp(x)==g&&stmtOk(x)).map(x=>`<option value="${x.id}" ${x.id==SPR.acc?'selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select>
 ${d.id==SPR.acc&&d.why.length?`<small class="g">✔ Detected from the PDF: ${esc(d.why.join(', '))}</small>`:d.id&&d.id!=SPR.acc?`<small class="r">⚠ This looks like ${esc(acc(d.id).name)}'s statement (${esc(d.why.join(', '))}). <a onclick="stSetAcc('${d.id}')">Use ${esc(acc(d.id).name)}</a></small>`:`<small>Could not tell which account this is${d.banks&&d.banks.length?' (bank: '+esc(d.banks.join(', '))+')':''} — please check. Adding the last 4 digits of the account or card number in Accounts › ✏️ Edit makes this automatic.</small>`}
@@ -1374,7 +1410,7 @@ return`<div class="row3"><div class="card">Up to date<h3 class="${up==l.length&&
 ${RCV=='done'?doneHtml():`<h4>Reconcile an account</h4><small>Reconciling checks the app against your bank or card statement line by line, so you know every balance is right. Pick an account.</small>${l.map(a=>{const lr=lastRec(a.id),pend=TX().filter(t=>(t.acc==a.id||t.to==a.id)&&!rst(t,a.id).rcn).length;return`<div class="card fl" style="cursor:pointer" onclick="rcStart('${a.id}','')"><span style="font-size:22px">${lg(a)}</span><div style="flex:1"><b>${esc(a.name)}</b><br><small>${lr?'Reconciled to '+lr:'Never reconciled'} · ${pend} not reconciled yet${a.stmt?' · last statement '+lastStmt(a)+(lr&&lr>=lastStmt(a)?' ✔':''):''}</small></div><span>›</span></div>`}).join('')||'<small>Add a bank or card account first.</small>'}`}`}
 const a=acc(RCX.acc),L=isL(a),end=RCX.end||today(),v=parseFloat(RCX.bal),hasB=!isNaN(v),sb=hasB?(L?-v:v):0,rb=recBal(a),items=rcItems(a.id,end),cl=items.filter(t=>rst(t,a.id).cl),
 cb=rb+cl.reduce((s,t)=>s+dl(t,a.id),0),diff=+(sb-cb).toFixed(2),ok=hasB&&Math.abs(diff)<0.005,unIn=items.filter(t=>!rst(t,a.id).cl&&dl(t,a.id)>0).reduce((s,t)=>s+dl(t,a.id),0),
-unOut=-items.filter(t=>!rst(t,a.id).cl&&dl(t,a.id)<0).reduce((s,t)=>s+dl(t,a.id),0),book=bal(a,end),f=S.stm.find(x=>x.acc==a.id&&stM(x)==end.slice(0,7)),
+unOut=-items.filter(t=>!rst(t,a.id).cl&&dl(t,a.id)<0).reduce((s,t)=>s+dl(t,a.id),0),book=bal(a,end),f=S.stm.find(x=>stFor(x,a.id)&&stM(x)==end.slice(0,7)),
 later=TX().filter(t=>(t.acc==a.id||t.to==a.id)&&!rst(t,a.id).rcn&&t.date>end).length,show=x=>money(L?-x:x),gap=sb+unIn-unOut-book,
 listHtml=()=>`<small>Tick each transaction that is on your statement. Last reconciled balance: ${show(rb)}${lastRec(a.id)?' at '+lastRec(a.id):''}.</small>
 <div class="fl" style="margin:6px 0"><span><a onclick="rcAll(1)">Tick all</a> · <a onclick="rcAll(0)">Untick all</a></span><small>${cl.length} of ${items.length} ticked</small></div>
@@ -1554,9 +1590,14 @@ for(const x of files){const r=await upload(x,f,safe(`${t.date}_${t.desc.slice(0,
 catch(e){return setStatus('Upload failed: '+e.message)}}
 if(t.g){put('govr',{id:t.id,h:0,f:{date:t.date,desc:t.desc,amt:t.amt,cat:t.cat,acc:t.acc,shop:t.shop,note:t.note,att:t.att,tag:t.tag}});closeM();return}
 if(rem.length){try{await trash(rem)}catch(e){}}const ot=S.tx.find(x=>x.id==t.id);if(ot&&(ot.amt!=t.amt||ot.date!=t.date||ot.acc!=t.acc||(ot.to||'')!=(t.to||''))&&unrec(ot))setStatus('This transaction was reconciled — it is now un-reconciled because you changed it');put('tx',t);if(!id&&RCADD&&(t.acc==RCADD.acc||t.to==RCADD.acc)&&tab=='rcn'){mInit();rcSet(t,RCADD.acc,{cl:1});if(RCADD.si!=null&&RCX.st&&RCX.st[RCADD.si]){const k='g'+uid();RCX.st[RCADD.si].m=k;RCX.mt[t.id]=k;RCX.selS=[]}save();setStatus('Added and ticked')}RCADD=null;closeM()}
+async function stDetect(f){try{const lib=await pdfLib(),L=await pdfLines(lib,new Uint8Array(await f.arrayBuffer()),()=>null),parts=cardSplit(L);return{accs:[...new Set(parts.map(p=>p.acc).filter(Boolean))],det:detectAcc(L,'')}}catch(e){return null}}
 async function upStm(){const files=[...$('#s_files').files],a=$('#s_acc').value,m=$('#s_m').value,y=$('#s_y').value;if(!files.length||!a)return setStatus('Pick an account and a file');
 try{setStatus('Uploading…');const d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
-for(const x of files){const r=await upload(x,d,safe(`${y}-${m}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a,month:y+'-'+m,name:x.name,link:r.webViewLink})}save();setStatus('Uploaded')}
+const notes=[];for(const x of files){let a2=a,also=[];const dt=/pdf$/i.test(x.type||x.name)?await stDetect(x):null;
+if(dt&&dt.accs.length>=2){a2=dt.accs.includes(a)?a:dt.accs[0];also=dt.accs.filter(id=>id!=a2);notes.push('combined statement for '+dt.accs.map(id=>acc(id).name).join(' + '))}
+else if(dt&&dt.det.sure&&dt.det.id&&dt.det.id!=a){a2=dt.det.id;notes.push(x.name+' is '+acc(a2).name+"'s statement, so it was filed there")}
+const d2=a2==a?d:await path(S.cfg.root,'Statements',safe(acc(a2).name),y),r=await upload(x,d2,safe(`${y}-${m}_${x.name}`));S.stm.push({id:uid(),u:now(),fid:r.id,acc:a2,...(also.length?{also}:{}),month:y+'-'+m,name:x.name,link:r.webViewLink})}
+save();setStatus('Uploaded'+(notes.length?' · '+notes.join(' · '):''))}
 catch(e){setStatus('Upload failed: '+e.message)}}
 function dl_(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function exp(){dl_(new Blob([JSON.stringify(ME||S)],{type:'application/json'}),'ledger-'+today()+'.json')}
