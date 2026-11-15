@@ -44,7 +44,7 @@ main.anim .pie .sl{animation:chf .6s ease-out both}
 .rdue{border-left:4px solid #eab308}.rdue.late{border-left-color:var(--r)}.rdue>.fl small{color:var(--mut)}
 .rdr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #8882}.rdr:first-of-type{margin-top:6px}.rdr>div:last-child{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .rdr button{width:auto;margin:0;padding:5px 12px;font-size:12.5px}
-.nbg{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:var(--r);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;font-style:normal;border:2px solid var(--card);box-sizing:content-box}
+.nbg{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:var(--r);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;font-style:normal;text-align:center;border:2px solid var(--card);box-sizing:content-box}
 .sdot{display:inline-block;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--r);color:#fff;font-size:10px;line-height:16px;text-align:center;vertical-align:1px}
 .pb{position:relative;height:8px;background:#8883;border-radius:4px;margin:6px 0}.pb>i{display:block;height:100%;border-radius:4px;transition:width .5s ease}.pb>b{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--fg);opacity:.6;border-radius:1px}
 .pbk{display:block;margin:-4px 0 4px;color:var(--mut)}.pbk b{display:inline-block;width:2px;height:10px;background:var(--fg);opacity:.6;vertical-align:-1px;margin-right:4px}
@@ -123,11 +123,50 @@ nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relativ
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:20;max-width:88vw;text-align:center}#toast.show{opacity:1;transform:translate(-50%,0)}
 #ptr{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-40px);width:36px;height:36px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;z-index:20;box-shadow:0 4px 12px #0005;color:var(--acc)}
 .modal>div{border-radius:20px;animation:fu .22s ease both}
+
+/* ===== DEVICE LAYOUTS: phones, tablets and computers ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{overscroll-behavior-y:contain}
+/* keep content clear of the notch and rounded corners when a phone is turned sideways */
+header{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+nav{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+/* all eight tabs always fit, even on the smallest phones */
+nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px}
+/* touch screens: 16px text in fields stops iPhone and iPad zooming in when you tap one; bigger tap targets */
+@media (pointer:coarse){input,select,textarea{font-size:16px}nav a{padding-top:9px;padding-bottom:9px}}
+/* small phones (iPhone SE, mini, compact Android) */
+@media (max-width:390px){nav a{font-size:17px;padding-left:0;padding-right:0}nav a small{font-size:9px;letter-spacing:-.3px;text-overflow:clip}
+ .hero{padding:14px}.hero .big{font-size:28px}.hs{gap:6px}.hs div{padding:7px 8px}.hs b{font-size:clamp(10.5px,3.15vw,13px);white-space:nowrap;overflow-wrap:normal}.qa span{width:44px;height:44px}
+ .pulse .pv{font-size:22px;white-space:nowrap}.row3 h3{font-size:clamp(12.5px,3.9vw,16px);white-space:nowrap}.row3 .card{padding:10px}}
+/* tablets in portrait and small laptops: centred tab bar instead of one stretched across the screen */
+@media (min-width:700px){nav{justify-content:center}nav a{flex:0 1 104px}nav a small{font-size:11px}main{padding-bottom:110px}}
+/* mouse and trackpad: hover feedback and slimmer scrollbars */
+@media (hover:hover) and (pointer:fine){
+ nav a:hover{color:var(--fg)}.card[onclick]:hover,.rr:hover,.pulse:hover,.qa a:hover span{filter:brightness(1.07)}
+ *{scrollbar-width:thin;scrollbar-color:#8886 transparent}::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#8885;border-radius:6px;border:2px solid transparent;background-clip:padding-box}}
+/* iPad in landscape and computers: side menu, wider content, charts side by side */
+@media (min-width:1100px){
+ #app{padding-left:232px}
+ nav{top:0;bottom:0;right:auto;width:232px;box-sizing:border-box;flex-direction:column;justify-content:flex-start;gap:2px;padding:max(16px,env(safe-area-inset-top)) 12px 16px max(12px,env(safe-area-inset-left));border-top:0;border-right:1px solid #8882;overflow-y:auto}
+ nav::before{content:'';display:block;height:46px;flex-shrink:0}
+ nav a{flex:0 0 auto;flex-direction:row;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:19px;text-align:left}
+ nav a small{font-size:14px}nav a.on{background:color-mix(in srgb,var(--acc) 14%,transparent)}nav a:active{transform:scale(.98)}
+ nav a.on::before{top:22%;bottom:22%;left:0;right:auto;width:3px;height:auto;border-radius:0 3px 3px 0}
+ nav .nbg{left:auto;right:10px;top:50%;transform:translateY(-50%)}
+ header,main{max-width:1000px;margin-left:auto;margin-right:auto;box-sizing:border-box}
+ main{padding-bottom:60px}
+ .tgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tgrid>.card:first-child{grid-column:1/-1}
+ .fab{bottom:28px;right:max(24px,calc((100vw - 232px - 1000px)/2 - 72px))}
+ #toast{bottom:28px;left:calc(50% + 116px)}
+ .modal>div{margin-top:8vh}}
+@media (min-width:1500px){header,main{max-width:1120px}.fab{right:max(24px,calc((100vw - 232px - 1120px)/2 - 72px))}}
 </style></head><body>
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.8',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.9',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -567,6 +606,11 @@ ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
 [...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr')c.remove()});app.insertAdjacentHTML('afterbegin',h)}
+// computer keyboard: N = new record, 1–8 = tabs, Esc = close the open window or chart details
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target||{},typing=/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)||t.isContentEditable,open=[...document.querySelectorAll('.modal.show')];
+if(e.key=='Escape'){if(open.length){const m=open[open.length-1];if(m.id=='m')closeM();else m.className='modal';e.preventDefault()}else document.querySelectorAll('.chw.on,.pie.sel,.stk.sel').forEach(chOff);return}
+if(typing||open.length||($('#lock')||{}).className=='show')return;
+if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-8]$/.test(e.key))go(['ov','tx','ac','rc','rp','bd','sv','more'][+e.key-1])});
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
@@ -1009,7 +1053,7 @@ const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TXM(m).filter(t=>!t.tr&&!t.set&&!isN
 cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
 let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8],id:f.id}));const full=ms.map(m=>MN[+m.slice(5)-1]+' '+m.slice(0,4));
 if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
-return`<h4>Trends</h4><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it,{lbl:'Spent',open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp,{sel:5,full,open:i=>{ym=ms[i];render()}})}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw,{n:'Net worth',full})}</div>`}
+return`<h4>Trends</h4><div class="tgrid"><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it,{lbl:'Spent',open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp,{sel:5,full,open:i=>{ym=ms[i];render()}})}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw,{n:'Net worth',full})}</div></div>`}
 function cfv(){const f=rf,t=rto,D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),eff=x=>D.reduce((a,c)=>a+dl(x,c.id),0),sec={op:[],inv:[],fin:[]},add=(k,n,v)=>{const r=sec[k].find(x=>x.n==n);if(r)r.v+=v;else sec[k].push({n,v})};
 TX().filter(x=>inR(x.date,f,t)).forEach(x=>{const e=eff(x);if(Math.abs(e)<0.005)return;
 if(x.f)add('inv','🏗️ Fixed assets purchased',e);
