@@ -23,6 +23,22 @@ header span{color:var(--mut);font-size:12px}
 .pill span{color:inherit;font-size:12px}.pill i{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}.pill.ok{color:#22c55e;background:#22c55e1f;border-color:#22c55e40}.pill.run{color:#4f8cff;background:#4f8cff1f;border-color:#4f8cff40}
 .pill.warn{color:#f59e0b;background:#f59e0b1f;border-color:#f59e0b40}.pill.err{color:#ef4444;background:#ef44441f;border-color:#ef444440}.pill.ro{color:var(--mut);background:#8882}
 .pill.run i{animation:pp 1s ease-in-out infinite}@keyframes pp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}.pill.ok i{box-shadow:0 0 0 3px #22c55e33}header h1{flex-shrink:0}
+.chw{position:relative;margin-top:6px}.chw svg{display:block;overflow:visible;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.chw .gl{stroke:#8883;stroke-width:1;stroke-dasharray:2 4}.chw .bl{stroke:#8887;stroke-width:1}.chw .ax{font-size:10px;fill:var(--mut)}.chw .ax.cur{fill:var(--fg);font-weight:700}
+.chw .hb{fill:#8882;opacity:0;transition:x .15s ease,opacity .15s}.chw .xh{stroke:var(--mut);stroke-width:1;stroke-dasharray:3 3;opacity:0;transition:opacity .15s}
+.chw .hd{opacity:0;stroke:var(--card);stroke-width:2.5;transition:cx .12s ease,cy .12s ease,opacity .15s}.chw .pt{stroke:var(--card);stroke-width:2.5}.chw .vl{font-size:11px;font-weight:700;fill:var(--fg)}
+.chw.on .pt,.chw.on .vl{opacity:.35}
+.tip{position:absolute;top:2px;display:none;min-width:150px;background:var(--bg);color:var(--fg);border:1px solid #8884;border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 8px 24px #0005;z-index:3}
+.tip>b{display:block;margin-bottom:5px;font-size:13px}.tip .tr{display:flex;justify-content:space-between;gap:14px;margin:3px 0}.tip .tr span{color:var(--mut)}.tip .tr i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.tip .th{display:block;margin-top:7px;color:var(--mut)}.tip a,.pact a{display:block;margin-top:7px;color:var(--acc);cursor:pointer;font-weight:600}
+.pie .pw{display:flex;align-items:center;gap:10px}.pie .pw svg{width:136px;height:136px;flex-shrink:0}.pie .lg{flex:1;min-width:0}.pie .sl{cursor:pointer;transition:opacity .2s,stroke-width .2s}.pie.sel .sl{opacity:.28}.pie.sel .sl.on{opacity:1;stroke-width:24}
+.pie .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 6px;margin:1px 0;border-radius:8px;font-size:12px;cursor:pointer;transition:opacity .2s,background .2s}.pie .li>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pie .li>span:last-child{white-space:nowrap}
+.pie .li i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px}.pie .li small{color:var(--mut)}.pie.sel .li{opacity:.45}.pie.sel .li.on{opacity:1;background:#8882}
+.pc1,.pc3{font-size:10px;fill:var(--mut)}.pc2{font-size:15px;font-weight:700;fill:var(--fg)}.pact{min-height:4px;text-align:center}
+main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
+main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
+main.anim .pie .sl{animation:chf .6s ease-out both}
+@media (prefers-reduced-motion:reduce){main.anim .chw *{animation:none!important}}
 .hdr{display:flex;align-items:center;gap:6px;min-width:0}.hdr .pill{max-width:50vw}
 .gear{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;background:transparent;color:var(--mut);cursor:pointer;flex-shrink:0;transition:color .2s,background .2s,transform .3s}.gear:hover,.gear.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}.gear:active{transform:rotate(60deg)}
 main{max-width:900px;margin:auto;padding:0 12px 130px}
@@ -94,7 +110,7 @@ nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relativ
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.4',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.6',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -279,13 +295,62 @@ const stFor=(x,id)=>x.acc==id||(x.also||[]).includes(id),stNames=x=>[x.acc,...(x
 const yrs=()=>{const y=new Date().getFullYear(),a=S.stm.map(s=>+stM(s).slice(0,4)).filter(Boolean),lo=Math.min(y-2,...a),o=[];for(let i=y+1;i>=lo;i--)o.push(i);return o};
 const mOpts=(sel,all)=>(all?'<option value="">All months</option>':'')+MN.map((n,i)=>{const v=String(i+1).padStart(2,'0');return`<option value="${v}" ${sel==v?'selected':''}>${n}</option>`}).join('');
 const yOpts=(sel,all)=>(all?'<option value="">All years</option>':'')+yrs().map(y=>`<option value="${y}" ${sel==y?'selected':''}>${y}</option>`).join('');
-function pieSvg(it){const t=it.reduce((s,x)=>s+x.v,0);if(!t)return'<small>No data</small>';const C=2*Math.PI*56;let off=0;
-const p=it.map(x=>{const L=x.v/t*C,e=`<circle cx="80" cy="80" r="56" fill="none" stroke="${x.c}" stroke-width="28" stroke-dasharray="${L} ${C-L}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)"/>`;off+=L;return e}).join('');
-return`<div class="fl" style="align-items:flex-start"><svg viewBox="0 0 160 160" width="150" height="150">${p}</svg><div style="flex:1">${it.map(x=>`<div class="fl" style="margin:4px 0;font-size:12px"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.c};margin-right:6px"></i>${x.n}</span><span>${Math.round(x.v/t*100)}%</span></div>`).join('')}</div></div>`}
-function barSvg(lb,a,b){const mx=Math.max(1,...a,...b),W=320,H=130,bw=14,g=W/lb.length;
-return`<svg viewBox="0 0 ${W} ${H+20}" width="100%">${lb.map((l,i)=>{const x=i*g+g/2-bw-1,ha=a[i]/mx*H,hb=b[i]/mx*H;return`<rect x="${x}" y="${H-ha}" width="${bw}" height="${ha}" rx="3" fill="var(--g)"/><rect x="${x+bw+2}" y="${H-hb}" width="${bw}" height="${hb}" rx="3" fill="var(--r)"/><text x="${i*g+g/2}" y="${H+14}" font-size="10" text-anchor="middle" fill="var(--mut)">${l}</text>`}).join('')}</svg>`}
-function lineSvg(lb,v){const W=300,H=110,mn=Math.min(...v,0),mx=Math.max(...v,1),rg=mx-mn||1,g=W/(lb.length-1||1),pt=v.map((y,i)=>[i*g,H-(y-mn)/rg*H]);
-return`<svg viewBox="0 0 ${W+20} ${H+26}" width="100%"><g transform="translate(10,8)"><polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="${pt.map(p=>p.join(',')).join(' ')}"/>${pt.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--acc)"/><text x="${p[0]}" y="${H+18}" font-size="10" text-anchor="middle" fill="var(--mut)">${lb[i]}</text>`).join('')}</g></svg>`}
+/* ===== INTERACTIVE CHARTS: hover, tap or drag across a chart to see exact values ===== */
+let CH={},CHN=0;
+const kfmt=n=>{const a=Math.abs(n),s=n<0?'-':'',f=(x,d)=>x.toFixed(d).replace(/\.0$/,'');return s+(a>=1e6?f(a/1e6,a>=1e7?0:1)+'m':a>=1e3?f(a/1e3,a>=1e4?0:1)+'k':Math.round(a)+'')};
+// short amount for chart labels (whole ringgit; 100k and up as 123k); tooltips keep the exact amount
+const mshort=v=>(v<0?'-':'')+S.cfg.cur+' '+(Math.abs(v)>=1e5?kfmt(Math.abs(v)):Math.round(Math.abs(v)).toLocaleString())
+// evenly spaced, round axis values covering lo..hi
+function ticks(lo,hi,n){if(hi-lo<1e-9){lo-=1;hi+=1}const raw=(hi-lo)/n,p=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,2.5,5,10].map(x=>x*p).find(x=>x>=raw);const a=Math.floor(lo/st+1e-9)*st,b=Math.ceil(hi/st-1e-9)*st,o=[];for(let v=a;v<=b+st/2;v+=st)o.push(+v.toFixed(6));return o}
+// a bar with rounded top corners that sits flat on the baseline
+const barPath=(x,w,top,base)=>{const h=base-top;if(h<0.5)return'';const r=Math.min(4,h,w/2);return`M${x},${base}V${top+r}Q${x},${top} ${x+r},${top}H${x+w-r}Q${x+w},${top} ${x+w},${top+r}V${base}Z`};
+const tRow=(n,v,c,cls)=>`<div class="tr"><span>${c?`<i style="background:${c}"></i>`:''}${n}</span><b class="${cls||''}">${v}</b></div>`;
+const chEv=id=>`onpointermove="chMove(event,'${id}')" onpointerdown="chMove(event,'${id}')" onpointerleave="chOut(event,'${id}')"`;
+function chMove(e,id){const c=CH[id],w=document.getElementById(id);if(!c||!w)return;w._pt=e.pointerType;const sv=w.querySelector('svg'),r=sv.getBoundingClientRect(),sx=(e.clientX-r.left)*c.W/r.width;
+let i=c.k=='bar'?Math.floor((sx-c.L)/c.g):Math.round((sx-c.L)/c.g);i=Math.max(0,Math.min(c.n-1,i));if(w._i===i&&w.classList.contains('on'))return;w._i=i;w.classList.add('on');
+let cx;if(c.k=='bar'){cx=c.L+i*c.g+c.g/2;const hb=sv.querySelector('.hb');hb.setAttribute('x',c.L+i*c.g);hb.style.opacity=1}
+else{const[px,py]=c.p[i];cx=px;const xh=sv.querySelector('.xh'),hd=sv.querySelector('.hd');xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.style.opacity=1;hd.setAttribute('cx',px);hd.setAttribute('cy',py);hd.style.opacity=1}
+const t=w.querySelector('.tip');t.innerHTML=c.tip(i);t.style.display='block';const k=r.width/c.W,px=cx*k,tw=t.offsetWidth,ww=w.clientWidth,off=c.k=='bar'?c.g*k/2+4:12;
+t.style.left=(px+off+tw<=ww?px+off:Math.max(0,px-off-tw))+'px'}
+// runs the chart's action (e.g. open that month) for the month whose details are showing
+function chAct(id){const c=CH[id],w=document.getElementById(id);if(c&&c.act&&w&&w._i!=null)c.act(w._i)}
+function chOff(w){if(!w)return;if(w.classList.contains('pie'))return pieSel(w.id,-1);w.classList.remove('on');w._i=null;const t=w.querySelector('.tip');if(t)t.style.display='none';w.querySelectorAll('.hb,.xh,.hd').forEach(x=>x.style.opacity=0)}
+// a mouse leaving hides the details; on touch they stay until you tap somewhere else
+function chOut(e,id){if(e.pointerType=='mouse')chOff(document.getElementById(id))}
+document.addEventListener('pointerdown',e=>{document.querySelectorAll('.chw.on,.pie.sel').forEach(w=>{if(!w.contains(e.target))chOff(w)})});
+// income vs expenses style: two bars per month. o: n=[name a,name b], sel=highlighted month, full=tooltip titles, open=i=>js to open that month
+function barSvg(lb,a,b,o){o=o||{};const nm=o.n||['Income','Expenses'],id='ch'+(++CHN),W=340,H=158,L=38,R=4,T=8,B=22,pw=W-L-R,ph=H-T-B,n=lb.length,g=pw/n,bw=Math.max(4,Math.min(14,g*.3)),
+tk=ticks(0,Math.max(1,...a,...b),4),mx=tk[tk.length-1],y=v=>T+ph-v/mx*ph,base=T+ph;
+CH[id]={k:'bar',n,L,g,W,tip:i=>`<b>${esc(o.full?o.full[i]:lb[i])}</b>${tRow(esc(nm[0]),money(a[i]),'var(--g)')}${tRow(esc(nm[1]),money(b[i]),'var(--r)')}${tRow('Net',money(a[i]-b[i]),'',a[i]-b[i]<0?'r':'g')}${o.open&&i!==o.sel?(document.getElementById(id)||{})._pt=='mouse'?`<small class="th">Click to open ${esc(lb[i])}</small>`:`<a onclick="chAct('${id}')">Open ${esc(lb[i])} ›</a>`:''}`,act:o.open&&(i=>i!==o.sel&&o.open(i))};
+return`<div class="chw" id="${id}"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(nm[0]+' and '+nm[1]+' by month: '+lb.map((l,i)=>l+' '+money(a[i])+' / '+money(b[i])).join(', '))}" ${chEv(id)}${o.open?` onclick="if(this.parentNode._pt=='mouse')chAct('${id}')" style="cursor:pointer"`:''}>
+${tk.slice(1).map(v=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/>`).join('')}${tk.map(v=>`<text class="ax" x="${L-6}" y="${y(v)+3.5}" text-anchor="end">${kfmt(v)}</text>`).join('')}
+<rect class="hb" x="${L}" y="${T}" width="${g}" height="${ph+B-4}" rx="8"/>
+${lb.map((l,i)=>{const cx=L+i*g+g/2;return`<path class="bar" style="animation-delay:${i*40}ms" d="${barPath(cx-bw-1,bw,y(a[i]),base)}" fill="var(--g)"/><path class="bar" style="animation-delay:${i*40+20}ms" d="${barPath(cx+1,bw,y(b[i]),base)}" fill="var(--r)"/><text class="ax${i===o.sel?' cur':''}" x="${cx}" y="${H-6}" text-anchor="middle">${esc(l)}</text>`}).join('')}
+<line class="bl" x1="${L}" x2="${W-R}" y1="${base}" y2="${base}"/></svg><div class="tip"></div></div>`}
+// one value over time. o: n=series name, full=tooltip titles, d=show change from the month before (default on)
+function lineSvg(lb,v,o){o=o||{};const nm=o.n||'',id='ch'+(++CHN),W=340,H=158,L=38,R=14,T=22,B=22,pw=W-L-R,ph=H-T-B,n=v.length,g=n>1?pw/(n-1):0;
+const lo=Math.min(...v),hi=Math.max(...v),sp=hi-lo||Math.abs(hi)||1,tk=ticks(lo>=0?Math.max(0,lo-sp*.08):lo-sp*.08,hi+sp*.05,4),y0=tk[0],y1=tk[tk.length-1],base=T+ph,
+p=v.map((q,i)=>[+(n>1?L+i*g:L+pw/2).toFixed(1),+(T+ph-(q-y0)/(y1-y0)*ph).toFixed(1)]),d='M'+p.map(q=>q.join(',')).join('L'),last=p[n-1];
+CH[id]={k:'line',n,L,g:g||1,W,p,tip:i=>{const ch=i?v[i]-v[i-1]:0;return`<b>${esc(o.full?o.full[i]:lb[i])}</b>${tRow(esc(nm||'Value'),money(v[i]))}${o.d!==0&&i?tRow('vs '+esc(lb[i-1]),(ch>=0?'+':'')+money(ch),'',ch<0?'r':'g'):''}`}};
+return`<div class="chw" id="${id}"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc((nm||'Value')+' by month: '+lb.map((l,i)=>l+' '+money(v[i])).join(', '))}" ${chEv(id)}>
+<defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".32"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>
+${tk.slice(1).map(q=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${T+ph-(q-y0)/(y1-y0)*ph}" y2="${T+ph-(q-y0)/(y1-y0)*ph}"/>`).join('')}${tk.map(q=>`<text class="ax" x="${L-6}" y="${T+ph-(q-y0)/(y1-y0)*ph+3.5}" text-anchor="end">${kfmt(q)}</text>`).join('')}
+${n>1?`<path class="ar" d="${d}L${last[0]},${base}L${p[0][0]},${base}Z" fill="url(#${id}g)"/><path class="ln" pathLength="1" d="${d}" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+<line class="xh" x1="0" x2="0" y1="${T-6}" y2="${base}"/>${lb.map((l,i)=>`<text class="ax${i==n-1?' cur':''}" x="${p[i][0]}" y="${H-6}" text-anchor="middle">${esc(l)}</text>`).join('')}
+<circle class="pt" cx="${last[0]}" cy="${last[1]}" r="4.5" fill="var(--acc)"/><text class="vl" x="${Math.min(last[0],W-R)}" y="${last[1]-10}" text-anchor="end">${esc(mshort(v[n-1]))}</text>
+<circle class="hd" r="5.5" fill="var(--acc)" cx="0" cy="0"/></svg><div class="tip"></div></div>`}
+// donut: it=[{n (already escaped),v,c,id}]. o: lbl=centre label, open=id=>js to list that slice's records
+function pieSvg(it,o){o=o||{};const t=it.reduce((s,x)=>s+x.v,0);if(!t)return'<small>No data</small>';const id='ch'+(++CHN),R=60,C=2*Math.PI*R,gap=it.length>1?2.5:0;let off=0;
+CH[id]={k:'pie',it,t,o};const pc=v=>Math.round(v/t*1000)/10;
+const sl=it.map((x,i)=>{const L=x.v/t*C,dl=Math.max(.5,L-gap),e=`<circle class="sl" data-i="${i}" cx="80" cy="80" r="${R}" fill="none" stroke="${x.c}" stroke-width="20" stroke-dasharray="${dl} ${C-dl}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)" onpointerenter="pieSel('${id}',${i})" onclick="pieSel('${id}',${i})"/>`;off+=L;return e}).join('');
+return`<div class="chw pie" id="${id}" onpointerleave="if(event.pointerType=='mouse')pieSel('${id}',-1)"><div class="pw"><svg viewBox="0 0 160 160" width="150" height="150" role="img" aria-label="${it.map(x=>x.n+' '+pc(x.v)+'%').join(', ')}">${sl}
+<text class="pc1" x="80" y="70" text-anchor="middle">${esc(o.lbl||'Total')}</text><text class="pc2" x="80" y="90" text-anchor="middle">${esc(mshort(t))}</text><text class="pc3" x="80" y="106" text-anchor="middle">${it.length} ${it.length==1?'category':'categories'}</text></svg>
+<div class="lg">${it.map((x,i)=>`<div class="li" data-i="${i}" onpointerenter="pieSel('${id}',${i})" onclick="pieSel('${id}',${i})"><span><i style="background:${x.c}"></i>${x.n}</span><span><b>${esc(mshort(x.v))}</b> <small>${pc(x.v)}%</small></span></div>`).join('')}</div></div><div class="pact"></div></div>`}
+function pieSel(id,i){const w=document.getElementById(id),c=CH[id];if(!w||!c)return;w.classList.toggle('sel',i>=0);w.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('on',+e.dataset.i===i));
+const x=c.it[i],s=w.querySelectorAll('svg text'),pa=w.querySelector('.pact');
+if(!x){s[0].textContent=c.o.lbl||'Total';s[1].textContent=mshort(c.t);s[2].textContent=c.it.length+(c.it.length==1?' category':' categories');pa.innerHTML='';return}
+const nm=new DOMParser().parseFromString(x.n,'text/html').body.textContent;s[0].textContent=nm.length>16?nm.slice(0,15)+'…':nm;s[1].textContent=mshort(x.v);s[2].textContent=(Math.round(x.v/c.t*1000)/10)+'% of '+(c.o.lbl||'total').toLowerCase();
+pa.innerHTML=x.id&&c.o.open?`<a onclick="${c.o.open(x.id)}">View ${x.n} records ›</a>`:''}
 const barRow=(s,b)=>`<div style="height:6px;background:#8883;border-radius:3px;margin:4px 0"><i style="display:block;height:6px;border-radius:3px;width:${b?Math.min(100,s/b*100):0}%;background:${s>b?'var(--r)':s>=b*(S.cfg.bw||80)/100?'#f59e0b':'var(--g)'}"></i></div>`;
 const BL=()=>[...S.buds.filter(b=>b.cat).map(b=>({id:b.id,name:cat(b.cat).i+' '+cat(b.cat).name,amt:b.amt,per:'m',cats:[b.cat],shops:[]})),...S.buds.filter(b=>!b.cat).map(b=>({...b,cats:b.cats||[],shops:b.shops||[],per:b.per||'m'}))];
 function bspent(b,m){let f,t;if(b.per=='y'){f=m.slice(0,4)+'-01-01';t=m.slice(0,4)+'-12-31'}else if(b.per=='r'){f=b.from||'';t=b.to||''}else{f=m+'-01';t=m+'-31'}
@@ -467,10 +532,10 @@ const RT={ov:'overview',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',
 TABN={ov:'Overview',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings'};
 const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
-function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
+function render(){CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small></a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small></a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
@@ -728,7 +793,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['set','⚙️','Settings','Sync, security, backup, error log, shops, appearance']];
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="${k=='fxa'?"rt='fa';go('rp')":`go('${k}')`}" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
@@ -870,9 +935,9 @@ return`<h4>Budget</h4><div class="card" onclick="go('bd')" style="cursor:pointer
 function chv(){const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(+ym.slice(0,4),+ym.slice(5)-1-i,1).toLocaleDateString('en-CA').slice(0,7));
 const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TXM(m).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=ms.map(m=>sum(cs(m).filter(t=>t.amt>0))),exp=ms.map(m=>-sum(cs(m).filter(t=>t.amt<0))),nw=ms.map(m=>S.accs.reduce((x,a)=>x+bal(a,m+'-31'),0)+fxNBV(m+'-31')),by={};
 cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
-let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8]}));
+let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8],id:f.id}));const full=ms.map(m=>MN[+m.slice(5)-1]+' '+m.slice(0,4));
 if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
-return`<h4>Trends</h4><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it)}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp)}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw)}</div>`}
+return`<h4>Trends</h4><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it,{lbl:'Spent',open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp,{sel:5,full,open:i=>{ym=ms[i];render()}})}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw,{n:'Net worth',full})}</div>`}
 function cfv(){const f=rf,t=rto,D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),eff=x=>D.reduce((a,c)=>a+dl(x,c.id),0),sec={op:[],inv:[],fin:[]},add=(k,n,v)=>{const r=sec[k].find(x=>x.n==n);if(r)r.v+=v;else sec[k].push({n,v})};
 TX().filter(x=>inR(x.date,f,t)).forEach(x=>{const e=eff(x);if(Math.abs(e)<0.005)return;
 if(x.f)add('inv','🏗️ Fixed assets purchased',e);
@@ -901,7 +966,7 @@ const nets=MN.map((_,i)=>l.filter(p=>+p.date.slice(5,7)==i+1).reduce((a,p)=>a+pn
 return`<div class="mn"><a onclick="py=String(+py-1);render()">‹</a><b>${py}</b><a onclick="py=String(+py+1);render()">›</a></div>
 <div class="row3"><div class="card">Gross<h3>${money(G)}</h3></div><div class="card">Deductions<h3 class="r">${money(D)}</h3></div><div class="card">Net pay<h3 class="g">${money(G-D)}</h3></div></div>
 <button onclick="payEd('')">+ Add payslip</button>
-${l.length?`<div class="card"><small>Net pay <span class="g">■</span> and deductions <span class="r">■</span> by month</small>${barSvg(MN,nets,dds)}</div>`:''}
+${l.length?`<div class="card"><small>Net pay <span class="g">■</span> and deductions <span class="r">■</span> by month</small>${barSvg(MN,nets,dds,{n:['Net pay','Deductions']})}</div>`:''}
 ${Object.keys(by).length?`<h4>Deductions this year</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<div class="fl" style="margin:4px 0"><span>${esc(n)}</span><span>${money(v)}</span></div>`).join('')}</div>`:''}
 ${Object.keys(byE).length?`<h4>Employer contributions this year</h4><div class="card">${Object.entries(byE).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<div class="fl" style="margin:4px 0"><span>${esc(n)}</span><span>${money(v)}</span></div>`).join('')}</div>`:''}<h4>Payslips</h4>${l.map(p=>`<div class="card" onclick="payEd('${p.id}')" style="cursor:pointer"><div class="fl"><b>${MN[+p.date.slice(5,7)-1]} ${p.date.slice(0,4)}${p.employer?' · '+esc(p.employer):''}</b><b class="g">${money(pn(p))}</b></div>
 <div class="fl"><small>Basic ${money(p.basic||0)} · Allowances ${money(pg(p)-(p.basic||0))}</small><small>Gross ${money(pg(p))}</small></div><div class="fl"><small>Deductions ${money(pd(p))}${(p.er||[]).length?' · Employer '+money((p.er||[]).reduce((a,x)=>a+(x.v||0),0)):''} · paid ${p.date} → ${esc(acc(p.acc).name)}</small>${(p.att||[]).length?`<a onclick="event.stopPropagation();pv('${p.att[0].id}')">📎 payslip</a>`:''}</div></div>`).join('')||'<small>No payslips for this year yet</small>'}
@@ -1499,7 +1564,7 @@ const l=all.filter(x=>gf=='a'?!x.g.done:gf=='d'?x.g.done:true).sort((a,b)=>(a.g.
 return`<div class="row3"><div class="card">Saved for goals<h3 class="g">${money(tf)}</h3></div><div class="card">Still needed<h3>${money(Math.max(0,tt-tf))}</h3></div><div class="card">Needed / month<h3>${money(nd)}</h3></div></div>
 <div class="row3"><div class="card">Saved this month<h3 class="${r.s<0?'r':'g'}">${money(r.s)}</h3></div><div class="card">Savings rate<h3>${r.i>0?Math.round(r.s/r.i*100)+'%':'–'}</h3></div><div class="card">Emergency cover<h3>${avgE>0?(liq/avgE).toFixed(1)+' mo':'–'}</h3></div></div>
 <small>Savings rate = what you kept from this month's income. Emergency cover = cash, bank and e-wallet balances ÷ your average monthly spending over the last 3 months (3–6 months is a common target).</small>
-<div class="card"><small>Saved each month (income − spending − tax) · last 6 months</small>${lineSvg(m6.map(x=>MN[+x.slice(5)-1]),m6.map(x=>savRate(x).s))}</div>
+<div class="card"><small>Saved each month (income − spending − tax) · last 6 months</small>${lineSvg(m6.map(x=>MN[+x.slice(5)-1]),m6.map(x=>savRate(x).s),{n:'Saved',d:0})}</div>
 <div class="seg"><a class="${gf=='a'?'on':''}" onclick="gf='a';render()">Active (${act.length})</a><a class="${gf=='d'?'on':''}" onclick="gf='d';render()">Achieved (${all.length-act.length})</a><a class="${gf=='all'?'on':''}" onclick="gf='all';render()">All</a></div>
 <button onclick="gEd('')">+ New goal</button>
 ${l.map(x=>`<div class="card" onclick="GV='${x.g.id}';render();scrollTo(0,0)" style="cursor:pointer;opacity:${x.g.done?.7:1}"><div class="fl"><b>${gIco(x.g)} ${esc(x.g.name)}</b><b>${x.g.done?'✔ Achieved':Math.round(x.pct)+'%'}</b></div>${gBar(x)}
