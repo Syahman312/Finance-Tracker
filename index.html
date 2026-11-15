@@ -92,7 +92,7 @@ nav{border-top:1px solid #8882;backdrop-filter:blur(12px)}nav a{position:relativ
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.2',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.3',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -196,7 +196,11 @@ const gfiles=i=>{const o=[],seen={},okid=v=>typeof v=='string'&&/^[\w-]{25,60}$/
 const walk=(v,k)=>{if(v==null)return;if(typeof v=='string'){const m=v.match(/\/d\/([\w-]{20,})/)||v.match(/[?&]id=([\w-]{20,})/);if(m)add(m[1]);else if(/^(rid|fid|rids|fids|receipt|receipts|file|files|pdf|photo|photos|img|att)$/i.test(k||'')&&okid(v))add(v)}
 else if(Array.isArray(v))v.forEach(x=>walk(x,k));else if(typeof v=='object'){const id=v.fid||v.rid||v.id;if(okid(id))add(id,v.name||v.fname);Object.entries(v).forEach(([a,b])=>walk(b,a))}};
 Object.entries(i).forEach(([k,v])=>{if(k!='id'&&k!='car')walk(v,k)});return o};
-const gt=()=>{let G=[];try{G=JSON.parse(localStorage.getItem('ledger.g')||'[]')}catch(e){}const car={},ovm={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});(S.govr||[]).forEach(o=>ovm[o.id]=o);
+// cached: parsing and scanning the garage list is only redone when its stored text or the settings it uses change
+let GTR=null,GTK='',GTV=[];
+const gt=()=>{const raw=localStorage.getItem('ledger.g')||'[]',key=JSON.stringify([S.govr||[],S.cfg.gFuel,S.cfg.gSvc,S.cfg.gAcc,(S.accs[0]||{}).id]);
+if(raw!==GTR||key!==GTK){GTR=raw;GTK=key;GTV=gtBuild(raw)}return GTV.map(x=>({...x}))};
+const gtBuild=raw=>{let G=[];try{G=JSON.parse(raw)}catch(e){}const car={},ovm={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});(S.govr||[]).forEach(o=>ovm[o.id]=o);
 return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petrol|refuel/i.test(i.kind),what=f?[i.brand,i.place].filter(Boolean).join(' '):[].concat(i.item||i.name||'').map(x=>typeof x=='object'?(x.name||x.item||''):x).filter(Boolean).join(', ');
 const b={id:'g:'+i.id,g:1,u:0,date:String(i.date).slice(0,10),desc:(f?'Fuel':'Service')+(car[i.car]?' · '+car[i.car]:'')+(what?' · '+what:''),amt:-Math.abs(+i.cost),cat:f?(S.cfg.gFuel||'c8'):(S.cfg.gSvc||'c9'),acc:S.cfg.gAcc||(S.accs[0]||{}).id,shop:'',note:i.notes||'',att:gfiles(i)},o=ovm[b.id];
 return o?(o.h?null:{...b,...o.f,ov:1}):b}).filter(Boolean)};
@@ -463,9 +467,12 @@ const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett}[tab]();
-const A_=ANIM;ANIM=0;$('#app').innerHTML=`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}${pillHtml()}</header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main><div id="toast"></div><div id="ptr">↻</div>
+const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}${pillHtml()}</header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
 <nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','set','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small></a>`).join('')}</nav>
-${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`;if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
+${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
+// swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
+function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
+[...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr')c.remove()});app.insertAdjacentHTML('afterbegin',h)}
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
