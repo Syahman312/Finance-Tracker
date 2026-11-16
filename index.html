@@ -43,6 +43,12 @@ main.swl{animation:swl .3s cubic-bezier(.2,.8,.2,1) both}main.swr{animation:swr 
 main{touch-action:pan-y pinch-zoom}
 @media (prefers-reduced-motion:reduce){main.swl,main.swr{animation:none}}
 .chw:not(.spk):not(.pie){max-width:680px;margin-left:auto;margin-right:auto}
+.b5h{display:block;margin:-2px 2px 6px;color:var(--mut)}.b5z{transition:outline-color .15s,background .15s;outline:2px dashed transparent;outline-offset:-2px}.b5z.over{outline-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--card))}
+.b5p{width:46px;display:inline-block;margin:0 2px 0 6px;padding:3px 4px;text-align:center;font-weight:700}.b5l{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.b5c{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 5px;border-radius:999px;background:#8882;font-size:12.5px;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}.b5c b{font-weight:700}.b5c small{color:var(--mut)}.b5c.z{opacity:.6}
+.b5c.b5o{opacity:.25}.b5g{position:fixed;z-index:30;pointer-events:none;box-shadow:0 10px 28px #0007;background:var(--card);opacity:.95;transform-origin:center}body.b5drag,body.b5drag *{cursor:grabbing!important;user-select:none}.b5e{color:var(--mut);padding:6px}
+.ffi .two{row-gap:6px}.ffi input{background:color-mix(in srgb,#facc15 14%,var(--bg))}.ffn{margin:8px 0;padding:9px 11px;border-radius:10px;background:color-mix(in srgb,var(--acc) 12%,transparent);font-size:13px}
+.ffy{display:flex;gap:6px;flex-wrap:wrap;margin:5px 0}.ffy span{display:flex;flex-direction:column;align-items:center;min-width:56px;padding:6px 8px;border-radius:10px;background:#8882}.ffy small{color:var(--mut);font-size:11px}
 .wl-l{padding:7px 0;border-top:1px solid #8882;gap:10px}.wl-l>b,.wl-l>span+b{white-space:nowrap}.wl-s b{white-space:nowrap;font-size:clamp(12.5px,3.6vw,15px)}.wl-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wl-ch a{padding:5px 11px;border-radius:999px;background:#8882;font-size:12.5px;cursor:pointer}.wl-ch a.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--fg)}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
 .dsr-t{margin-top:10px}.dsr-p{padding:10px 8px;border-radius:10px;border-bottom:1px solid #8882;cursor:pointer;gap:10px}.dsr-p:hover{background:#8881}.dsr-p b{white-space:nowrap;color:var(--acc)}.dsr-p.on{cursor:default;opacity:.6}.dsr-p.on b{color:var(--g)}
@@ -175,7 +181,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.7',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.8',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -603,17 +609,17 @@ rm('stm',id)}
 
 /* ---------- views ---------- */
 let ANIM=1;const haptic=n=>{try{navigator.vibrate&&navigator.vibrate(n||8)}catch(e){}};
-const RT={ov:'overview',dy:'daily',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr',wl:'wealth'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
-TABN={ov:'Overview',dy:'Daily',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator',wl:'Wealth and projections'};
+const RT={ov:'overview',dy:'daily',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr',wl:'wealth',ff:'freedom'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
+TABN={ov:'Overview',dy:'Daily',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator',wl:'Wealth and projections',ff:'Financial freedom'};
 const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){
 // commit a field being typed in first: removing it would fire its change handler (and another render) part-way through this one
 const ae=document.activeElement,ap=$('#app');if(ae&&ap&&ap.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))ae.blur();
 CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
-const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv,wl:wlv}[tab]();
+const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv,wl:wlv,ff:ffv}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr','wl'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr','wl','ff'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}if(SWDIR){const m_=document.querySelector('main');if(m_)m_.classList.add(SWDIR>0?'swl':'swr');SWDIR=0}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
@@ -645,6 +651,82 @@ return{inst,cc,tot,inc,b:DSRB.find(x=>inc<=x.max),dsr:inc>0?tot/inc*100:0}}
 const mPay=(p,rate,yrs)=>{const n=yrs*12,r=rate/1200;return p<=0||n<=0?0:r?p*r/(1-Math.pow(1+r,-n)):p/n};
 const dsrSt=(v,b)=>v<=b.lo?['ok','✅ High chance of approval','var(--g)']:v<=b.hi?['mid','🟡 Borderline: some banks may approve','#f59e0b']:['hi','🔴 Above the guide for your income','var(--r)'];
 function dsrSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(dsrD()));f(d);delete d.incAuto;cfg('dsr',d)}
+/* ===== 50/30/20: commitments, wants and savings; drag a category to the section it belongs to ===== */
+const B5={n:['🏠','Commitments','Needs: bills, rent, loans, groceries, transport'],w:['🛍️','Wants','Nice to have: shopping, dining out, hobbies'],s:['💰','Savings','Savings, investments and what is left over']};
+// a category's section: your choice, or a guess from its name
+function b5Of(c){const m=(S.cfg.b5||{})[c.id];if(m)return m;const n=(c.name||'').toLowerCase();
+if(/saving|invest|asb|asnb|unit trust|stock|share|crypto|gold|emas|emergency|tabung|fund|kwsp|epf|prs/.test(n))return's';
+if(/bill|util|electric|water|rent|house|home|mortgage|loan|insur|takaful|transport|fuel|petrol|toll|park|car|health|medic|clinic|grocer|food|meal|school|educ|child|baby|phone|internet|tax|zakat|install/.test(n))return'n';return'w'}
+function b5Sec(){if(!S.cats.length)return'';const P=planCalc(ym),cash=TXM(ym).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc0=cash.filter(t=>t.amt>0).reduce((a,t)=>a+t.amt,0),inc=P.inc>0?P.inc:inc0,
+pc={n:50,w:30,s:20,...(S.cfg.b5p||{})},sp={},bm={};cash.filter(t=>t.amt<0).forEach(t=>{const k=mainOf(t.cat);sp[k]=(sp[k]||0)-t.amt});S.buds.filter(b=>b.cat).forEach(b=>{const k=mainOf(b.cat);bm[k]=(bm[k]||0)+b.amt});
+const by={n:[],w:[],s:[]};S.cats.filter(c=>isMain(c)&&(c.ty||'e')=='e'&&c.id!='cadj').forEach(c=>by[b5Of(c)].push(c));
+const tot=k=>by[k].reduce((a,c)=>a+(sp[c.id]||0),0),N=tot('n'),W=tot('w'),Sv=tot('s'),left=inc-N-W-Sv,act={n:N,w:W,s:Sv+Math.max(0,left)},sum=pc.n+pc.w+pc.s,ro=RO();
+return`<h4>50 / 30 / 20 plan</h4><small class="b5h">${ro?'':'Drag a category (press and hold on a phone) to move it, or tap it to choose. '}${inc>0?`Targets use ${money(inc)} income for ${MN[+ym.slice(5)-1]}.`:'Add income for this month to see your targets.'}${sum!=100?` <b class="r">Your shares add up to ${sum}%, not 100%.</b>`:''}</small>
+${['n','w','s'].map(k=>{const tg=inc*pc[k]/100,a=act[k],good=k=='s'?a>=tg:a<=tg,col=good?'var(--g)':k=='s'?'#f59e0b':'var(--r)';
+return`<div class="card b5z" data-b5z="${k}"><div class="fl"><b>${B5[k][0]} ${B5[k][1]} <input type="number" min="0" max="100" inputmode="numeric" value="${pc[k]}" ${ro?'disabled':''} aria-label="${B5[k][1]} share %" onchange="cfg('b5p',{...{n:50,w:30,s:20},...(S.cfg.b5p||{}),${k}:+this.value||0})" class="b5p">%</b><span><b style="color:${inc>0?col:'inherit'}">${money(a)}</b> <small>of ${money(tg)}</small></span></div>
+<small>${B5[k][2]}${inc>0?' · '+(k=='s'?(good?'on target 🎉':money(tg-a)+' short'):(good?money(tg-a)+' left':money(a-tg)+' over')):''}</small>${inc>0?pbar(tg?a/tg*100:0,col):''}
+<div class="b5l">${by[k].sort((x,y)=>(sp[y.id]||0)-(sp[x.id]||0)).map(c=>`<div class="b5c ${sp[c.id]?'':'z'}" data-noswipe data-b5c="${c.id}" ${ro?'':`onpointerdown="b5Down(event,'${c.id}')" onclick="b5Tap('${c.id}')"`}>${cbadge(c,22)}<span>${esc(c.name)}</span><b>${money(sp[c.id]||0)}</b>${bm[c.id]?`<small>/ ${money(bm[c.id])}</small>`:''}</div>`).join('')||'<small class="b5e">Drop a category here</small>'}
+${k=='s'&&inc>0?`<div class="b5c z" style="cursor:default"><span>➕ Left over this month</span><b>${money(Math.max(0,left))}</b></div>`:''}</div></div>`}).join('')}`}
+function b5Set(id,k){const c=S.cats.find(x=>x.id==id);if(!c||b5Of(c)==k)return;cfg('b5',{...(S.cfg.b5||{}),[id]:k});setStatus(`${c.name} moved to ${B5[k][1]}`)}
+function b5Tap(id){if(B5J&&Date.now()-B5J<400)return;const c=S.cats.find(x=>x.id==id);if(!c)return;const cur=b5Of(c);
+$('#m').innerHTML=`<div><h3>${esc(c.name)}</h3><small>Which part of your 50/30/20 plan is this?</small>${['n','w','s'].map(k=>`<button class="${k==cur?'':'s'}" style="margin-top:8px" onclick="closeM();b5Set('${id}','${k}')">${B5[k][0]} ${B5[k][1]}${k==cur?' ✓':''}</button>`).join('')}<button class="s" style="margin-top:8px" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+// drag: a mouse drags straight away; a finger presses and holds first, so scrolling still works
+let B5D=null,B5J=0;
+function b5Down(e,id){if(RO()||e.button>0)return;const d={id,el:e.currentTarget,x:e.clientX,y:e.clientY,t:e.pointerType,on:false};B5D=d;if(d.t!='mouse')d.timer=setTimeout(()=>{if(B5D===d)b5Start(d)},300)}
+function b5Start(d){d.on=true;haptic(15);const r=d.el.getBoundingClientRect(),g=d.el.cloneNode(true);d.ox=d.x-r.left;d.oy=d.y-r.top;g.className+=' b5g';g.style.width=r.width+'px';g.style.left=r.left+'px';g.style.top=r.top+'px';document.body.append(g);d.g=g;d.el.classList.add('b5o');document.body.classList.add('b5drag')}
+function b5Zone(x,y){const e=document.elementFromPoint(x,y);return e&&e.closest('[data-b5z]')}
+function b5End(drop,x,y){const d=B5D;B5D=null;if(!d)return;clearTimeout(d.timer);if(!d.on)return;B5J=Date.now();const z=drop&&b5Zone(x,y);
+if(d.g)d.g.remove();d.el.classList.remove('b5o');document.body.classList.remove('b5drag');document.querySelectorAll('.b5z.over').forEach(e=>e.classList.remove('over'));if(z)b5Set(d.id,z.dataset.b5z)}
+document.addEventListener('pointermove',e=>{const d=B5D;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+ if(!d.on){if(d.t=='mouse'){if(Math.hypot(dx,dy)>5)b5Start(d);else return}else{if(Math.hypot(dx,dy)>8){clearTimeout(d.timer);B5D=null}return}}
+ d.g.style.transform=`translate(${dx}px,${dy}px)`;const z=b5Zone(e.clientX,e.clientY);document.querySelectorAll('.b5z').forEach(x=>x.classList.toggle('over',x===z));
+ const m=60;if(e.clientY<m)scrollBy(0,-12);else if(e.clientY>innerHeight-m-70)scrollBy(0,12)});
+document.addEventListener('pointerup',e=>b5End(true,e.clientX,e.clientY));document.addEventListener('pointercancel',()=>b5End(false));
+document.addEventListener('touchmove',e=>{if(B5D&&B5D.on)e.preventDefault()},{passive:false});   // while dragging, the finger moves the chip, not the page
+/* ===== FINANCIAL FREEDOM: how much you need to live off your savings, from the user's Financial Freedom spreadsheet ===== */
+// Malaysia figures (yearly). Inflation: DOSM. EPF dividend: KWSP, Simpanan Konvensional.
+const MYINF=[[2021,2.5],[2022,3.3],[2023,2.5],[2024,1.8],[2025,1.4]],MYEPF=[[2021,6.10],[2022,5.35],[2023,5.50],[2024,6.30],[2025,6.15]],avg_=l=>l.reduce((a,x)=>a+x[1],0)/l.length;
+const ffD=()=>{const d=S.cfg.ff||{},ep=(S.cfg.wl||{}).ep||{};return{age:ep.age||0,pen:55,cap:0,kw:0,mon:0,spend:0,inf:2.3,wr:4,ret:6,ap:0,bs:0,...d}};
+function ffSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(ffD()));f(d);cfg('ff',d)}
+const fvYear=(cap,yearly,r,n)=>r?cap*Math.pow(1+r,n)+yearly*(Math.pow(1+r,n)-1)/r:cap+yearly*n;
+function ffv(){const d=ffD(),ro=RO()?'disabled':'',num=(k,ph,step)=>`<input type="number" step="${step||'0.01'}" min="0" inputmode="decimal" value="${d[k]||''}" placeholder="${ph||'0'}" ${ro} onchange="ffSet(d=>d.${k}=+this.value||0)" style="margin:0">`,
+avgSp=[1,2,3].map(i=>TXM(mAdd(today().slice(0,7),-i)).filter(isSp).reduce((s,x)=>s-x.amt,0)).reduce((a,b)=>a+b,0)/3,
+inv=S.accs.filter(a=>grp(a)=='inv'&&a.t!='kwsp').reduce((s,a)=>s+(mval(a)??bal(a)),0),
+ep=wlD().ep,kwNow=S.accs.filter(a=>a.t=='kwsp').reduce((s,a)=>s+(mval(a)??bal(a)),0)||ep.bal,epMon=ep.mon>0?ep.mon:epMonthly(),
+yrs=d.age>0?Math.max(0,d.pen-d.age):0,kwProj=(()=>{let b=kwNow,m=epMon;for(let y=1;y<=yrs;y++){b=b*(1+ep.div/100)+m*12*(1+ep.div/200);m*=1+ep.grow/100}return b})(),
+fut=d.spend*Math.pow(1+d.inf/100,yrs),yearly=fut*12,target=d.wr>0?yearly/(d.wr/100):0,short=target-d.kw,hz=Math.max(0,yrs-1),r=d.ret/100,
+grow=fvYear(d.cap,d.mon*12,r,hz),gap=short-grow,need=hz>0?Math.max(0,(short-d.cap*Math.pow(1+r,hz))*(r?r/(Math.pow(1+r,hz)-1):1/hz)/12):0,
+pct=target>0?Math.min(1,(d.kw+grow)/target):0,ok=d.age>0&&d.spend>0&&target>0,
+row=(l,v,c)=>`<div class="fl wl-l"><span>${l}</span><b${c?` class="${c}"`:''}>${v}</b></div>`,
+path=[...Array(hz+1)].map((_,i)=>fvYear(d.cap,d.mon*12,r,i)),
+ip=Math.max(0,(d.ap-d.bs))*0.3;
+return`<div class="pulse" style="cursor:default"><div class="pm"><div class="pk">Financial freedom at ${d.pen}</div><div class="pv">${ok?Math.round(pct*100)+'% there':'Fill in the yellow boxes'}</div>
+${ok?`<span class="tc ${gap<=0?'up':'dn'}">${gap<=0?'🎉 On track to be free':'Short by '+money(gap)}</span>`:''}<div class="ps">“This is not about becoming rich. This is about the freedom to not depend on anyone.”</div></div>${ok?ring(pct,gap<=0?'var(--g)':pct>.6?'#f59e0b':'var(--r)',72,Math.round(pct*100)+'%'):''}</div>
+<h4>About you</h4><div class="card ffi"><div class="two">
+<div><small>My age today</small>${num('age','e.g. 25','1')}</div><div><small>My pension age</small>${num('pen','55','1')}</div>
+<div><small>Starting capital (RM)</small>${num('cap','e.g. 10000')}${inv>0&&Math.abs(inv-d.cap)>1?`<small><a onclick="ffSet(d=>d.cap=${inv.toFixed(2)})">use my investments ${money(inv)}</a></small>`:''}</div>
+<div><small>Save &amp; invest monthly (RM)</small>${num('mon','e.g. 300')}</div>
+<div><small>Spending per month now (RM)</small>${num('spend','e.g. 1500')}${avgSp>0&&Math.abs(avgSp-d.spend)>1?`<small><a onclick="ffSet(d=>d.spend=${avgSp.toFixed(2)})">use my 3-month average ${money(avgSp)}</a></small>`:''}</div>
+<div><small>KWSP at pension age (RM)</small>${num('kw','e.g. 1500000')}${yrs>0&&kwProj>0&&Math.abs(kwProj-d.kw)>1?`<small><a onclick="ffSet(d=>d.kw=${kwProj.toFixed(0)})">use my EPF projection ${money(kwProj)}</a></small>`:''}</div>
+<div><small>Average inflation (% a year)</small>${num('inf','2.3')}</div><div><small>Investment return (% a year)</small>${num('ret','6')}</div>
+<div><small>Withdrawal rate (% a year)</small>${num('wr','4')}</div><div></div></div>
+<small>Planning to use KWSP from ${d.pen} for less upkeep. Yellow-box values from your spreadsheet: inflation 2.3% (Malaysia's 5-year average), 4% withdrawal rule.</small></div>
+${ok?`<h4>The numbers</h4><div class="card">
+${row('Years to pension',yrs+' years')}${row(`Spending per month at ${d.pen} (with inflation)`,money(fut))}${row('Yearly expenses then',money(yearly))}
+${row(`<b>Target fund</b> <small>(${d.wr}% withdrawal rule)</small>`,money(target))}${row('Minus KWSP at pension',money(d.kw))}${row('<b>Fund still needed</b>',money(Math.max(0,short)),short<=0?'g':'')}</div>
+<h4>My game plan</h4><div class="card">${row('Investment 1st capital',money(d.cap))}${row('Investment per year',money(d.mon*12))}${row('Investment horizon',hz+' years <small>(1-year buffer before pension)</small>')}
+${row(`Growth engine at ${d.ret}% a year`,money(grow))}${row(gap<=0?'<b>Ahead of target by</b>':'<b>Still short by</b>',money(Math.abs(gap)),gap<=0?'g':'r')}
+${gap>0&&hz>0?`<div class="ffn">💡 To close the gap, invest about <b>${money(need)}</b> a month instead of ${money(d.mon)}.</div>`:''}
+${hz>0?lineSvg(path.map((_,i)=>i%Math.max(1,Math.ceil(hz/6))==0||i==hz?String(d.age+i):''),path,{n:'Investments',d:0,full:path.map((_,i)=>'Age '+(d.age+i))}):''}
+<small>Growth engine: grow capital as fast as your risk appetite allows. Returns are not guaranteed; past results do not promise future ones.</small></div>`:''}
+<h4>How much I can invest using KWSP</h4><div class="card"><small>EPF's Members Investment Scheme (i-Invest) lets members aged 55 and below move up to 30% of their Akaun Persaraan savings above the Basic Savings for their age to approved funds.</small>
+<div class="two" style="margin-top:8px"><div><small>Akaun Persaraan balance</small>${num('ap','From i-Akaun')}</div><div><small>Basic Savings for my age</small>${num('bs','From i-Akaun')}</div></div>
+${d.ap>0?row('<b>You can invest up to</b>',d.bs>0?money(ip):'Enter your Basic Savings',d.bs>0&&ip>0?'g':''):''}<small>Your Basic Savings figure depends on your age and changes each year. Check it in the KWSP i-Akaun app. See your <a onclick="go('wl')">EPF retirement projection ›</a></small></div>
+<h4>🇲🇾 Malaysia at a glance</h4><div class="card ffm">
+<div><small>Inflation (DOSM)</small><div class="ffy">${MYINF.map(([y,v])=>`<span><b>${v}%</b><small>${y}</small></span>`).join('')}</div><small>5-year average <b>${avg_(MYINF).toFixed(1)}%</b> ${ro?'':`<a onclick="ffSet(d=>d.inf=${avg_(MYINF).toFixed(1)})">use it</a>`}</small></div>
+<div style="margin-top:10px"><small>EPF dividend (Simpanan Konvensional)</small><div class="ffy">${MYEPF.map(([y,v])=>`<span><b>${v.toFixed(2)}%</b><small>${y}</small></span>`).join('')}</div><small>5-year average <b>${avg_(MYEPF).toFixed(2)}%</b>. The 2025 rate was 6.15% for both conventional and Shariah.</small></div>
+<div style="margin-top:10px"><small>EPF retirement savings targets at 60</small><div class="ffy"><span><b>RM390k</b><small>Basic</small></span><span><b>RM650k</b><small>Adequate</small></span><span><b>RM1.3m</b><small>Enhanced</small></span></div></div>
+<small style="display:block;margin-top:8px">Each EPF contribution goes 75% to Akaun Persaraan, 15% to Akaun Sejahtera and 10% to Akaun Fleksibel. Figures as published by DOSM and KWSP up to 2026; check their sites for the latest.</small></div>`}
 // a quick DSR check on Overview; tap for the full calculator
 function dsrCard(){if(RO())return'';const c=dsrCalc();if(!c.inc&&!c.tot)return'';
 if(!c.inc)return`<div class="card fl" onclick="go('dsr')" style="cursor:pointer"><span>📐 <b>DSR</b> <small>· add your net income to see it</small></span><span>›</span></div>`;
@@ -1021,7 +1103,7 @@ function bud(){const bl=BL().map(b=>({b,sp:bspent(b,ym)})),m=bl.filter(x=>x.b.pe
 const per=b=>b.per=='y'?'Yearly '+ym.slice(0,4):b.per=='r'?(b.from||'?')+' → '+(b.to||'?'):'Monthly',cov=b=>[...b.cats.map(c=>cat(c).name),...b.shops.map(x=>(S.shops.find(y=>y.id==x)||{name:'?'}).name)].join(', ')||'All spending';
 return`<div class="mn"><a onclick="mo(-1)">‹</a><b>${ym}</b><a onclick="mo(1)">›</a></div>
 <div class="row3"><div class="card">Monthly budget<h3>${money(tb)}</h3></div><div class="card">Spent<h3 class="${ts>tb?'r':''}">${money(ts)}</h3></div><div class="card">Left<h3 class="${tb-ts<0?'r':'g'}">${money(tb-ts)}</h3></div></div>
-<button onclick="budEd('')">+ Add budget (any categories or shops)</button>
+${b5Sec()}<button onclick="budEd('')">+ Add budget (any categories or shops)</button>
 ${cu.length?'<h4>Your budgets</h4>'+(mPace()?'<small class="pbk"><b></b> marks how far through the month you are</small>':'')+cu.map(x=>`<div class="card" onclick="budEd('${x.b.id}')" style="cursor:pointer"><div class="fl"><b>${esc(x.b.name)}</b><span>${money(x.sp)} / ${money(x.b.amt)}</span></div><small>${per(x.b)} · ${esc(cov(x.b))}</small>${barRow(x.sp,x.b.amt,x.b.per=='m'?mPace():0)}<small class="${x.sp>x.b.amt?'r':''}">${x.sp>x.b.amt?'Over by '+money(x.sp-x.b.amt):'Left '+money(x.b.amt-x.sp)}</small></div>`).join(''):''}
 <h4>Quick category budgets (monthly)</h4>${catsOf('e').map(c=>{const b=bm[c.id]||0,sp=bspent({cats:[c.id],shops:[],per:'m'},ym);return`<div class="card"><div class="fl"><span>${isMain(c)?'':'　↳ '}<span class="ibt" onclick="catIco('${c.id}')">${cbadge(c,22)}</span> ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${b||''}" style="width:110px;text-align:right" onchange="setBud('${c.id}',this.value)"></div><div class="fl"><small>Spent ${money(sp)}</small><small class="${b&&sp>b?'r':''}">${b?(sp>b?'Over by '+money(sp-b):'Left '+money(b-sp)):'No budget'}</small></div>${b?barRow(sp,b):''}</div>`}).join('')}`}
 function budEd(id){const b=S.buds.find(x=>x.id==id&&!x.cat)||{id:'',name:'',amt:0,per:'m',cats:[],shops:[],from:today(),to:today()},cs=b.cats||[],sh=b.shops||[];
@@ -1035,7 +1117,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['wl','📈','Wealth &amp; projections','Net worth trend, savings goals, zakat and EPF projection'],['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['dsr','📐','DSR calculator','How much of your income goes to loans, and your chance of a new loan being approved']];
+function mre(){const l=[['ff','🏝️','Financial freedom','How much you need to stop depending on a salary, and how to get there'],['wl','📈','Wealth &amp; projections','Net worth trend, savings goals, zakat and EPF projection'],['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['dsr','📐','DSR calculator','How much of your income goes to loans, and your chance of a new loan being approved']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="${k=='fxa'?"rt='fa';go('rp')":`go('${k}')`}" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
@@ -2096,7 +2178,7 @@ try{const x=JSON.parse(localStorage.getItem('ledger.rcx')||'null');if(x&&x.acc&&
 if(window.innerWidth<700)rv='r';
 (()=>{let y0=null,pulled=0;const ind=()=>document.getElementById('ptr');
 document.addEventListener('touchstart',e=>{y0=window.scrollY<=0&&!document.querySelector('.modal.show')?e.touches[0].clientY:null;pulled=0},{passive:true});
-document.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0,el=ind();if(!el)return;if(d>10){pulled=d;el.style.transform=`translate(-50%,${Math.min(d,90)-40}px) rotate(${d*3}deg)`;el.style.opacity=Math.min(1,d/70)}},{passive:true});
+document.addEventListener('touchmove',e=>{if(y0==null||(typeof B5D!='undefined'&&B5D&&B5D.on))return;const d=e.touches[0].clientY-y0,el=ind();if(!el)return;if(d>10){pulled=d;el.style.transform=`translate(-50%,${Math.min(d,90)-40}px) rotate(${d*3}deg)`;el.style.opacity=Math.min(1,d/70)}},{passive:true});
 document.addEventListener('touchend',()=>{const el=ind();if(el){el.style.transform='';el.style.opacity=0}if(y0!=null&&pulled>70){haptic(15);toast('Syncing…');pull(1)}y0=null;pulled=0})})();
 let lastPull=0;
 function pull(force){if(!localStorage.getItem(SU)||RO()||busy||document.hidden)return;if(!force&&Date.now()-lastPull<20000)return;lastPull=Date.now();sync()}
