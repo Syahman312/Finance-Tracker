@@ -42,6 +42,8 @@ main.swl{animation:swl .3s cubic-bezier(.2,.8,.2,1) both}main.swr{animation:swr 
 @keyframes swl{from{transform:translateX(48px);opacity:.4}}@keyframes swr{from{transform:translateX(-48px);opacity:.4}}
 main{touch-action:pan-y pinch-zoom}
 @media (prefers-reduced-motion:reduce){main.swl,main.swr{animation:none}}
+.chw:not(.spk):not(.pie){max-width:680px;margin-left:auto;margin-right:auto}
+.wl-l{padding:7px 0;border-top:1px solid #8882;gap:10px}.wl-l>b,.wl-l>span+b{white-space:nowrap}.wl-s b{white-space:nowrap;font-size:clamp(12.5px,3.6vw,15px)}.wl-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wl-ch a{padding:5px 11px;border-radius:999px;background:#8882;font-size:12.5px;cursor:pointer}.wl-ch a.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--fg)}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
 .dsr-t{margin-top:10px}.dsr-l{padding:7px 0;border-top:1px solid #8882}.dsr-l:first-of-type{margin-top:8px}.dsr-g{padding:7px 8px;border-radius:8px}.dsr-g.on{background:color-mix(in srgb,var(--acc) 16%,transparent);font-weight:600}
 .rst{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}.rst.over{color:var(--r);background:color-mix(in srgb,var(--r) 15%,transparent)}
@@ -172,7 +174,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.3',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.4',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -600,17 +602,17 @@ rm('stm',id)}
 
 /* ---------- views ---------- */
 let ANIM=1;const haptic=n=>{try{navigator.vibrate&&navigator.vibrate(n||8)}catch(e){}};
-const RT={ov:'overview',dy:'daily',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
-TABN={ov:'Overview',dy:'Daily',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator'};
+const RT={ov:'overview',dy:'daily',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr',wl:'wealth'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
+TABN={ov:'Overview',dy:'Daily',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator',wl:'Wealth and projections'};
 const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){
 // commit a field being typed in first: removing it would fire its change handler (and another render) part-way through this one
 const ae=document.activeElement,ap=$('#app');if(ae&&ap&&ap.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))ae.blur();
 CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
-const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv}[tab]();
+const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv,wl:wlv}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr','wl'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}if(SWDIR){const m_=document.querySelector('main');if(m_)m_.classList.add(SWDIR>0?'swl':'swr');SWDIR=0}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
@@ -707,6 +709,51 @@ ${RO()?'':`<div class="two"><button onclick="RCADD=null;edit('',{acc:'${a.id}'})
 <div class="card"><small>${L?'Owed':'Balance'} · last 30 days</small>${lineSvg(days.map((d,i)=>i%10==0?+d.slice(8)+' '+MN[+d.slice(5,7)-1]:''),series,{n:L?'Owed':'Balance',d:0,full:days.map(d=>dayLbl(d))})}</div>
 <h4>Recent on ${esc(a.name)}</h4>${recordsHtml(recent,a.id,recent.length)}
 ${!S.cfg.dAcc?`<small>Showing the account you spend from most. Pick another with the menu at the top; Ledger remembers it.</small>`:''}`}
+/* ===== WEALTH & PROJECTIONS: net worth trend, goals, zakat on savings, EPF to retirement ===== */
+let NWR='1y';
+const wlD=()=>{const d=S.cfg.wl||{};return{zk:{accs:null,nis:0,...(d.zk||{})},ep:{age:0,ret:60,div:5.5,grow:3,inf:3,mon:0,bal:0,...(d.ep||{})}}};
+function wlSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(wlD()));f(d);cfg('wl',d)}
+const nwAt=d=>S.accs.reduce((s,a)=>s+bal(a,d),0)+fxNBV(d);
+const monthEnds=n=>{const t=today(),o=[];for(let i=n-1;i>=1;i--){const m=mAdd(t.slice(0,7),-i);o.push(m+'-'+String(dim(m)).padStart(2,'0'))}o.push(t);return o};
+// zakat on savings: 2.5% of the lowest balance held over the past year, if it stays at or above the nisab
+const zkDef=()=>S.accs.filter(a=>grp(a)=='debit'||a.t=='asnb').map(a=>a.id);
+// EPF: this month's employee + employer contributions from the latest payslip
+function epMonthly(){const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];if(!p)return 0;const f=l=>(l||[]).filter(x=>x.k=='epf'||/epf|kwsp/i.test(x.n||'')).reduce((a,x)=>a+(+x.v||0),0);return f(p.ded)+f(p.er)}
+function wlv(){const d=wlD(),ro=RO()?'disabled':'',num=(v,on,ph,w)=>`<input type="number" step="0.01" min="0" inputmode="decimal" value="${v||''}" placeholder="${ph||'0'}" ${ro} onchange="${on}" style="margin:0${w?';width:'+w:''}">`;
+// ---- net worth trend ----
+const first=TX().reduce((m,t)=>!m||t.date<m?t.date:m,''),allN=first?Math.min(120,Math.max(2,(+today().slice(0,4)-+first.slice(0,4))*12+(+today().slice(5,7)-+first.slice(5,7))+1)):6,
+N={'6m':6,'1y':12,'3y':36,all:allN}[NWR]||12,ds=monthEnds(N),nw=ds.map(nwAt),ch=nw[nw.length-1]-nw[0],st=Math.max(1,Math.ceil(N/6)),
+lb=ds.map((x,i)=>i==ds.length-1?'Now':(ds.length-1-i)%st==0?MN[+x.slice(5,7)-1]+(N>12?" '"+x.slice(2,4):''):''),full=ds.map((x,i)=>i==ds.length-1?'Today':'End of '+MN[+x.slice(5,7)-1]+' '+x.slice(0,4));
+const assets=S.accs.filter(a=>!isL(a)).reduce((s,a)=>s+Math.max(0,bal(a)),0)+fxNBV(today()),debts=S.accs.filter(a=>isL(a)).reduce((s,a)=>s+Math.max(0,-bal(a)),0);
+// ---- goals ----
+const gl=gAll().filter(x=>!x.g.done);
+// ---- zakat ----
+const zids=d.zk.accs||zkDef(),zacc=S.accs.filter(a=>zids.includes(a.id)),zds=monthEnds(13),zser=zds.map(x=>zacc.reduce((s,a)=>s+bal(a,x),0)),zNow=zser[zser.length-1],zLow=Math.min(...zser),
+gp=S.cfg.gp||0,nis=d.zk.nis>0?d.zk.nis:gp>0?85*gp:0,due=nis>0&&zLow>=nis?zLow*0.025:0;
+// ---- EPF ----
+const e=d.ep,kw=S.accs.filter(a=>a.t=='kwsp'),eBal=kw.length?kw.reduce((s,a)=>s+(mval(a)??bal(a)),0):e.bal,eAuto=epMonthly(),eMon=e.mon>0?e.mon:eAuto,yrs=e.age>0?Math.max(0,e.ret-e.age):0;
+const proj=[eBal];{let b=eBal,m=eMon;for(let y=1;y<=yrs;y++){b=b*(1+e.div/100)+m*12*(1+e.div/200);m*=1+e.grow/100;proj.push(b)}}
+const atRet=proj[proj.length-1],real=yrs?atRet/Math.pow(1+e.inf/100,yrs):atRet;
+return`<div class="pulse" style="cursor:default"><div class="pm"><div class="pk">Net worth</div><div class="pv">${money(nw[nw.length-1])}</div>${tchip(ch,0,'')} <small>${ch>=0?'up':'down'} ${money(Math.abs(ch))} over ${({'6m':'6 months','1y':'the year','3y':'3 years',all:'all time'})[NWR]}</small>
+<div class="ps">Assets ${money(assets)} · Debts ${money(debts)}</div></div></div>
+<h4>Net worth trend</h4><div class="card"><div class="seg" style="margin-top:0">${[['6m','6 months'],['1y','1 year'],['3y','3 years'],['all','All time']].map(([k,n])=>`<a class="${NWR==k?'on':''}" onclick="NWR='${k}';render()">${n}</a>`).join('')}</div>
+${lineSvg(lb,nw,{n:'Net worth',full})}<div class="row3 wl-s" style="margin-top:6px"><div><small>Change</small><b class="${ch<0?'r':'g'}" style="display:block">${ch>=0?'+':''}${money(ch)}</b></div><div><small>Average a month</small><b style="display:block">${money(ch/Math.max(1,N-1))}</b></div><div><small>Best month-end</small><b style="display:block">${money(Math.max(...nw))}</b></div></div></div>
+<h4>Savings goals</h4>${gl.length?`<div class="card" onclick="go('sv')" style="cursor:pointer">${gl.map(x=>`<div style="margin:8px 0"><div class="fl"><span>${gIco(x.g)} ${esc(x.g.name)}</span><small>${money(x.funded)} / ${money(x.target)}</small></div>${gBar(x)}
+<div class="fl"><small>${x.g.date?'By '+fmtD(x.g.date)+(x.need>0?' · '+money(x.need)+' a month needed':''):'No target date'+(x.need>0?' · '+money(x.need)+' a month':'')}</small>${paceTag(x.pace)}</div></div>`).join('')}<small>Tap to open Savings ›</small></div>`:`<div class="card" onclick="go('sv')" style="cursor:pointer"><small>No active goals. Tap to set one in Savings ›</small></div>`}
+<h4>Zakat on savings</h4><div class="card">
+<div class="fl wl-l"><span>Balance now</span><b>${money(zNow)}</b></div><div class="fl wl-l"><span>Lowest balance in the last 12 months</span><b>${money(zLow)}</b></div>
+<div class="fl wl-l"><span>Nisab${d.zk.nis>0?'':gp>0?` <small>(85 g gold × ${money(gp)}/g)</small>`:''}</span>${num(d.zk.nis||(gp>0?+(85*gp).toFixed(2):''),"wlSet(d=>d.zk.nis=+this.value||0)",'Enter nisab','140px')}</div>
+<div class="fl wl-l"><span><b>Zakat due (2.5%)</b></span><b class="${due>0?'':'g'}">${nis<=0?'Enter the nisab':due>0?money(due):'None: below nisab'}</b></div>${due>0?`<small>About ${money(due/12)} a month if you pay monthly.</small>`:''}
+<div style="margin-top:8px"><small>Counted accounts (tap to change)</small><div class="wl-ch">${S.accs.filter(a=>!isL(a)&&a.t!='kwsp').map(a=>`<a class="${zids.includes(a.id)?'on':''}" onclick="wlSet(d=>{const l=d.zk.accs||zkDef();d.zk.accs=l.includes('${a.id}')?l.filter(x=>x!='${a.id}'):l.concat('${a.id}')})">${zids.includes(a.id)?'✓ ':''}${esc(a.name)}</a>`).join('')}</div></div>
+<small>Uses the lowest balance over the past 12 months (a lunar year is 354 days). Rules and the nisab differ by state, so check with your state zakat body (e.g. LZS, PPZ). Zakat paid can be claimed as a tax rebate in Tax.</small></div>
+<h4>EPF projection</h4><div class="card"><div class="two">
+<div><small>Your age</small>${num(e.age,"wlSet(d=>d.ep.age=+this.value||0)",'e.g. 30')}</div><div><small>Retire at</small>${num(e.ret,"wlSet(d=>d.ep.ret=+this.value||0)")}</div>
+<div><small>Dividend (% a year)</small>${num(e.div,"wlSet(d=>d.ep.div=+this.value||0)")}</div><div><small>Pay rise (% a year)</small>${num(e.grow,"wlSet(d=>d.ep.grow=+this.value||0)")}</div>
+<div><small>EPF balance now${kw.length?' (from your KWSP account)':''}</small>${kw.length?`<b style="display:block;padding:9px 0">${money(eBal)}</b>`:num(e.bal,"wlSet(d=>d.ep.bal=+this.value||0)")}</div>
+<div><small>Monthly contribution${eAuto&&!(e.mon>0)?' (from latest payslip)':''}</small>${num(e.mon||(eAuto?+eAuto.toFixed(2):''),"wlSet(d=>d.ep.mon=+this.value||0)",'You + employer')}</div></div>
+${yrs>0?`${lineSvg(proj.map((_,i)=>i%Math.max(1,Math.ceil(yrs/6))==0||i==yrs?String(e.age+i):''),proj,{n:'EPF balance',d:0,full:proj.map((_,i)=>'Age '+(e.age+i))})}
+<div class="fl wl-l"><span><b>At age ${e.ret}</b></span><b>${money(atRet)}</b></div><div class="fl wl-l"><span>In today's money (${e.inf}% inflation)</span><b>${money(real)}</b></div>
+<small>Each month's contribution goes 75% to Akaun Persaraan, 15% to Akaun Sejahtera and 10% to Akaun Fleksibel. Dividends vary every year, so this is an estimate.</small>`:'<small>Enter your age to see the projection.</small>'}</div>`}
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
@@ -966,7 +1013,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['dsr','📐','DSR calculator','How much of your income goes to loans, and your chance of a new loan being approved']];
+function mre(){const l=[['wl','📈','Wealth &amp; projections','Net worth trend, savings goals, zakat and EPF projection'],['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['dsr','📐','DSR calculator','How much of your income goes to loans, and your chance of a new loan being approved']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="${k=='fxa'?"rt='fa';go('rp')":`go('${k}')`}" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
