@@ -38,6 +38,8 @@ header span{color:var(--mut);font-size:12px}
 main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
 main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
 main.anim .pie .sl{animation:chf .6s ease-out both}
+.dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
+.dsr-t{margin-top:10px}.dsr-l{padding:7px 0;border-top:1px solid #8882}.dsr-l:first-of-type{margin-top:8px}.dsr-g{padding:7px 8px;border-radius:8px}.dsr-g.on{background:color-mix(in srgb,var(--acc) 16%,transparent);font-weight:600}
 .rst{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}.rst.over{color:var(--r);background:color-mix(in srgb,var(--r) 15%,transparent)}
 .rst.today{color:#f59e0b;background:#f59e0b24}.rst.soon{color:#ca8a04;background:#eab3081f}.rst.ok{color:var(--g);background:color-mix(in srgb,var(--g) 14%,transparent)}.rst.auto{color:var(--mut);background:#8882}
 .rci.over{border-left:4px solid var(--r)}.rci.today{border-left:4px solid #f59e0b}
@@ -166,7 +168,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-15.9',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.1',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -594,23 +596,73 @@ rm('stm',id)}
 
 /* ---------- views ---------- */
 let ANIM=1;const haptic=n=>{try{navigator.vibrate&&navigator.vibrate(n||8)}catch(e){}};
-const RT={ov:'overview',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
-TABN={ov:'Overview',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings'};
+const RT={ov:'overview',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
+TABN={ov:'Overview',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator'};
 const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
-function render(){CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
-const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett}[tab]();
+function render(){
+// commit a field being typed in first: removing it would fire its change handler (and another render) part-way through this one
+const ae=document.activeElement,ap=$('#app');if(ae&&ap&&ap.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))ae.blur();
+CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
+const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
-[...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr')c.remove()});app.insertAdjacentHTML('afterbegin',h)}
+[...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr'&&c.parentNode===app)c.remove()});app.insertAdjacentHTML('afterbegin',h)}
 // computer keyboard: N = new record, 1–8 = tabs, Esc = close the open window or chart details
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target||{},typing=/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)||t.isContentEditable,open=[...document.querySelectorAll('.modal.show')];
 if(e.key=='Escape'){if(open.length){const m=open[open.length-1];if(m.id=='m')closeM();else m.className='modal';e.preventDefault()}else document.querySelectorAll('.chw.on,.pie.sel,.stk.sel').forEach(chOff);return}
 if(typing||open.length||($('#lock')||{}).className=='show')return;
 if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-8]$/.test(e.key))go(['ov','tx','ac','rc','rp','bd','sv','more'][+e.key-1])});
+/* ===== DSR CALCULATOR: debt service ratio for Malaysian loan applications (built from the user's DSR spreadsheet) ===== */
+// guide: the DSR with a high chance of approval for each net income range (from the spreadsheet). hi = edge of "borderline".
+const DSRB=[{max:3000,lo:40,hi:50,g:'40% – 50%',n:'RM3,000 and below'},{max:5000,lo:60,hi:65,g:'about 60%',n:'RM3,001 – RM5,000'},{max:10000,lo:70,hi:75,g:'about 70%',n:'RM5,001 – RM10,000'},{max:Infinity,lo:80,hi:90,g:'80% – 90%',n:'Above RM10,000'}];
+const DSRT={mg:['🏠','Mortgage'],hp:['🚗','Hire purchase'],pl:['💳','Personal loan'],ot:['📄','Other loan'],cc:['🧾','Card instalment']};
+const dsrD=()=>{const d=S.cfg.dsr||{};return{inc:d.inc||0,rows:d.rows||[],cards:d.cards||[],hl:{price:0,mar:90,rate:4,yrs:35,...(d.hl||{})}}};
+const dsrMin=b=>b>0?Math.max(b*0.05,50):0;   // card minimum payment: 5% of the balance, at least RM50
+const dsrRow=r=>(+r.v||0)*(r.j?0.5:1);       // joint loans count half
+function dsrCalc(d){d=d||dsrD();const inst=d.rows.reduce((a,r)=>a+dsrRow(r),0),cc=d.cards.reduce((a,c)=>a+dsrMin(+c.b||0),0),tot=inst+cc,inc=+d.inc||0;
+return{inst,cc,tot,inc,b:DSRB.find(x=>inc<=x.max),dsr:inc>0?tot/inc*100:0}}
+const mPay=(p,rate,yrs)=>{const n=yrs*12,r=rate/1200;return p<=0||n<=0?0:r?p*r/(1-Math.pow(1+r,-n)):p/n};
+const dsrSt=(v,b)=>v<=b.lo?['ok','✅ High chance of approval','var(--g)']:v<=b.hi?['mid','🟡 Borderline: some banks may approve','#f59e0b']:['hi','🔴 Above the guide for your income','var(--r)'];
+function dsrSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(dsrD()));f(d);cfg('dsr',d)}
+// adds card balances, loan and BNPL repayments and instalment plans already in Ledger (each only once)
+function dsrFill(){const last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];let n=0;
+dsrSet(d=>{if(last&&!d.inc)d.inc=+pn(last).toFixed(2);const have=new Set(d.rows.map(r=>r.src).concat(d.cards.map(c=>c.src)).filter(Boolean));
+ S.accs.filter(a=>!(a.lend&&a.lend<today())&&!have.has(a.id)).forEach(a=>{
+  if(a.t=='card'){d.cards.push({id:uid(),n:a.name,b:+owedOf(a).toFixed(2),src:a.id});n++}
+  else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0){d.rows.push({id:uid(),t:a.t=='bnpl'?'cc':'ot',n:a.name,v:+repAmt(a).toFixed(2),src:a.id});n++}});
+ S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)&&!have.has('r:'+r.id)).forEach(r=>{d.rows.push({id:uid(),t:'ot',n:r.name,v:+mq(r).toFixed(2),src:'r:'+r.id});n++});
+ setStatus(n?`Added ${n} from your Ledger. Check each type and remove anything counted twice.`:'Nothing new to add from your Ledger')})}
+function dsrv(){const d=dsrD(),c=dsrCalc(d),b=c.b,st=dsrSt(c.dsr,b),ro=RO()?'disabled':'',h=d.hl,
+num=(v,on,ph,w)=>`<input type="number" step="0.01" min="0" inputmode="decimal" value="${v||''}" placeholder="${ph||'0.00'}" ${ro} onchange="${on}" style="margin:0${w?';width:'+w:''}">`,
+row=(id,k)=>`d.${k}.find(x=>x.id=='${id}')`,
+last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0],room=c.inc>0?b.lo/100*c.inc-c.tot:0,
+loan=h.price*h.mar/100,hp=mPay(loan,h.rate,h.yrs),after=c.inc>0?(c.tot+hp)/c.inc*100:0,
+r_=h.rate/1200,n_=h.yrs*12,maxLoan=room>0&&n_>0?(r_?room*(1-Math.pow(1+r_,-n_))/r_:room*n_):0,maxPrice=h.mar>0?maxLoan/(h.mar/100):0;
+return`<div class="pulse" style="cursor:default"><div class="pm"><div class="pk">Your DSR (debt service ratio)</div><div class="pv">${c.inc>0?c.dsr.toFixed(1)+'%':'–'}</div>
+${c.inc>0?`<span class="tc ${st[0]=='ok'?'up':'dn'}">${st[1]}</span>`:'<span class="tc">Enter your net income below</span>'}
+<div class="ps">${money(c.tot)} of monthly commitments${c.inc>0?` ÷ ${money(c.inc)} net income · guide for ${b.n}: <b>${b.g}</b>`:''}</div></div>${c.inc>0?ring(Math.min(1,c.dsr/100),st[2],72,Math.round(c.dsr)+'%'):''}</div>
+${RO()?'':`<button class="s" onclick="dsrFill()">⤵ Fill from my Ledger (cards, loans, instalments)</button>`}
+<h4>Net income</h4><div class="card"><div class="fl"><span>Monthly net income<br><small>Take-home pay after EPF, SOCSO and tax</small></span>${num(d.inc,"dsrSet(d=>d.inc=+this.value||0)",'0.00','140px')}</div>
+${last&&Math.abs(pn(last)-c.inc)>0.005?`<small>Latest payslip net pay ${money(pn(last))} · <a onclick="dsrSet(d=>d.inc=${pn(last).toFixed(2)})">use this</a></small>`:''}</div>
+<h4>Loan instalments</h4><div class="card">${d.rows.map(r=>`<div class="dsr-r"><div class="two"><select ${ro} onchange="dsrSet(d=>${row(r.id,'rows')}.t=this.value)">${Object.entries(DSRT).map(([k,[i,n]])=>`<option value="${k}" ${r.t==k?'selected':''}>${i} ${n}</option>`).join('')}</select>
+<input ${ro} value="${esc(r.n)}" placeholder="Name (e.g. Maybank home loan)" onchange="dsrSet(d=>${row(r.id,'rows')}.n=this.value)"></div>
+<div class="fl" style="gap:8px">${num(r.v,`dsrSet(d=>${row(r.id,'rows')}.v=+this.value||0)`,'Monthly instalment','150px')}<label class="fl" style="gap:6px;flex:1;justify-content:flex-start"><input type="checkbox" ${r.j?'checked':''} ${ro} style="width:auto;margin:0" onchange="dsrSet(d=>${row(r.id,'rows')}.j=this.checked)"><small>Joint loan, count half${r.j&&r.v?' ('+money(dsrRow(r))+')':''}</small></label>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(r.n||'loan')}" onclick="dsrSet(d=>d.rows=d.rows.filter(x=>x.id!='${r.id}'))">✕</a>`}</div></div>`).join('')||'<small>No loans yet. Add each monthly instalment, or tap Fill from my Ledger. Other loan covers e.g. ASB financing; Card instalment covers EPP, FPP, QuickCash and balance transfers.</small>'}
+<div class="fl dsr-t">${RO()?'<span></span>':`<button class="s" style="width:auto" onclick="dsrSet(d=>d.rows.push({id:uid(),t:'mg',n:'',v:0}))">+ Add loan</button>`}<span>Total <b>${money(c.inst)}</b></span></div></div>
+<h4>Credit cards (normal spending)</h4><div class="card">${d.cards.map(x=>`<div class="dsr-r"><input ${ro} value="${esc(x.n)}" placeholder="Card name" onchange="dsrSet(d=>${row(x.id,'cards')}.n=this.value)">
+<div class="fl" style="gap:8px">${num(x.b,`dsrSet(d=>${row(x.id,'cards')}.b=+this.value||0)`,'Outstanding balance','150px')}<small style="flex:1">Counts as <b>${money(dsrMin(+x.b||0))}</b> a month</small>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(x.n||'card')}" onclick="dsrSet(d=>d.cards=d.cards.filter(y=>y.id!='${x.id}'))">✕</a>`}</div></div>`).join('')||'<small>No cards yet.</small>'}
+<div class="fl dsr-t">${RO()?'<span></span>':`<button class="s" style="width:auto" onclick="dsrSet(d=>d.cards.push({id:uid(),n:'',b:0}))">+ Add card</button>`}<span>Total <b>${money(c.cc)}</b></span></div>
+<small>Banks count 5% of each card's outstanding balance, at least RM50. Card instalments (EPP, balance transfer…) go under Loan instalments instead.</small></div>
+<h4>Planning a home loan?</h4><div class="card"><div class="two"><div><small>House price</small>${num(h.price,"dsrSet(d=>d.hl.price=+this.value||0)",'e.g. 500000')}</div><div><small>Loan margin (%)</small>${num(h.mar,"dsrSet(d=>d.hl.mar=+this.value||0)")}</div>
+<div><small>Interest rate (% a year)</small>${num(h.rate,"dsrSet(d=>d.hl.rate=+this.value||0)")}</div><div><small>Tenure (years)</small>${num(h.yrs,"dsrSet(d=>d.hl.yrs=+this.value||0)")}</div></div>
+${h.price>0?`<div class="fl dsr-l"><span>Loan amount</span><b>${money(loan)}</b></div><div class="fl dsr-l"><span>Estimated monthly instalment</span><b>${money(hp)}</b></div>${c.inc>0?`<div class="fl dsr-l"><span>DSR with this loan</span><b style="color:${dsrSt(after,b)[2]}">${after.toFixed(1)}% · ${dsrSt(after,b)[1].replace(/:.*/,'')}</b></div>`:''}`:''}
+${c.inc>0?`<div class="fl dsr-l"><span>Room for new instalments within ${b.lo}%</span><b>${money(Math.max(0,room))} a month</b></div><div class="fl dsr-l"><span>Highest house price that fits</span><b>${money(Math.max(0,maxPrice))}</b></div>`:''}
+<small>Estimates only. Banks use their own rates, and may count your income and commitments differently. For a joint home loan, use your half.</small></div>
+<h4>DSR guide</h4><div class="card">${DSRB.map(x=>`<div class="fl dsr-g ${c.inc>0&&x===b?'on':''}"><span>${x.n}</span><b>${x.g}</b></div>`).join('')}<small>The DSR range with a high chance of loan approval for each net income range.</small></div>
+${det('dsrtip','💡 How to fill this in',`<small>• Joint mortgage: tick "Joint loan" or key in your half. E.g. RM2,300 a month in two names → RM1,150.<br>• Card instalments (EPP, FPP, QuickCash, balance transfer) are listed in your CCRIS report under Instalment. Key in the monthly amount.<br>• Normal card spending: key in the outstanding balance from your CCRIS report. E.g. RM4,996 → minimum payment RM249.80.<br>• Your DSR is your total monthly commitments divided by your net income.</small>`)}`}
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
@@ -870,7 +922,7 @@ $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} budget</h3><input id="u_n" placeh
 function saveBud(id){const g=x=>$('#u_'+x).value,cs=[...document.querySelectorAll('.bc:checked')].map(x=>x.value),sh=[...document.querySelectorAll('.bh:checked')].map(x=>x.value),a=parseFloat(g('a'))||0;
 if(!g('n')||!a||(!cs.length&&!sh.length))return setStatus('Enter a name, an amount and pick at least one category or shop');
 put('buds',{id:id||uid(),name:g('n'),amt:a,per:g('p'),cats:cs,shops:sh,from:g('f'),to:g('t')});closeM()}
-function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements']];
+function mre(){const l=[['cm','🏷️','Category manager','Expense and income categories'],['sal','💼','Salary &amp; payslips','Basic, allowances, deductions and payslip files'],['avl','🧭','Available income','What is left after commitments, budget and savings'],['rcn','✔','Reconcile','Check your accounts against bank and card statements'],['fxa','🏗️','Fixed assets &amp; depreciation','Cost, depreciation and net book value'],['tax','🧮','Tax (LHDN)','Reliefs, rebates and estimated income tax for Malaysia'],['imp','📥','Import CSV','Bring in transactions from another app'],['st','📄','Statements','Upload, rename and preview bank statements'],['dsr','📐','DSR calculator','How much of your income goes to loans, and your chance of a new loan being approved']];
 return`<h4>More</h4>${l.map(([k,i,t,d])=>`<div class="card fl" onclick="${k=='fxa'?"rt='fa';go('rp')":`go('${k}')`}" style="cursor:pointer"><span style="font-size:24px">${i}</span><div style="flex:1"><b>${t}</b><br><small>${d}</small></div><span>›</span></div>`).join('')}`}
 const gprice=a=>a.gpx>0?a.gpx:(S.cfg.gp||0)*(1+(a.gadj||0)/100);
 const mval=a=>a.t=='gold'?(a.gm||0)*gprice(a):(a.mv>0?a.mv:null);
