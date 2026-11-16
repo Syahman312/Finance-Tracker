@@ -38,6 +38,10 @@ header span{color:var(--mut);font-size:12px}
 main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
 main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
 main.anim .pie .sl{animation:chf .6s ease-out both}
+main.swl{animation:swl .3s cubic-bezier(.2,.8,.2,1) both}main.swr{animation:swr .3s cubic-bezier(.2,.8,.2,1) both}
+@keyframes swl{from{transform:translateX(48px);opacity:.4}}@keyframes swr{from{transform:translateX(-48px);opacity:.4}}
+main{touch-action:pan-y pinch-zoom}
+@media (prefers-reduced-motion:reduce){main.swl,main.swr{animation:none}}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
 .dsr-t{margin-top:10px}.dsr-l{padding:7px 0;border-top:1px solid #8882}.dsr-l:first-of-type{margin-top:8px}.dsr-g{padding:7px 8px;border-radius:8px}.dsr-g.on{background:color-mix(in srgb,var(--acc) 16%,transparent);font-weight:600}
 .rst{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}.rst.over{color:var(--r);background:color-mix(in srgb,var(--r) 15%,transparent)}
@@ -168,7 +172,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.1',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.2',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -607,7 +611,7 @@ CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();co
 const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
 <nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
-${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}countUp()}
+${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}if(SWDIR){const m_=document.querySelector('main');if(m_)m_.classList.add(SWDIR>0?'swl':'swr');SWDIR=0}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
 [...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr'&&c.parentNode===app)c.remove()});app.insertAdjacentHTML('afterbegin',h)}
@@ -663,6 +667,27 @@ ${c.inc>0?`<div class="fl dsr-l"><span>Room for new instalments within ${b.lo}%<
 <small>Estimates only. Banks use their own rates, and may count your income and commitments differently. For a joint home loan, use your half.</small></div>
 <h4>DSR guide</h4><div class="card">${DSRB.map(x=>`<div class="fl dsr-g ${c.inc>0&&x===b?'on':''}"><span>${x.n}</span><b>${x.g}</b></div>`).join('')}<small>The DSR range with a high chance of loan approval for each net income range.</small></div>
 ${det('dsrtip','💡 How to fill this in',`<small>• Joint mortgage: tick "Joint loan" or key in your half. E.g. RM2,300 a month in two names → RM1,150.<br>• Card instalments (EPP, FPP, QuickCash, balance transfer) are listed in your CCRIS report under Instalment. Key in the monthly amount.<br>• Normal card spending: key in the outstanding balance from your CCRIS report. E.g. RM4,996 → minimum payment RM249.80.<br>• Your DSR is your total monthly commitments divided by your net income.</small>`)}`}
+/* ===== SWIPE BETWEEN TABS: on a phone or tablet, slide left for the next tab and right for the previous one ===== */
+const SWT=['ov','tx','ac','rc','rp','bd','sv','more'];let SWDIR=0;
+(()=>{let x0=0,y0=0,t0=0,mode=null,m=null;
+// swipes that start on something that already scrolls or drags sideways, or on a control, are left alone
+const skip=el=>{if(!el||!el.closest)return false;if(el.closest('.chw svg,.stk .sb,nav,.modal,[data-noswipe]'))return true;
+ const f=el.closest('input,select,textarea');if(f&&(f===document.activeElement||f.type=='range'))return true;   // the field you are typing in
+ for(let n=el;n&&n!==document.body;n=n.parentElement)if(n.scrollWidth>n.clientWidth+2&&/auto|scroll/.test(getComputedStyle(n).overflowX))return true;return false};
+const idx=()=>SWT.indexOf(SWT.includes(tab)?tab:'more');
+const reset=()=>{if(m){m.style.transition='transform .25s ease,opacity .25s ease';m.style.transform='';m.style.opacity='';const mm=m;setTimeout(()=>{mm.style.transition=''},260)}m=null};
+document.addEventListener('touchstart',e=>{mode=null;if(e.touches.length!=1||document.querySelector('.modal.show')||($('#lock')||{}).className=='show'||selMode)return;const t=e.touches[0];
+ if(t.clientX<24||t.clientX>innerWidth-24||skip(e.target))return;   // the screen edges belong to the phone's own back gesture
+ x0=t.clientX;y0=t.clientY;t0=Date.now();mode='?';m=document.querySelector('main')},{passive:true});
+document.addEventListener('touchmove',e=>{if(!mode||mode=='v')return;const t=e.touches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+ if(mode=='?'){if(Math.abs(dx)<12&&Math.abs(dy)<12)return;mode=Math.abs(dx)>Math.abs(dy)*1.5?'h':'v';if(mode=='v'){m=null;return}}
+ const i=idx(),end=(dx>0&&i<=0)||(dx<0&&i>=SWT.length-1);   // no tab that way: a little resistance instead
+ if(m){m.style.transition='none';m.style.transform=`translateX(${end?dx*.2:dx*.55}px)`;m.style.opacity=String(1-Math.min(.45,Math.abs(dx)/innerWidth*.8))}},{passive:true});
+document.addEventListener('touchend',e=>{if(mode!='h'){mode=null;return}mode=null;const dx=e.changedTouches[0].clientX-x0,fast=Math.abs(dx)>45&&Math.abs(dx)/Math.max(1,Date.now()-t0)>.45,n=idx()+(dx<0?1:-1);
+ if((Math.abs(dx)>innerWidth*.22||fast)&&n>=0&&n<SWT.length){SWDIR=dx<0?1:-1;m=null;haptic(8);go(SWT[n])}else reset()});
+document.addEventListener('touchcancel',()=>{if(mode=='h')reset();mode=null});
+// a one-time tip on touch screens
+setTimeout(()=>{try{if(!matchMedia('(pointer:coarse)').matches||localStorage.getItem('ledger.swtip'))return;localStorage.setItem('ledger.swtip','1');toast('👆 Tip: swipe left or right to switch tabs')}catch(e){}},6500)})();
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
