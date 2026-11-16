@@ -175,7 +175,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.6',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.7',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -645,6 +645,13 @@ return{inst,cc,tot,inc,b:DSRB.find(x=>inc<=x.max),dsr:inc>0?tot/inc*100:0}}
 const mPay=(p,rate,yrs)=>{const n=yrs*12,r=rate/1200;return p<=0||n<=0?0:r?p*r/(1-Math.pow(1+r,-n)):p/n};
 const dsrSt=(v,b)=>v<=b.lo?['ok','✅ High chance of approval','var(--g)']:v<=b.hi?['mid','🟡 Borderline: some banks may approve','#f59e0b']:['hi','🔴 Above the guide for your income','var(--r)'];
 function dsrSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(dsrD()));f(d);delete d.incAuto;cfg('dsr',d)}
+// a quick DSR check on Overview; tap for the full calculator
+function dsrCard(){if(RO())return'';const c=dsrCalc();if(!c.inc&&!c.tot)return'';
+if(!c.inc)return`<div class="card fl" onclick="go('dsr')" style="cursor:pointer"><span>📐 <b>DSR</b> <small>· add your net income to see it</small></span><span>›</span></div>`;
+const st=dsrSt(c.dsr,c.b),room=c.b.lo/100*c.inc-c.tot,over=c.tot-c.b.lo/100*c.inc;
+return`<div class="card dsro" onclick="go('dsr')" style="cursor:pointer;border-left:4px solid ${st[2]}"><div class="fl" style="gap:12px">${ring(Math.min(1,c.dsr/100),st[2],56,Math.round(c.dsr)+'%')}
+<div style="flex:1;min-width:0"><div><b>DSR ${c.dsr.toFixed(1)}%</b> <small>· guide ${c.b.g}</small></div><small style="color:${st[2]};font-weight:600">${st[1]}</small>
+<div><small>${money(c.tot)} of ${money(c.inc)} a month${st[0]=='ok'&&room>0?` · room for ${money(room)} more`:st[0]=='hi'&&over>0?` · ${money(over)} a month over the guide`:''}</small></div></div><span>›</span></div></div>`}
 // pick any card, loan, BNPL or borrowing from your accounts, including ones Ledger has no monthly amount for
 const dsrPickable=()=>S.accs.filter(a=>!(a.lend&&a.lend<today())&&(['card','loan','bnpl','borrow'].includes(a.t)));
 function dsrPick(){if(RO())return;const d=dsrD(),inList=new Set(d.rows.concat(d.cards).map(x=>x.src).filter(Boolean)),l=dsrPickable();
@@ -869,7 +876,7 @@ function recentHtml(){const td=today(),l=[];for(const t of TXD()){if(t.date<=td)
 return`<div class="fl" style="margin:14px 4px 4px"><b>Recent records</b><a onclick="rv='r';rmode='a';fa='';fc='';q='';go('tx')">See all ›</a></div>${recordsHtml(l,'',l.length)}`}
 function ov(){const tm=TXM(ym).filter(t=>isTax(t)).reduce((a,t)=>a-t.amt,0),m=TXM(ym).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0)),by={};
 m.filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);const bs={};m.filter(t=>t.amt<0&&t.shop).forEach(t=>bs[t.shop]=(bs[t.shop]||0)-t.amt);
-return`${heroHtml(inc,exp,tm)}${quickHtml()}${insightsHtml()}${achHtml()}${recentHtml()}<div class="mn"><a onclick="mo(-1)">‹</a><b>${MN[+ym.slice(5)-1]} ${ym.slice(0,4)}</b><a onclick="mo(1)">›</a></div>
+return`${heroHtml(inc,exp,tm)}${quickHtml()}${dsrCard()}${insightsHtml()}${achHtml()}${recentHtml()}<div class="mn"><a onclick="mo(-1)">‹</a><b>${MN[+ym.slice(5)-1]} ${ym.slice(0,4)}</b><a onclick="mo(1)">›</a></div>
 <div class="row3"><div class="card">Income<h3 class="g">${money(inc)}</h3></div><div class="card">Expenses<h3 class="r">${money(exp)}</h3></div><div class="card">Net<h3>${money(inc-exp-tm)}</h3></div></div>${tm?`<small>Tax &amp; zakat paid ${money(tm)} — taken off Net but not counted as spending.</small>`:''}
 ${dueBanner()}${avlCard()}${bovw()}${gCard()}${chv()}<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="fa='${a.id}';go('tx')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>
 <h4>Spending by category</h4><div class="card">${famRows(by).map(f=>`<div class="bar"><div class="fl"><span><span class="ibt" onclick="event.stopPropagation();catIco('${f.id}')">${cbadge(f.main,24)}</span> ${esc(f.main.name)}</span><span>${money(f.v)}</span></div><i style="width:${f.v/exp*100}%;background:${f.main.color||'#94a3b8'}"></i>${f.subs.map(x=>`<div class="fl"><small>　↳ <span class="ibt" onclick="event.stopPropagation();catIco('${x.id}')">${cbadge(x.c,18)}</span> ${esc(x.c.name)}</small><small>${money(x.v)}</small></div>`).join('')}</div>`).join('')||'<small>No expenses this month</small>'}</div>
