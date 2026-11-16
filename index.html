@@ -45,7 +45,7 @@ main{touch-action:pan-y pinch-zoom}
 .chw:not(.spk):not(.pie){max-width:680px;margin-left:auto;margin-right:auto}
 .wl-l{padding:7px 0;border-top:1px solid #8882;gap:10px}.wl-l>b,.wl-l>span+b{white-space:nowrap}.wl-s b{white-space:nowrap;font-size:clamp(12.5px,3.6vw,15px)}.wl-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wl-ch a{padding:5px 11px;border-radius:999px;background:#8882;font-size:12.5px;cursor:pointer}.wl-ch a.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--fg)}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
-.dsr-t{margin-top:10px}.dsr-l{padding:7px 0;border-top:1px solid #8882}.dsr-l:first-of-type{margin-top:8px}.dsr-g{padding:7px 8px;border-radius:8px}.dsr-g.on{background:color-mix(in srgb,var(--acc) 16%,transparent);font-weight:600}
+.dsr-t{margin-top:10px}.dsr-k{display:block;color:var(--mut);margin:2px 0 4px}.dsr-n{display:block;margin:4px 2px 8px;color:var(--mut)}.dsr-l{padding:7px 0;border-top:1px solid #8882}.dsr-l:first-of-type{margin-top:8px}.dsr-g{padding:7px 8px;border-radius:8px}.dsr-g.on{background:color-mix(in srgb,var(--acc) 16%,transparent);font-weight:600}
 .rst{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}.rst.over{color:var(--r);background:color-mix(in srgb,var(--r) 15%,transparent)}
 .rst.today{color:#f59e0b;background:#f59e0b24}.rst.soon{color:#ca8a04;background:#eab3081f}.rst.ok{color:var(--g);background:color-mix(in srgb,var(--g) 14%,transparent)}.rst.auto{color:var(--mut);background:#8882}
 .rci.over{border-left:4px solid var(--r)}.rci.today{border-left:4px solid #f59e0b}
@@ -174,7 +174,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.4',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.5',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -626,22 +626,26 @@ if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-9]$/.
 // guide: the DSR with a high chance of approval for each net income range (from the spreadsheet). hi = edge of "borderline".
 const DSRB=[{max:3000,lo:40,hi:50,g:'40% – 50%',n:'RM3,000 and below'},{max:5000,lo:60,hi:65,g:'about 60%',n:'RM3,001 – RM5,000'},{max:10000,lo:70,hi:75,g:'about 70%',n:'RM5,001 – RM10,000'},{max:Infinity,lo:80,hi:90,g:'80% – 90%',n:'Above RM10,000'}];
 const DSRT={mg:['🏠','Mortgage'],hp:['🚗','Hire purchase'],pl:['💳','Personal loan'],ot:['📄','Other loan'],cc:['🧾','Card instalment']};
-const dsrD=()=>{const d=S.cfg.dsr||{};return{inc:d.inc||0,rows:d.rows||[],cards:d.cards||[],hl:{price:0,mar:90,rate:4,yrs:35,...(d.hl||{})}}};
+// what Ledger already knows: card balances, loan and BNPL repayments, instalment plans (src links each back to its source)
+function dsrAuto(){const o={rows:[],cards:[]};
+S.accs.filter(a=>!(a.lend&&a.lend<today())).forEach(a=>{if(a.t=='card')o.cards.push({src:a.id,n:a.name,b:+owedOf(a).toFixed(2)});
+ else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0)o.rows.push({src:a.id,t:a.t=='bnpl'?'cc':'ot',n:a.name,v:+repAmt(a).toFixed(2)})});
+S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)).forEach(r=>o.rows.push({src:'r:'+r.id,t:'ot',n:r.name,v:+mq(r).toFixed(2)}));return o}
+const dsrPay=()=>{const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];return p?+pn(p).toFixed(2):0};
+// linked entries follow Ledger until you change the amount (ov); removed ones stay hidden (hide); your own entries are kept as typed
+function dsrD(){const d=S.cfg.dsr||{},A=dsrAuto(),hide=d.hide||[],live={};A.rows.forEach(x=>live[x.src]=x);A.cards.forEach(x=>live[x.src]=x);
+const merge=(list,key,auto)=>{const have=new Set();const out=(list||[]).filter(x=>!x.src||live[x.src]||x.ov).map(x=>{if(x.src)have.add(x.src);return x.src&&live[x.src]&&!x.ov?{...x,[key]:live[x.src][key]}:x});
+ auto.forEach(a=>{if(!have.has(a.src)&&!hide.includes(a.src))out.push({id:'a'+a.src.replace(/[^\w]/g,''),...a})});return out};
+return{inc:d.inc||0,incAuto:dsrPay(),rows:merge(d.rows,'v',A.rows),cards:merge(d.cards,'b',A.cards),hide,hl:{price:0,mar:90,rate:4,yrs:35,...(d.hl||{})}}}
 const dsrMin=b=>b>0?Math.max(b*0.05,50):0;   // card minimum payment: 5% of the balance, at least RM50
 const dsrRow=r=>(+r.v||0)*(r.j?0.5:1);       // joint loans count half
-function dsrCalc(d){d=d||dsrD();const inst=d.rows.reduce((a,r)=>a+dsrRow(r),0),cc=d.cards.reduce((a,c)=>a+dsrMin(+c.b||0),0),tot=inst+cc,inc=+d.inc||0;
+function dsrCalc(d){d=d||dsrD();const inst=d.rows.reduce((a,r)=>a+dsrRow(r),0),cc=d.cards.reduce((a,c)=>a+dsrMin(+c.b||0),0),tot=inst+cc,inc=+d.inc||d.incAuto||0;
 return{inst,cc,tot,inc,b:DSRB.find(x=>inc<=x.max),dsr:inc>0?tot/inc*100:0}}
 const mPay=(p,rate,yrs)=>{const n=yrs*12,r=rate/1200;return p<=0||n<=0?0:r?p*r/(1-Math.pow(1+r,-n)):p/n};
 const dsrSt=(v,b)=>v<=b.lo?['ok','✅ High chance of approval','var(--g)']:v<=b.hi?['mid','🟡 Borderline: some banks may approve','#f59e0b']:['hi','🔴 Above the guide for your income','var(--r)'];
-function dsrSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(dsrD()));f(d);cfg('dsr',d)}
-// adds card balances, loan and BNPL repayments and instalment plans already in Ledger (each only once)
-function dsrFill(){const last=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];let n=0;
-dsrSet(d=>{if(last&&!d.inc)d.inc=+pn(last).toFixed(2);const have=new Set(d.rows.map(r=>r.src).concat(d.cards.map(c=>c.src)).filter(Boolean));
- S.accs.filter(a=>!(a.lend&&a.lend<today())&&!have.has(a.id)).forEach(a=>{
-  if(a.t=='card'){d.cards.push({id:uid(),n:a.name,b:+owedOf(a).toFixed(2),src:a.id});n++}
-  else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0){d.rows.push({id:uid(),t:a.t=='bnpl'?'cc':'ot',n:a.name,v:+repAmt(a).toFixed(2),src:a.id});n++}});
- S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)&&!have.has('r:'+r.id)).forEach(r=>{d.rows.push({id:uid(),t:'ot',n:r.name,v:+mq(r).toFixed(2),src:'r:'+r.id});n++});
- setStatus(n?`Added ${n} from your Ledger. Check each type and remove anything counted twice.`:'Nothing new to add from your Ledger')})}
+function dsrSet(f){if(RO())return setStatus('👁 View only');const d=JSON.parse(JSON.stringify(dsrD()));f(d);delete d.incAuto;cfg('dsr',d)}
+// removing a linked entry hides it, so it does not come back on its own
+const dsrRm=(k,id)=>dsrSet(d=>{const x=d[k].find(y=>y.id==id);if(x&&x.src&&!d.hide.includes(x.src))d.hide.push(x.src);d[k]=d[k].filter(y=>y.id!=id)});
 function dsrv(){const d=dsrD(),c=dsrCalc(d),b=c.b,st=dsrSt(c.dsr,b),ro=RO()?'disabled':'',h=d.hl,
 num=(v,on,ph,w)=>`<input type="number" step="0.01" min="0" inputmode="decimal" value="${v||''}" placeholder="${ph||'0.00'}" ${ro} onchange="${on}" style="margin:0${w?';width:'+w:''}">`,
 row=(id,k)=>`d.${k}.find(x=>x.id=='${id}')`,
@@ -651,15 +655,17 @@ r_=h.rate/1200,n_=h.yrs*12,maxLoan=room>0&&n_>0?(r_?room*(1-Math.pow(1+r_,-n_))/
 return`<div class="pulse" style="cursor:default"><div class="pm"><div class="pk">Your DSR (debt service ratio)</div><div class="pv">${c.inc>0?c.dsr.toFixed(1)+'%':'–'}</div>
 ${c.inc>0?`<span class="tc ${st[0]=='ok'?'up':'dn'}">${st[1]}</span>`:'<span class="tc">Enter your net income below</span>'}
 <div class="ps">${money(c.tot)} of monthly commitments${c.inc>0?` ÷ ${money(c.inc)} net income · guide for ${b.n}: <b>${b.g}</b>`:''}</div></div>${c.inc>0?ring(Math.min(1,c.dsr/100),st[2],72,Math.round(c.dsr)+'%'):''}</div>
-${RO()?'':`<button class="s" onclick="dsrFill()">⤵ Fill from my Ledger (cards, loans, instalments)</button>`}
-<h4>Net income</h4><div class="card"><div class="fl"><span>Monthly net income<br><small>Take-home pay after EPF, SOCSO and tax</small></span>${num(d.inc,"dsrSet(d=>d.inc=+this.value||0)",'0.00','140px')}</div>
-${last&&Math.abs(pn(last)-c.inc)>0.005?`<small>Latest payslip net pay ${money(pn(last))} · <a onclick="dsrSet(d=>d.inc=${pn(last).toFixed(2)})">use this</a></small>`:''}</div>
+<small class="dsr-n">🔗 Cards, loans and instalment plans from your Ledger are added and kept up to date for you. Change an amount, remove or add entries any time.${d.hide.length&&!RO()?` <a onclick="dsrSet(d=>d.hide=[])">Show ${d.hide.length} removed</a>`:''}</small>
+<h4>Net income</h4><div class="card"><div class="fl"><span>Monthly net income<br><small>Take-home pay after EPF, SOCSO and tax</small></span>${num(d.inc||d.incAuto,"dsrSet(d=>d.inc=+this.value||0)",'0.00','140px')}</div>
+${!d.inc&&d.incAuto?'<small>🔗 From your latest payslip. Type a different amount to override it.</small>':d.inc&&d.incAuto&&Math.abs(d.incAuto-d.inc)>0.005?`<small>Latest payslip net pay ${money(d.incAuto)} · <a onclick="dsrSet(d=>d.inc=0)">use payslip</a></small>`:''}</div>
 <h4>Loan instalments</h4><div class="card">${d.rows.map(r=>`<div class="dsr-r"><div class="two"><select ${ro} onchange="dsrSet(d=>${row(r.id,'rows')}.t=this.value)">${Object.entries(DSRT).map(([k,[i,n]])=>`<option value="${k}" ${r.t==k?'selected':''}>${i} ${n}</option>`).join('')}</select>
 <input ${ro} value="${esc(r.n)}" placeholder="Name (e.g. Maybank home loan)" onchange="dsrSet(d=>${row(r.id,'rows')}.n=this.value)"></div>
-<div class="fl" style="gap:8px">${num(r.v,`dsrSet(d=>${row(r.id,'rows')}.v=+this.value||0)`,'Monthly instalment','150px')}<label class="fl" style="gap:6px;flex:1;justify-content:flex-start"><input type="checkbox" ${r.j?'checked':''} ${ro} style="width:auto;margin:0" onchange="dsrSet(d=>${row(r.id,'rows')}.j=this.checked)"><small>Joint loan, count half${r.j&&r.v?' ('+money(dsrRow(r))+')':''}</small></label>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(r.n||'loan')}" onclick="dsrSet(d=>d.rows=d.rows.filter(x=>x.id!='${r.id}'))">✕</a>`}</div></div>`).join('')||'<small>No loans yet. Add each monthly instalment, or tap Fill from my Ledger. Other loan covers e.g. ASB financing; Card instalment covers EPP, FPP, QuickCash and balance transfers.</small>'}
+${r.src?`<small class="dsr-k">🔗 From Ledger${r.ov?` · amount changed by you · <a onclick="dsrSet(d=>{const x=${row(r.id,'rows')};x.ov=0})">use Ledger amount</a>`:''}</small>`:''}
+<div class="fl" style="gap:8px">${num(r.v,`dsrSet(d=>{const x=${row(r.id,'rows')};x.v=+this.value||0;if(x.src)x.ov=1})`,'Monthly instalment','150px')}<label class="fl" style="gap:6px;flex:1;justify-content:flex-start"><input type="checkbox" ${r.j?'checked':''} ${ro} style="width:auto;margin:0" onchange="dsrSet(d=>${row(r.id,'rows')}.j=this.checked)"><small>Joint loan, count half${r.j&&r.v?' ('+money(dsrRow(r))+')':''}</small></label>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(r.n||'loan')}" onclick="dsrRm('rows','${r.id}')">✕</a>`}</div></div>`).join('')||'<small>No loans yet. Add each monthly instalment. Other loan covers e.g. ASB financing; Card instalment covers EPP, FPP, QuickCash and balance transfers.</small>'}
 <div class="fl dsr-t">${RO()?'<span></span>':`<button class="s" style="width:auto" onclick="dsrSet(d=>d.rows.push({id:uid(),t:'mg',n:'',v:0}))">+ Add loan</button>`}<span>Total <b>${money(c.inst)}</b></span></div></div>
 <h4>Credit cards (normal spending)</h4><div class="card">${d.cards.map(x=>`<div class="dsr-r"><input ${ro} value="${esc(x.n)}" placeholder="Card name" onchange="dsrSet(d=>${row(x.id,'cards')}.n=this.value)">
-<div class="fl" style="gap:8px">${num(x.b,`dsrSet(d=>${row(x.id,'cards')}.b=+this.value||0)`,'Outstanding balance','150px')}<small style="flex:1">Counts as <b>${money(dsrMin(+x.b||0))}</b> a month</small>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(x.n||'card')}" onclick="dsrSet(d=>d.cards=d.cards.filter(y=>y.id!='${x.id}'))">✕</a>`}</div></div>`).join('')||'<small>No cards yet.</small>'}
+${x.src?`<small class="dsr-k">🔗 From Ledger${x.ov?` · balance changed by you · <a onclick="dsrSet(d=>{const y=${row(x.id,'cards')};y.ov=0})">use Ledger balance</a>`:''}</small>`:''}
+<div class="fl" style="gap:8px">${num(x.b,`dsrSet(d=>{const y=${row(x.id,'cards')};y.b=+this.value||0;if(y.src)y.ov=1})`,'Outstanding balance','150px')}<small style="flex:1">Counts as <b>${money(dsrMin(+x.b||0))}</b> a month</small>${RO()?'':`<a class="dsr-x" title="Remove" aria-label="Remove ${esc(x.n||'card')}" onclick="dsrRm('cards','${x.id}')">✕</a>`}</div></div>`).join('')||'<small>No cards yet.</small>'}
 <div class="fl dsr-t">${RO()?'<span></span>':`<button class="s" style="width:auto" onclick="dsrSet(d=>d.cards.push({id:uid(),n:'',b:0}))">+ Add card</button>`}<span>Total <b>${money(c.cc)}</b></span></div>
 <small>Banks count 5% of each card's outstanding balance, at least RM50. Card instalments (EPP, balance transfer…) go under Loan instalments instead.</small></div>
 <h4>Planning a home loan?</h4><div class="card"><div class="two"><div><small>House price</small>${num(h.price,"dsrSet(d=>d.hl.price=+this.value||0)",'e.g. 500000')}</div><div><small>Loan margin (%)</small>${num(h.mar,"dsrSet(d=>d.hl.mar=+this.value||0)")}</div>
