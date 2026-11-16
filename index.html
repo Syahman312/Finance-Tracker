@@ -139,11 +139,11 @@ main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env
 nav{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 /* all eight tabs always fit, even on the smallest phones */
 nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px}
+.dyk .spk svg{width:100%}.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px}
 /* touch screens: 16px text in fields stops iPhone and iPad zooming in when you tap one; bigger tap targets */
 @media (pointer:coarse){input,select,textarea{font-size:16px}nav a{padding-top:9px;padding-bottom:9px}}
 /* small phones (iPhone SE, mini, compact Android) */
-@media (max-width:390px){nav a{font-size:17px;padding-left:0;padding-right:0}nav a small{font-size:9px;letter-spacing:-.3px;text-overflow:clip}
+@media (max-width:390px){nav a{font-size:17px;padding-left:0;padding-right:0}nav a small{font-size:8.5px;letter-spacing:-.35px;text-overflow:clip}
  .hero{padding:14px}.hero .big{font-size:28px}.hs{gap:6px}.hs div{padding:7px 8px}.hs b{font-size:clamp(10.5px,3.15vw,13px);white-space:nowrap;overflow-wrap:normal}.qa span{width:44px;height:44px}
  .pulse .pv{font-size:22px;white-space:nowrap}.row3 h3{font-size:clamp(12.5px,3.9vw,16px);white-space:nowrap}.row3 .card{padding:10px}}
 /* tablets in portrait and small laptops: centred tab bar instead of one stretched across the screen */
@@ -172,7 +172,7 @@ nav a{flex:1 1 0;min-width:0}nav a small{white-space:nowrap;overflow:hidden;text
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.2',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-16.3',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -600,26 +600,26 @@ rm('stm',id)}
 
 /* ---------- views ---------- */
 let ANIM=1;const haptic=n=>{try{navigator.vibrate&&navigator.vibrate(n||8)}catch(e){}};
-const RT={ov:'overview',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
-TABN={ov:'Overview',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator'};
+const RT={ov:'overview',dy:'daily',tx:'register',ac:'accounts',rc:'recurring',rp:'reports',bd:'budget',sv:'savings',more:'more',cm:'categories',imp:'import',sal:'salary',tax:'tax',avl:'available',rcn:'reconcile',st:'statements',set:'settings',dsr:'dsr'},RTI=Object.fromEntries(Object.entries(RT).map(([a,b])=>[b,a])),
+TABN={ov:'Overview',dy:'Daily',tx:'Register',ac:'Accounts',rc:'Recurring',rp:'Reports',bd:'Budget',sv:'Savings',more:'More',cm:'Category manager',imp:'Import CSV',sal:'Salary and payslips',tax:'Tax',avl:'Available income',rcn:'Reconcile',st:'Statements',set:'Settings',dsr:'DSR calculator'};
 const go=(k,nopush)=>{ANIM=1;haptic();if(k!='sv')GV='';if(k!='tx'){selMode=false;SELS=new Set()}tab=k;try{const h='#'+(RT[k]||k);if(!nopush&&location.hash!=h)history.pushState({t:k},'',h)}catch(e){}render();scrollTo(0,0)};
 const mo=d=>{SELS=new Set();const[y,m]=ym.split('-').map(Number),n=new Date(y,m-1+d,1);ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');render()};
 function render(){
 // commit a field being typed in first: removing it would fire its change handler (and another render) part-way through this one
 const ae=document.activeElement,ap=$('#app');if(ae&&ap&&ap.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))ae.blur();
 CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
-const v=pulseFor(tab)+{ov,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv}[tab]();
+const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv}[tab]();
 const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
-<nav>${[['ov','📊','Overview'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
+<nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}if(SWDIR){const m_=document.querySelector('main');if(m_)m_.classList.add(SWDIR>0?'swl':'swr');SWDIR=0}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
 function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.innerHTML='<div id="toast"></div><div id="ptr">↻</div>';
 [...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr'&&c.parentNode===app)c.remove()});app.insertAdjacentHTML('afterbegin',h)}
-// computer keyboard: N = new record, 1–8 = tabs, Esc = close the open window or chart details
+// computer keyboard: N = new record, 1–9 = tabs, Esc = close the open window or chart details
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target||{},typing=/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)||t.isContentEditable,open=[...document.querySelectorAll('.modal.show')];
 if(e.key=='Escape'){if(open.length){const m=open[open.length-1];if(m.id=='m')closeM();else m.className='modal';e.preventDefault()}else document.querySelectorAll('.chw.on,.pie.sel,.stk.sel').forEach(chOff);return}
 if(typing||open.length||($('#lock')||{}).className=='show')return;
-if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-8]$/.test(e.key))go(['ov','tx','ac','rc','rp','bd','sv','more'][+e.key-1])});
+if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-9]$/.test(e.key))go(['ov','dy','tx','ac','rc','rp','bd','sv','more'][+e.key-1])});
 /* ===== DSR CALCULATOR: debt service ratio for Malaysian loan applications (built from the user's DSR spreadsheet) ===== */
 // guide: the DSR with a high chance of approval for each net income range (from the spreadsheet). hi = edge of "borderline".
 const DSRB=[{max:3000,lo:40,hi:50,g:'40% – 50%',n:'RM3,000 and below'},{max:5000,lo:60,hi:65,g:'about 60%',n:'RM3,001 – RM5,000'},{max:10000,lo:70,hi:75,g:'about 70%',n:'RM5,001 – RM10,000'},{max:Infinity,lo:80,hi:90,g:'80% – 90%',n:'Above RM10,000'}];
@@ -668,7 +668,7 @@ ${c.inc>0?`<div class="fl dsr-l"><span>Room for new instalments within ${b.lo}%<
 <h4>DSR guide</h4><div class="card">${DSRB.map(x=>`<div class="fl dsr-g ${c.inc>0&&x===b?'on':''}"><span>${x.n}</span><b>${x.g}</b></div>`).join('')}<small>The DSR range with a high chance of loan approval for each net income range.</small></div>
 ${det('dsrtip','💡 How to fill this in',`<small>• Joint mortgage: tick "Joint loan" or key in your half. E.g. RM2,300 a month in two names → RM1,150.<br>• Card instalments (EPP, FPP, QuickCash, balance transfer) are listed in your CCRIS report under Instalment. Key in the monthly amount.<br>• Normal card spending: key in the outstanding balance from your CCRIS report. E.g. RM4,996 → minimum payment RM249.80.<br>• Your DSR is your total monthly commitments divided by your net income.</small>`)}`}
 /* ===== SWIPE BETWEEN TABS: on a phone or tablet, slide left for the next tab and right for the previous one ===== */
-const SWT=['ov','tx','ac','rc','rp','bd','sv','more'];let SWDIR=0;
+const SWT=['ov','dy','tx','ac','rc','rp','bd','sv','more'];let SWDIR=0;
 (()=>{let x0=0,y0=0,t0=0,mode=null,m=null;
 // swipes that start on something that already scrolls or drags sideways, or on a control, are left alone
 const skip=el=>{if(!el||!el.closest)return false;if(el.closest('.chw svg,.stk .sb,nav,.modal,[data-noswipe]'))return true;
@@ -688,6 +688,25 @@ document.addEventListener('touchend',e=>{if(mode!='h'){mode=null;return}mode=nul
 document.addEventListener('touchcancel',()=>{if(mode=='h')reset();mode=null});
 // a one-time tip on touch screens
 setTimeout(()=>{try{if(!matchMedia('(pointer:coarse)').matches||localStorage.getItem('ledger.swtip'))return;localStorage.setItem('ledger.swtip','1');toast('👆 Tip: swipe left or right to switch tabs')}catch(e){}},6500)})();
+/* ===== DAILY: the account used for everyday spending, at a glance ===== */
+// the chosen account, or the debit account with the most spending in the last 30 days
+function dyAcc(){const pick=S.accs.find(a=>a.id==S.cfg.dAcc);if(pick)return pick;const f=new Date();f.setDate(f.getDate()-30);const from=f.toLocaleDateString('en-CA'),n={};
+S.tx.forEach(t=>{if(t.date>=from&&isSp(t))n[t.acc]=(n[t.acc]||0)+1});const d=S.accs.filter(a=>grp(a)=='debit');return d.sort((a,b)=>(n[b.id]||0)-(n[a.id]||0))[0]||S.accs[0]}
+function dyv(){const a=dyAcc();if(!a)return'<div class="card empty"><span>👛</span><b>No accounts yet</b><small>Add an account in Accounts first.</small></div>';
+const t=today(),dAgo=k=>{const x=new Date(t+'T00:00:00');x.setDate(x.getDate()-k);return x.toLocaleDateString('en-CA')},wk=(()=>{const x=new Date(t+'T00:00:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toLocaleDateString('en-CA')})(),
+mine=TX().filter(x=>x.acc==a.id||x.to==a.id),sp=x=>x.acc==a.id&&isSp(x)?-x.amt:0,sum_=f=>mine.filter(f).reduce((s,x)=>s+sp(x),0),
+day=sum_(x=>x.date==t),week=sum_(x=>x.date>=wk&&x.date<=t),month=sum_(x=>x.date.startsWith(t.slice(0,7))&&x.date<=t),avg=sum_(x=>x.date>dAgo(30)&&x.date<=t)/30,
+L=isL(a),b=L?-bal(a):bal(a),lasts=!L&&avg>0&&b>0?Math.floor(b/avg):null,
+days=[...Array(31)].map((_,i)=>dAgo(30-i)),series=days.map(d=>{const v=bal(a,d);return L?-v:v}),
+recent=mine.filter(x=>x.date<=t).sort((x,y)=>y.date.localeCompare(x.date)).slice(0,25);
+return`<div class="hero"><div class="fl"><small>${lg(a)} ${esc(a.name)}${L?' · owed':''}</small><select onchange="cfg('dAcc',this.value)" aria-label="Choose the daily account" style="width:auto;margin:0;padding:4px 8px;background:#ffffff22;color:#fff;border-color:#ffffff44">${S.accs.map(x=>`<option value="${x.id}" ${x.id==a.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+<small>${L?'Owed':'Balance'}</small><div class="big">${money(b)}</div>
+<div class="hs"><div><small>Today</small><b>−${money(day)}</b></div><div><small>This week</small><b>−${money(week)}</b></div><div><small>This month</small><b>−${money(month)}</b></div></div>
+${lasts!=null?`<div class="nudge" style="cursor:default">At your usual ${money(avg)} a day, this lasts about ${lasts} day${lasts==1?'':'s'}</div>`:''}</div>
+${RO()?'':`<div class="two"><button onclick="RCADD=null;edit('',{acc:'${a.id}'})">💸 Expense</button><button class="s" onclick="trEd('','${a.id}')">⇄ Top up</button></div>`}
+<div class="card"><small>${L?'Owed':'Balance'} · last 30 days</small>${lineSvg(days.map((d,i)=>i%10==0?+d.slice(8)+' '+MN[+d.slice(5,7)-1]:''),series,{n:L?'Owed':'Balance',d:0,full:days.map(d=>dayLbl(d))})}</div>
+<h4>Recent on ${esc(a.name)}</h4>${recordsHtml(recent,a.id,recent.length)}
+${!S.cfg.dAcc?`<small>Showing the account you spend from most. Pick another with the menu at the top; Ledger remembers it.</small>`:''}`}
 let NWV=null;function countUp(){const e=document.getElementById('nw');if(!e)return;const to=+e.dataset.v,from=NWV==null?to*.85:NWV;NWV=to;if(Math.abs(to-from)<0.01)return;const t0=performance.now(),D=600;
 const step=n=>{const p=Math.min(1,(n-t0)/D),k=1-Math.pow(1-p,3);e.textContent=money(from+(to-from)*k);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 /* ===== PULSE CARDS: a live summary at the top of each tab ===== */
