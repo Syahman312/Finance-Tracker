@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" data-t="dark"><head><meta charset="utf-8">
 <script>if(location.protocol=='http:'&&!/^(localhost|127\.|10\.|192\.168\.|\[::1\])/.test(location.hostname))location.replace('https:'+location.href.slice(5))</script>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev; frame-src 'self' blob: https://accounts.google.com; worker-src 'self' blob: https://cdn.jsdelivr.net; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://en.wikipedia.org https://commons.wikimedia.org; frame-src 'self' blob: https://accounts.google.com; worker-src 'self' blob: https://cdn.jsdelivr.net; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow,noarchive,nosnippet"><meta name="googlebot" content="noindex,nofollow">
 <meta name="description" content="Ledger — a private personal finance tracker: accounts, budgets, reconciliation, payslips and Malaysian tax, synced to your own Google Sheet.">
@@ -69,6 +69,8 @@ main.swl{animation:swl .3s cubic-bezier(.2,.8,.2,1) both}main.swr{animation:swr 
 .dua{display:flex;flex-direction:column;align-items:flex-end;gap:5px;text-align:right;max-width:55%}.dub{padding:4px 14px;border-radius:999px;background:var(--acc);color:#fff!important;font-size:12.5px;font-weight:600;cursor:pointer}.dub.s{background:#8883;color:var(--fg)!important}
 .acd{margin:-2px 0 10px;padding:4px 12px;border-radius:12px;background:#8881}.acd .fl{padding:5px 0;border-top:1px solid #8881;gap:10px}.acd .fl:first-child{border-top:0}.acd .fl small:last-child{text-align:right}
 .b5t{flex-wrap:wrap;row-gap:4px}.b5n{white-space:nowrap}
+.glc{padding:6px 0 4px;border-top:1px solid #8882}.glc:first-child{border-top:0}.cps{position:absolute;left:8px;bottom:6px;font-size:10px;color:#fffc;background:#0006;padding:1px 6px;border-radius:6px}
+.cpg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.cpg a{border-radius:12px;overflow:hidden;background:#8882;aspect-ratio:4/3;cursor:pointer}.cpg img{width:100%;height:100%;object-fit:cover;display:block}
 .wl-l{padding:7px 0;border-top:1px solid #8882;gap:10px}.wl-l>b,.wl-l>span+b{white-space:nowrap}.wl-s b{white-space:nowrap;font-size:clamp(12.5px,3.6vw,15px)}.wl-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wl-ch a{padding:5px 11px;border-radius:999px;background:#8882;font-size:12.5px;cursor:pointer}.wl-ch a.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--fg)}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
 .dsr-t{margin-top:10px}.dsr-p{padding:10px 8px;border-radius:10px;border-bottom:1px solid #8882;cursor:pointer;gap:10px}.dsr-p:hover{background:#8881}.dsr-p b{white-space:nowrap;color:var(--acc)}.dsr-p.on{cursor:default;opacity:.6}.dsr-p.on b{color:var(--g)}
@@ -194,7 +196,7 @@ html,body{overscroll-behavior-y:contain}
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-22.2',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-22.3',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -655,7 +657,8 @@ const DSRT={mg:['🏠','Mortgage'],hp:['🚗','Hire purchase'],pl:['💳','Perso
 function dsrAuto(){const o={rows:[],cards:[]};
 S.accs.filter(a=>!(a.lend&&a.lend<today())).forEach(a=>{if(a.t=='card')o.cards.push({src:a.id,n:a.name,b:+owedOf(a).toFixed(2)});
  else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0)o.rows.push({src:a.id,t:a.t=='bnpl'?'cc':'ot',n:a.name,v:+repAmt(a).toFixed(2)})});
-S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)).forEach(r=>o.rows.push({src:'r:'+r.id,t:'ot',n:r.name,v:+mq(r).toFixed(2)}));return o}
+S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)).forEach(r=>o.rows.push({src:'r:'+r.id,t:'ot',n:r.name,v:+mq(r).toFixed(2)}));
+gLoose().forEach(x=>o.rows.push({src:'gl:'+x.L.id,t:'hp',n:x.name+' (Garage)',v:+x.c.inst.toFixed(2)}));return o}
 const dsrPay=()=>{const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];return p?+pn(p).toFixed(2):0};
 // linked entries follow Ledger until you change the amount (ov); removed ones stay hidden (hide); your own entries are kept as typed
 function dsrD(){const d=S.cfg.dsr||{},A=dsrAuto(),hide=d.hide||[],live={};A.rows.forEach(x=>live[x.src]=x);A.cards.forEach(x=>live[x.src]=x);
@@ -679,14 +682,55 @@ ${ro?'':`<div class="sfs">${sug.slice(0,4).map(n=>`<a onclick="sfNew('${n}')">+ 
 let CARSEL='';
 const gItems=()=>{try{return JSON.parse(localStorage.getItem('ledger.g')||'[]').filter(i=>i&&!i.deleted)}catch(e){return[]}};
 const carOf=i=>i.carId||i.car;
+/* ===== GARAGE CAR LOANS: worked out the same way as the Garage app, and linked into Ledger ===== */
+// 'eir' = reducing balance (hire purchase agreements from 1 June 2026); 'flat' = flat rate with the Rule of 78 rebate when settling early
+const gPmt=(P,r,n)=>r>0?P*r/(1-Math.pow(1+r,-n)):P/n;
+const gAddM=(d,k)=>{const x=new Date(d+'T00:00:00'),day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+k);x.setDate(Math.min(day,new Date(x.getFullYear(),x.getMonth()+1,0).getDate()));return x.toLocaleDateString('en-CA')};
+const gDueBy=(d0,asOf)=>{if(!d0||asOf<d0)return 0;let k=(+asOf.slice(0,4)-+d0.slice(0,4))*12+(+asOf.slice(5,7)-+d0.slice(5,7));if(gAddM(d0,k)>asOf)k--;return k+1};
+function gLoanCalc(L,asOf){asOf=asOf||today();const P=+L.amt||0,n=Math.round(+L.n||0),flat=L.lm==='flat',rate=(+L.rate||0)/100,d0=L.date||today();if(!(P>0&&n>0))return null;
+if(flat){const TI=P*rate*n/12,inst=+L.inst||(P+TI)/n,k0=Math.min(n,gDueBy(d0,asOf)),k=n-k0,reb=TI*k*(k+1)/(n*(n+1));
+ return{flat,inst,paidN:k0,leftN:k,bal:Math.max(0,k*inst-reb),eir:eirFlat(P,n,inst),end:gAddM(d0,n-1),d0}}
+const r=rate/12,inst=+L.inst||gPmt(P,r,n),pre=L.pre||{};let bal=P,i=0,paidN=0,balNow=P;
+while(bal>0.005&&i<n+600){const d=gAddM(d0,i),iv=bal*r,pay=Math.min(inst,bal+iv);bal=bal+iv-pay;Object.entries(pre).forEach(([pd,a])=>{if(pd>gAddM(d0,i-1)&&pd<=d)bal=Math.max(0,bal-(+a||0))});i++;if(d<=asOf){paidN=i;balNow=bal}}
+return{flat,inst,paidN,leftN:Math.max(0,i-paidN),bal:balNow,eir:rate*100,end:gAddM(d0,i-1),d0}}
+// Garage loans with their figures; 'acc' is the Ledger account you linked, if any
+const gLink=()=>S.cfg.gln||{};
+function gLoans(){const G=gItems(),cars={};G.filter(i=>i.kind=='car').forEach(c=>cars[c.id]=c);
+return G.filter(i=>i.kind=='loan').map(L=>{const c=gLoanCalc(L);if(!c)return null;const car=cars[L.carId]||{};const a=S.accs.find(x=>x.id==gLink()[L.id]);return{L,c,car,acc:a||null,name:L.name||((car.name||'Car')+' loan')}}).filter(x=>x&&x.c.leftN>0)}
+// the ones Ledger should count by themselves (not linked to an account, so never counted twice)
+const gLoose=()=>gLoans().filter(x=>!x.acc);
+function gLinkSet(lid,aid){if(RO())return;const m={...gLink()};if(aid)m[lid]=aid;else delete m[lid];cfg('gln',m)}
+function gLinkNew(lid){if(RO())return;const x=gLoans().find(y=>y.L.id==lid);if(!x)return;const id=uid();
+S.accs.push({id,name:x.name,t:'loan',color:'#f59e0b',open:+x.c.bal.toFixed(2),pmode:'fixed',pay:+x.c.inst.toFixed(2),due:+(x.L.date||today()).slice(8),lend:x.c.end,u:now()});
+const m={...gLink(),[lid]:id};S.cfg.gln=m;S.cfg.u=now();save();setStatus('Created the loan account "'+x.name+'" and linked it')}
+function gLoanCard(x){const ro=RO(),loans=S.accs.filter(a=>a.t=='loan'||a.t=='bnpl'),lb=x.acc?Math.max(0,-bal(x.acc)):0,off=x.acc&&Math.abs(lb-x.c.bal)>1;
+return`<div class="glc"><div class="fl"><span>🏦 <b>${esc(x.name)}</b><br><small>${x.c.paidN} of ${x.c.paidN+x.c.leftN} paid · ends ${fmtD(x.c.end)} · ${x.c.flat?'flat rate':'EIR '+x.c.eir.toFixed(2)+'%'}</small></span><b style="text-align:right">${money(x.c.inst)}<br><small>about ${money(x.c.bal)} to settle</small></b></div>
+${x.acc?`<div class="fl wl-l"><small>🔗 Linked to <a onclick="acSheet('${x.acc.id}')">${esc(x.acc.name)}</a> · Ledger shows ${money(lb)}</small>${ro?'':`<a class="dsr-x" title="Unlink" onclick="gLinkSet('${x.L.id}','')">✕</a>`}</div>${off&&!ro?`<div class="ffn">Garage says about ${money(x.c.bal)} is left, Ledger shows ${money(lb)}. <a onclick="adjEd('${x.acc.id}')">Adjust ${esc(x.acc.name)}</a></div>`:''}`
+:ro?'':`<div class="fl wl-l" style="gap:8px;flex-wrap:wrap"><small style="flex:1">Counted in DSR, debt planner and forecast from Garage. Already tracking it in Ledger?</small><span class="sfs" style="margin:0">${loans.length?`<select style="width:auto;margin:0;padding:5px 8px" onchange="if(this.value)gLinkSet('${x.L.id}',this.value)"><option value="">Link to…</option>${loans.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select>`:''}<a onclick="gLinkNew('${x.L.id}')">+ Create account</a></span></div>`}</div>`}
+/* ===== CAR PICTURE: found on Wikipedia / Wikimedia Commons from the model name ===== */
+const carQ=(car,cx)=>((cx&&cx.model)||car.name||'').replace(/\b(19|20)\d\d\b/g,'').trim();
+async function carPics(q){const out=[],seen=new Set(),add=(u,t)=>{if(u&&!seen.has(u)&&!/\.svg/i.test(u)){seen.add(u);out.push({u,t})}};
+try{const r=await(await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=6&prop=pageimages&piprop=thumbnail&pithumbsize=800&pilicense=free&gsrsearch='+encodeURIComponent(q+' car'))).json();
+ Object.values((r.query||{}).pages||{}).sort((a,b)=>a.index-b.index).forEach(p=>p.thumbnail&&add(p.thumbnail.source,'Wikipedia: '+p.title))}catch(e){}
+try{const r=await(await fetch('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url&iiurlwidth=800&gsrsearch='+encodeURIComponent(q+' side'))).json();
+ Object.values((r.query||{}).pages||{}).sort((a,b)=>a.index-b.index).forEach(p=>{const i=(p.imageinfo||[])[0];if(i)add(i.thumburl||i.url,'Wikimedia Commons: '+p.title.replace(/^File:/,''))})}catch(e){}
+return out}
+// keep a small copy of the picture so it shows offline; fall back to the web address if the copy is not allowed
+function carPicUse(id,u,t){const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{const W=Math.min(720,im.width),c=document.createElement('canvas');c.width=W;c.height=Math.round(im.height*W/im.width);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let d=c.toDataURL('image/webp',0.8);if(!/^data:image\/webp/.test(d))d=c.toDataURL('image/jpeg',0.82);carXSet(id,{img:d,src:t||''})}catch(e){carXSet(id,{img:u,src:t||''})}};im.onerror=()=>setStatus('Could not load that picture');im.src=u}
+let CARPF={};
+async function carAuto(id,q){if(!q||CARPF[id]||RO())return;CARPF[id]=1;const l=await carPics(q);if(!l.length)return;const x=carX(id);if(!x.img&&!x.noAuto)carPicUse(id,l[0].u,l[0].t)}
+async function carFind(id,q){$('#m').innerHTML=`<div><h3>Pictures of ${esc(q)}</h3><small>Searching Wikipedia and Wikimedia Commons…</small></div>`;$('#m').className='modal show';const l=await carPics(q);
+$('#m').innerHTML=`<div><h3>Pictures of ${esc(q)}</h3><small>${l.length?'Tap one to use it. Freely licensed photos from Wikipedia and Wikimedia Commons.':'Nothing found. Check the model name (✏️ Model & type), or add your own photo.'}</small>
+<div class="cpg">${l.slice(0,12).map(x=>`<a onclick="closeM();carPicUse('${id}',${esc(JSON.stringify(x.u))},${esc(JSON.stringify(x.t))})"><img src="${esc(x.u)}" alt="" loading="lazy"></a>`).join('')}</div>
+<button class="s" onclick="closeM();$('#carf').click()">📷 Use my own photo</button><button class="s" onclick="closeM()">Cancel</button></div>`}
 // your own photo, model and type for a car (kept in Ledger, since Garage does not sync photos)
 const carX=id=>((S.cfg.carx||{})[id])||{};
 function carXSet(id,o){if(RO())return;const all={...(S.cfg.carx||{})};all[id]={...(all[id]||{}),...o};cfg('carx',all)}
 function carPhoto(id,f){if(!f)return;const im=new Image();im.onload=()=>{const W=Math.min(720,im.width),c=document.createElement('canvas');c.width=W;c.height=Math.round(im.height*W/im.width);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
- let d=c.toDataURL('image/webp',0.8);if(!/^data:image\/webp/.test(d))d=c.toDataURL('image/jpeg',0.82);carXSet(id,{img:d});setStatus('Car photo saved')};im.onerror=()=>setStatus('Could not read that picture. Try a JPG or PNG.');im.src=URL.createObjectURL(f)}
+ let d=c.toDataURL('image/webp',0.8);if(!/^data:image\/webp/.test(d))d=c.toDataURL('image/jpeg',0.82);carXSet(id,{img:d,src:''});setStatus('Car photo saved')};im.onerror=()=>setStatus('Could not read that picture. Try a JPG or PNG.');im.src=URL.createObjectURL(f)}
 function carEdit(id,name,sub){const x=carX(id);$('#m').innerHTML=`<div><h3>Car details in Ledger</h3><small>Shown on this page only. Garage keeps its own name.</small>
 <small>Model</small><input id="cx_m" value="${esc(x.model||name||'')}" placeholder="e.g. Proton eMas 7"><small>Type</small><input id="cx_s" value="${esc(x.sub||sub||'')}" placeholder="e.g. Electric SUV">
-<button onclick="carXSet('${id}',{model:$('#cx_m').value.trim(),sub:$('#cx_s').value.trim()});closeM()">Save</button>${x.img?`<button class="d" onclick="carXSet('${id}',{img:''});closeM()">Remove photo</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+<button onclick="carXSet('${id}',{model:$('#cx_m').value.trim(),sub:$('#cx_s').value.trim()});closeM()">Save</button>${x.img?`<button class="d" onclick="carXSet('${id}',{img:'',src:'',noAuto:1});closeM()">Remove photo</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
 function carSyncNow(){localStorage.removeItem('ledger.gt');setStatus('Getting the latest from Garage…');sync()}
 function carv(){const G=gItems(),cars=G.filter(i=>i.kind=='car'),t=today(),gtAt=+(localStorage.getItem('ledger.gt')||0);
 const head=`<div class="fl"><small>${gtAt?'From Garage · updated '+(Date.now()-gtAt<6e4?'just now':new Date(gtAt).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'Not linked to Garage yet'}</small>${RO()?'':`<button class="s" style="width:auto;white-space:nowrap;font-size:13px;padding:6px 12px" onclick="carSyncNow()">↻ Sync now</button>`}</div>`;
@@ -703,14 +747,14 @@ const lnRow=L=>{const n=+L.n||0,inst=+L.inst||0,d0=L.date||t;let paid=0;if(d0<=t
 return`${head}${cars.length>1?`<div class="seg">${cars.map(c=>`<a class="${c.id==car.id?'on':''}" onclick="CARSEL='${c.id}';render()">${esc(c.name||c.plate||'Car')}</a>`).join('')}</div>`:''}
 <div class="hero carh"><div class="fl" style="align-items:flex-start"><div><small>${esc(cx.model||car.name||'My car').toUpperCase()}${car.plate?' · '+esc(car.plate):''}</small><div class="big" style="font-size:24px;margin:2px 0 6px">${esc(cx.sub||car.engine||car.name||'My car')}</div></div>${nx&&nx.over?'<span class="chip" style="background:#ef4444">⚠ Overdue</span>':nx&&nx.soon?'<span class="chip">Due soon</span>':''}</div>
 ${RO()?'':`<input type="file" accept="image/*" id="carf" hidden onchange="carPhoto('${car.id}',this.files[0]);this.value=''">`}
-${cx.img?`<div class="carpic"><img src="${cx.img}" alt="${esc(cx.model||car.name||'My car')}">${RO()?'':`<span class="carbtn"><a onclick="$('#carf').click()" title="Change photo">📷</a><a onclick="carEdit('${car.id}','${esc(car.name||'')}','${esc(car.engine||'')}')" title="Edit model">✏️</a></span>`}</div>`
-:RO()?'':`<div class="carpic add"><a onclick="$('#carf').click()">📷 Add a photo of your car</a><a onclick="carEdit('${car.id}','${esc(car.name||'')}','${esc(car.engine||'')}')">✏️ Model &amp; type</a></div>`}
+${!cx.img&&!cx.noAuto?(setTimeout(()=>carAuto(car.id,carQ(car,cx)),0),''):''}${cx.img?`<div class="carpic"><img src="${cx.img}" alt="${esc(cx.model||car.name||'My car')}">${cx.src?`<small class="cps">Photo: ${esc(cx.src.replace(/:.*/,''))}</small>`:''}${RO()?'':`<span class="carbtn"><a onclick="carFind('${car.id}',${esc(JSON.stringify(carQ(car,cx)))})" title="Find another picture">🔎</a><a onclick="$('#carf').click()" title="Use my own photo">📷</a><a onclick="carEdit('${car.id}','${esc(car.name||'')}','${esc(car.engine||'')}')" title="Edit model">✏️</a></span>`}</div>`
+:RO()?'':`<div class="carpic add"><a onclick="carFind('${car.id}',${esc(JSON.stringify(carQ(car,cx)))})">🔎 Find a picture</a><a onclick="$('#carf').click()">📷 Add a photo of your car</a><a onclick="carEdit('${car.id}','${esc(car.name||'')}','${esc(car.engine||'')}')">✏️ Model &amp; type</a></div>`}
 <div class="hs"><div><small>Odometer</small><b>${odo?odo.toLocaleString()+' km':'–'}</b></div><div><small>Next due</small><b>${nx?(+nx.i.odo?(+nx.i.odo).toLocaleString()+' km':fmtD(nx.i.date)):'–'}</b></div><div><small>This month</small><b>${money(fuel.reduce((a,i)=>a+(+i.cost||0),0))}</b></div></div></div>
 ${nx&&(nx.over||nx.soon)?`<div class="card" style="border-left:4px solid ${nx.over?'var(--r)':'#f59e0b'}"><b>${nx.over?'⚠ ':''}${esc(nx.i.item||'Service')} ${nx.over?'overdue':'due soon'}</b><br><small>${nx.dk!=null?(nx.dk<=0?'Overdue by '+(-nx.dk).toLocaleString()+' km':'In '+nx.dk.toLocaleString()+' km')+' (due at '+(+nx.i.odo).toLocaleString()+' km)':''}${nx.dk!=null&&nx.dd!=null?' · ':''}${nx.dd!=null?(nx.dd<0?(-nx.dd)+' days late':nx.dd==0?'today':'in '+nx.dd+' days')+' ('+fmtD(nx.i.date)+')':''}</small></div>`:''}
 <div class="two"><div class="card"><small>${ev.length?'⚡ EV charging':'⛽ Fuel'} this month</small><h3>${money(fuel.reduce((a,i)=>a+(+i.cost||0),0))}</h3><small>${fuel.length} ${ev.length?'session':'fill-up'}${fuel.length==1?'':'s'}</small></div><div class="card"><small>🔧 Service &amp; repairs ${t.slice(0,4)}</small><h3>${money(svc.reduce((a,i)=>a+(+i.cost||0),0))}</h3><small>${svc.length} record${svc.length==1?'':'s'}</small></div></div>
 ${car.rtax||car.ins?`<h4>Road tax &amp; insurance</h4><div class="card">${ex(car.rtax,'🧾 Road tax')}${ex(car.ins,'🛡️ Insurance')}</div>`:''}
 ${todos.length?`<h4>Maintenance</h4><div class="card">${todos.slice(0,8).map(x=>`<div class="fl wl-l"><span>${esc(x.i.item||'Service')}</span><small class="${x.over?'r':x.soon?'':'g'}" style="text-align:right">${x.over?'⚠ overdue':x.soon?'due soon':'ok'}${+x.i.odo?' · '+(+x.i.odo).toLocaleString()+' km':''}${x.i.date?' · '+fmtD(x.i.date):''}</small></div>`).join('')}</div>`:''}
-${loans.length?`<h4>Vehicle loan</h4><div class="card">${loans.map(lnRow).join('')}</div>`:''}
+${(()=>{const gl=gLoans().filter(x=>x.L.carId==car.id||mine.some(i=>i.id==x.L.id));return gl.length?`<h4>Vehicle loan</h4><div class="card">${gl.map(gLoanCard).join('')}</div>`:''})()}
 <h4>Sinking funds for the car</h4><div class="card">${sf.length?sf.map(x=>`<div class="sfr" onclick="GV='${x.g.id}';go('sv')"><div class="fl"><span>${gIco(x.g)} ${esc(x.g.name)}</span><b>${money(x.funded)}</b></div>${gBar(x)}<small>${Math.round(x.pct)}% of ${money(x.target)}</small></div>`).join(''):'<small>None yet.</small>'}${RO()?'':`<div class="sfs">${['Car insurance','Road tax','Car maintenance'].filter(n=>!sf.some(x=>x.g.name.toLowerCase()==n.toLowerCase())).map(n=>`<a onclick="sfNew('${n}')">+ ${n}</a>`).join('')}</div>`}</div>
 <small>Add or change car details, services and reminders in your Garage app; they appear here after the next sync.</small>`}
 /* ===== shared date helpers for the planning pages ===== */
@@ -768,6 +812,7 @@ S.rec.filter(r=>r.on&&r.start&&+r.amt>0&&ids.has(r.acc)).forEach(r=>{names.push(
  for(let i=0;i<3000;i++){const d=rdate(r,i);if(r.end&&d>r.end)break;if(r.k=='ins'&&r.n&&i>=r.n)break;if(d>end)break;if(d<=t)continue;ev.push({d,n:r.name,v:sg*r.amt,k:sg>0?'in':'out'})}});
 S.accs.filter(a=>isL(a)&&a.due&&!(a.lend&&a.lend<t)).forEach(a=>{const nm=(a.name||'').toLowerCase();if(names.some(n=>n&&(nm.includes(n)||n.includes(nm))))return;const i=dueInfo(a);if(!i)return;
  let d=i.date,first=1;for(let k=0;k<6&&d<=end;k++){const amt=first?(i.status=='paid'?0:i.amt):repAmt(a);const dd=first&&d<t?t:d;if(amt>0&&(first?dd>=t:dd>t))ev.push({d:dd,n:a.name+(a.t=='card'?' payment':' instalment'),v:-amt,k:'debt'});first=0;d=addMD(i.date,k+1)}});
+gLoose().forEach(x=>{for(let k=0;k<x.c.leftN&&k<6;k++){const d=gAddM(x.c.d0,x.c.paidN+k);if(d>end)break;if(d>t)ev.push({d,n:x.name+' (Garage)',v:-x.c.inst,k:'debt'})}});
 if(!S.rec.some(r=>r.on&&r.ty=='i')){const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];if(p){const day=+p.date.slice(8);for(let k=0;k<4;k++){const mm=mAdd(t.slice(0,7),k),d=mm+'-'+String(Math.min(day,dim(mm))).padStart(2,'0');if(d>t&&d<=end)ev.push({d,n:'Salary (from your payslip)',v:pn(p),k:'in'})}}}
 return ev.sort((a,b)=>a.d.localeCompare(b.d))}
 function fcCalc(H){const c=fcD(),t=today(),D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),start=D.reduce((s,a)=>s+bal(a),0),ev=fcEvents(H),
@@ -789,8 +834,8 @@ return`<div class="pulse" style="cursor:default"><div class="pm"><div class="pk"
 /* ===== DEBT PAYOFF PLANNER: snowball or avalanche ===== */
 const dpD=()=>({extra:200,mode:'av',r:{},m:{},off:{},...(S.cfg.dp||{})});
 function dpSet(f){if(RO())return;const d=JSON.parse(JSON.stringify(dpD()));f(d);cfg('dp',d)}
-function dpList(){const d=dpD();return S.accs.filter(a=>isL(a)&&!(a.lend&&a.lend<today())&&owedOf(a)>0.5).map(a=>{const b=owedOf(a),dr={card:18,bnpl:0,loan:4,borrow:0}[a.t]??5,dm=a.t=='card'?dsrMin(b):repAmt(a)||Math.max(50,b*.03);
-return{id:a.id,a,bal:b,rate:d.r[a.id]??dr,min:d.m[a.id]??+dm.toFixed(2),on:!d.off[a.id]}})}
+function dpList(){const d=dpD();return gLoose().map(x=>{const id='gl:'+x.L.id;return{id,a:{id,name:x.name+' (Garage)',t:'loan',i:'🚗'},bal:x.c.bal,rate:d.r[id]??+x.c.eir.toFixed(2),min:d.m[id]??+x.c.inst.toFixed(2),on:!d.off[id]}}).concat(S.accs.filter(a=>isL(a)&&!(a.lend&&a.lend<today())&&owedOf(a)>0.5).map(a=>{const b=owedOf(a),dr={card:18,bnpl:0,loan:4,borrow:0}[a.t]??5,dm=a.t=='card'?dsrMin(b):repAmt(a)||Math.max(50,b*.03);
+return{id:a.id,a,bal:b,rate:d.r[a.id]??dr,min:d.m[a.id]??+dm.toFixed(2),on:!d.off[a.id]}}))}
 function dpSim(list,extra,mode){const D=list.filter(x=>x.on).map(x=>({...x,b:x.bal,int:0,month:null})),budget=D.reduce((s,x)=>s+x.min,0)+Math.max(0,extra),ser=[D.reduce((s,x)=>s+x.b,0)];let m=0,ti=0;
 while(D.some(x=>x.b>0.005)&&m<600){m++;D.forEach(x=>{if(x.b>0.005){const i=x.b*x.rate/1200;x.b+=i;x.int+=i;ti+=i}});let av=budget;
  D.forEach(x=>{if(x.b>0.005){const p=Math.min(x.min,x.b,av);x.b-=p;av-=p}});
