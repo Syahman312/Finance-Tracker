@@ -76,6 +76,7 @@ main.swl{animation:swl .3s cubic-bezier(.2,.8,.2,1) both}main.swr{animation:swr 
 .evi{font-size:20px;padding:4px 8px!important}.evi.on{background:var(--acc)!important}
 .rvs{display:flex;justify-content:space-between;gap:6px;margin:6px 0}.rvs a{flex:1;text-align:center;font-size:1.9em;padding:6px 0;border-radius:12px;background:#8881;cursor:pointer;filter:grayscale(.5);transition:transform .15s}.rvs a.on{background:var(--acc);filter:none;transform:scale(1.08)}.rvs a:active{transform:scale(.92)}
 .rvy{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;text-align:center}.rvy span{display:flex;flex-direction:column;align-items:center}.rvy b{font-size:1.4em}
+.spc{font-size:11px;font-weight:600;background:var(--acc);color:#fff;padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px}
 .wl-l{padding:7px 0;border-top:1px solid #8882;gap:10px}.wl-l>b,.wl-l>span+b{white-space:nowrap}.wl-s b{white-space:nowrap;font-size:clamp(12.5px,3.6vw,15px)}.wl-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wl-ch a{padding:5px 11px;border-radius:999px;background:#8882;font-size:12.5px;cursor:pointer}.wl-ch a.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--fg)}
 .dsr-r{padding:8px 0 10px;border-bottom:1px solid #8882}.dsr-r .two{margin-bottom:4px}.dsr-r .two>*{margin:0}.dsr-x{cursor:pointer;color:var(--mut);padding:8px 10px;border-radius:8px}.dsr-x:hover{color:var(--r)}
 .dsr-t{margin-top:10px}.dsr-p{padding:10px 8px;border-radius:10px;border-bottom:1px solid #8882;cursor:pointer;gap:10px}.dsr-p:hover{background:#8881}.dsr-p b{white-space:nowrap;color:var(--acc)}.dsr-p.on{cursor:default;opacity:.6}.dsr-p.on b{color:var(--g)}
@@ -201,20 +202,29 @@ html,body{overscroll-behavior-y:contain}
 <div id="app"></div><div id="lock" role="dialog" aria-label="Unlock Ledger"><div style="font-size:44px">🔒</div><b>Enter your PIN</b><input id="pin_in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" onkeyup="if(this.value.length>=4)unlock(this.value)"><small id="pin_msg"></small><a onclick="pinForgot()" style="font-size:13px;color:var(--mut);cursor:pointer">Forgot PIN?</a></div><div id="m" class="modal" role="dialog"></div><div id="p" class="modal" style="z-index:10"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-23.2',LOGK='ledger.log';
+/* ===== LEDGER SPACES: your own ledger, plus shared ledgers you keep with a partner. Each has its own data, sync URL and key on this device ===== */
+const SPC=(()=>{try{return localStorage.getItem('ledger.space')||''}catch(e){return''}})(),IDS=SPC?'-'+SPC:'',GLK=['ledger.space','ledger.spaces','ledger.pin','ledger.me','ledger.links'],
+nk=k=>SPC&&typeof k=='string'&&k.startsWith('ledger.')&&!GLK.includes(k)?'sp.'+SPC+'.'+k:k,
+LS={getItem:k=>localStorage.getItem(nk(k)),setItem:(k,v)=>localStorage.setItem(nk(k),v),removeItem:k=>localStorage.removeItem(nk(k))},
+spaces=()=>{try{return JSON.parse(localStorage.getItem('ledger.spaces')||'[]')}catch(e){return[]}},meName=()=>localStorage.getItem('ledger.me')||'';
+if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');location.reload()}
+function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
+localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
+function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-24.1',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
-const logs=()=>{try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
+const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
 function logErr(a,m,d){try{m=String(m||'').slice(0,300);if(!m)return;const k=a+m;if(LOGLAST[k]&&Date.now()-LOGLAST[k]<60000)return;LOGLAST[k]=Date.now();
-const l=logs();l.push({t:Date.now(),a,m,d:String(d||'').slice(0,500),v:APP_V,dev:dev()});localStorage.setItem(LOGK,JSON.stringify(l.slice(-200)))}catch(e){}}
+const l=logs();l.push({t:Date.now(),a,m,d:String(d||'').slice(0,500),v:APP_V,dev:dev()});LS.setItem(LOGK,JSON.stringify(l.slice(-200)))}catch(e){}}
 addEventListener('error',e=>{if(e.message)logErr('app',e.message,(e.filename||'').split('/').pop()+':'+(e.lineno||'')+':'+(e.colno||''))});
 addEventListener('unhandledrejection',e=>{const r=e.reason;logErr('app',(r&&r.message)||String(r),r&&r.stack?String(r.stack).split('\n').slice(0,2).join(' '):'')});
 document.addEventListener('securitypolicyviolation',e=>logErr('security','Blocked by the content security policy: '+(e.blockedURI||'inline')+' ('+e.effectiveDirective+')'));
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36),now=()=>Date.now(),today=()=>new Date().toLocaleDateString('en-CA');
-let S,IDBW=false;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+let S,IDBW=false;try{S=JSON.parse(LS.getItem(K))}catch(e){}
 // the ledger outgrew the browser's small storage and lives only in its database: wait for it before saving or syncing anything
-if(!S&&localStorage.getItem('ledger.big')=='1')IDBW=true;
+if(!S&&LS.getItem('ledger.big')=='1')IDBW=true;
 S=S||{cfg:{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark',root:'Finance Tracker',u:0},
 cats:[['c1','Food','🍜','#f59e0b'],['c2','Transport','🚗','#3b82f6'],['c3','Bills','💡','#a855f7'],['c4','Shopping','🛍️','#ec4899'],['c5','Health','🏥','#ef4444'],['c6','Salary','💰','#22c55e'],['c7','Other','📦','#94a3b8']].map(([id,name,i,color])=>({id,name,i,color,u:0})),
 accs:[['a1','Cash','#22c55e'],['a2','Bank','#4f8cff']].map(([id,name,color])=>({id,name,color,t:id=='a1'?'cash':'bank',open:0,u:0})),tx:[],stm:[],del:{}};
@@ -247,7 +257,7 @@ let stT,toT,lastSync='Local only',LASTOK=0;
 /* ===== SYNC PILL (same as Flow): green synced · blue syncing · amber offline / not connected · red error ===== */
 function pillState(){const ago_=t=>{const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'};
 if(typeof RO=='function'&&RO())return['ro','View only','You are looking at a linked ledger'];
-if(!localStorage.getItem(SU))return['warn','Not connected','Tap to set up Google Sheet sync'];
+if(!LS.getItem(SU))return['warn','Not connected','Tap to set up Google Sheet sync'];
 if(busy||/^(Syncing|Uploading|Reading|Loading|Testing|Restoring|Backing up)/.test(status||''))return['run',/^Upload/.test(status)?'Uploading…':'Syncing…',status];
 if(!navigator.onLine)return['warn','Offline','Changes are saved on this device and sync when you are back online'];
 if(LASTERR)return['err','Sync error','Tap to see what went wrong: '+LASTERR];
@@ -255,7 +265,7 @@ if(oldScript)return['warn','Update script','Your Google script is out of date �
 if(LASTOK)return['ok','Synced · '+ago_(LASTOK),lastSync+' · tap to sync now'];return['warn','Not synced yet','Tap to sync now']}
 function pillHtml(){const[c,t,h]=pillState();return`<button id="stat" class="pill ${c}" onclick="pillTap()" title="${esc(h)}" aria-label="${esc(t+'. '+h)}"><i></i><span>${esc(t)}</span></button>`}
 function pillUpd(){const e=document.getElementById('stat');if(!e)return;const[c,t,h]=pillState();e.className='pill '+c;e.title=h;e.setAttribute('aria-label',t+'. '+h);e.querySelector('span').textContent=t}
-function pillTap(){haptic(8);const[c]=pillState();if(c=='ro')return;if(c=='warn'&&!localStorage.getItem(SU)){op.sy=1;go('set');return}if(c=='err')return diag();if(c=='warn'&&oldScript){op.sy=1;go('set');return}if(c=='run')return toast(status||'Syncing…');pull(1)}
+function pillTap(){haptic(8);const[c]=pillState();if(c=='ro')return;if(c=='warn'&&!LS.getItem(SU)){op.sy=1;go('set');return}if(c=='err')return diag();if(c=='warn'&&oldScript){op.sy=1;go('set');return}if(c=='run')return toast(status||'Syncing…');pull(1)}
 addEventListener('online',()=>{pillUpd();pull(1)});addEventListener('offline',pillUpd);setInterval(pillUpd,30000);function toast(m){const e=document.getElementById('toast');if(!e)return;e.textContent=m;e.className='show';clearTimeout(toT);toT=setTimeout(()=>{e.className=''},2600)}
 const setStatus=(m,keep)=>{if(m&&!/^(Synced|Syncing|Uploading|Reading|Loading|Local only|Waiting|Testing)/.test(m))toast(m);if(m&&/fail|error|could ?n[o']t|cannot|can't|bad file|⚠|not loaded|denied|wrong|unreadable/i.test(m))logErr(/sync|script|sheet/i.test(m)?'sync':/upload|drive/i.test(m)?'drive':/import|csv/i.test(m)?'import':/pdf|statement/i.test(m)?'pdf':/gold/i.test(m)?'gold':'app',m);status=m;pillUpd();clearTimeout(stT);if(!keep&&!/fail|⚠|error|Syncing|Uploading|Loading/i.test(m))stT=setTimeout(()=>{status=lastSync;pillUpd()},6000)};
 const BANKS=[[/maybank|\bmae\b/,'maybank2u.com.my'],[/cimb/,'cimb.com.my'],[/public ?bank|\bpbe\b/,'pbebank.com'],[/\brhb\b/,'rhbgroup.com'],[/hong ?leong|\bhlb\b|\bhlbb\b/,'hlb.com.my'],[/am ?bank|amonline/,'ambank.com.my'],[/bank ?islam|\bbimb\b/,'bankislam.com'],[/bank ?rakyat/,'bankrakyat.com.my'],[/\bbsn\b|simpanan nasional/,'bsn.com.my'],[/affin/,'affinbank.com.my'],[/alliance/,'alliancebank.com.my'],[/ocbc/,'ocbc.com.my'],[/\buob\b/,'uob.com.my'],[/hsbc/,'hsbc.com.my'],[/standard ?chartered|\bscb\b/,'sc.com'],[/\bciti(bank)?\b/,'citibank.com.my'],[/mbsb/,'mbsbbank.com'],[/agro ?bank/,'agrobank.com.my'],[/muamalat/,'muamalat.com.my'],[/touch ?n ?go|\btng\b/,'tngdigital.com.my'],[/grab/,'grab.com'],[/boost/,'myboost.co'],[/shopee|spaylater/,'shopee.com.my'],[/atome/,'atome.com.my'],[/\basnb\b|\basb\b|\basm\b/,'asnb.com.my'],[/kwsp|\bepf\b/,'kwsp.gov.my'],[/tabung ?haji/,'tabunghaji.gov.my'],[/public ?gold/,'publicgold.com.my']];
@@ -308,7 +318,7 @@ else if(Array.isArray(v))v.forEach(x=>walk(x,k));else if(typeof v=='object'){con
 Object.entries(i).forEach(([k,v])=>{if(k!='id'&&k!='car')walk(v,k)});return o};
 // cached: parsing and scanning the garage list is only redone when its stored text or the settings it uses change
 let GTR=null,GTK='',GTV=[];
-const gt=()=>{const raw=localStorage.getItem('ledger.g')||'[]',key=JSON.stringify([S.govr||[],S.cfg.gFuel,S.cfg.gSvc,S.cfg.gAcc,(S.accs[0]||{}).id]);
+const gt=()=>{const raw=LS.getItem('ledger.g')||'[]',key=JSON.stringify([S.govr||[],S.cfg.gFuel,S.cfg.gSvc,S.cfg.gAcc,(S.accs[0]||{}).id]);
 if(raw!==GTR||key!==GTK){GTR=raw;GTK=key;GTV=gtBuild(raw)}return GTV.map(x=>({...x}))};
 const gtBuild=raw=>{let G=[];try{G=JSON.parse(raw)}catch(e){}const car={},ovm={};G.forEach(i=>{if(i.kind=='car')car[i.id]=i.name});(S.govr||[]).forEach(o=>ovm[o.id]=o);
 return G.filter(i=>i.date&&+i.cost>0&&i.kind!='car').map(i=>{const f=/fuel|petrol|refuel/i.test(i.kind),what=f?[i.brand,i.place].filter(Boolean).join(' '):[].concat(i.item||i.name||'').map(x=>typeof x=='object'?(x.name||x.item||''):x).filter(Boolean).join(', ');
@@ -458,20 +468,20 @@ const BL=()=>[...S.buds.filter(b=>b.cat).map(b=>({id:b.id,name:cat(b.cat).i+' '+
 function bspent(b,m){let f,t;if(b.per=='y'){f=m.slice(0,4)+'-01-01';t=m.slice(0,4)+'-12-31'}else if(b.per=='r'){f=b.from||'';t=b.to||''}else{f=m+'-01';t=m+'-31'}
 const hit=x=>(!b.cats.length||b.cats.includes(x.cat)||b.cats.includes(mainOf(x.cat)))&&(!b.shops.length||b.shops.includes(x.shop));
 return TX().filter(x=>!x.tr&&!x.set&&!isTax(x)&&x.amt<0&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s-x.amt,0)+(b.shops.length?0:S.bills.filter(x=>x.k=='ap'&&inR(x.date,f,t)&&hit(x)).reduce((s,x)=>s+x.amt,0))}
-const RO=()=>!!ME,links=()=>{try{return JSON.parse(localStorage.getItem('ledger.links')||'[]')}catch(e){return[]}};
+const RO=()=>!!ME,links=()=>{try{return JSON.parse(LS.getItem('ledger.links')||'[]')}catch(e){return[]}};
 function norm(d){['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay','rcm','recs','goals'].forEach(k=>d[k]=d[k]||[]);d.del=d.del||{};d.cfg=d.cfg||{name:'Ledger',cur:'RM',accent:'#4f8cff',theme:'dark'};
 d.cats.forEach(c=>{if(!c.ty)c.ty=(c.id=='c6'||/salary|income|bonus|interest|dividend|refund/i.test(c.name))?'i':'e'});return d}
 async function sw(id){if(!id){if(ME){S=ME;ME=null}view='';tab='ov';render();return}
 const l=links().find(x=>x.id==id);if(!l)return;setStatus('Loading '+l.name+'…');let d=null;
-try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);d=r.data;if(d)localStorage.setItem('ledger.o.'+id,JSON.stringify(d))}
-catch(e){try{d=JSON.parse(localStorage.getItem('ledger.o.'+id))}catch(x){}setStatus(d?'Offline — showing the last saved copy':'Could not load: '+String(e.message).slice(0,40))}
+try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);d=r.data;if(d)LS.setItem('ledger.o.'+id,JSON.stringify(d))}
+catch(e){try{d=JSON.parse(LS.getItem('ledger.o.'+id))}catch(x){}setStatus(d?'Offline — showing the last saved copy':'Could not load: '+String(e.message).slice(0,40))}
 if(!d)return;flush();if(!ME)ME=S;S=clean(norm(d),1);view=id;tab='ov';render()}
 function addLink(){const g=x=>$('#lk_'+x).value.trim();if(!g('n')||!g('u')||!g('k'))return setStatus('Enter name, web app URL and view key');
-const l=links();l.push({id:uid(),name:g('n'),url:g('u'),key:g('k')});localStorage.setItem('ledger.links',JSON.stringify(l));render()}
-function delLink(id){localStorage.setItem('ledger.links',JSON.stringify(links().filter(x=>x.id!=id)));render()}
+const l=links();l.push({id:uid(),name:g('n'),url:g('u'),key:g('k')});LS.setItem('ledger.links',JSON.stringify(l));render()}
+function delLink(id){LS.setItem('ledger.links',JSON.stringify(links().filter(x=>x.id!=id)));render()}
 async function goldRefresh(){const c=S.cfg,src=c.gsrc||'spot';try{let p=0;
 if(src=='spot'){let j;try{j=await(await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json')).json()}catch(e){j=await(await fetch('https://latest.currency-api.pages.dev/v1/currencies/xau.json')).json()}p=j.xau.myr/31.1034768*(1+(c.gadj||0)/100)}
-else if(src=='web'){const r=await(await fetch(localStorage.getItem(SU),{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',action:'price',url:c.gurl,after:c.gafter||''})})).json();if(r.error)throw new Error(r.error);p=r.price*(1+(c.gadj||0)/100)}
+else if(src=='web'){const r=await(await fetch(LS.getItem(SU),{method:'POST',body:JSON.stringify({key:LS.getItem(SK)||'',action:'price',url:c.gurl,after:c.gafter||''})})).json();if(r.error)throw new Error(r.error);p=r.price*(1+(c.gadj||0)/100)}
 else p=c.gman||0;
 if(p>0){S.cfg.gp=Math.round(p*100)/100;S.cfg.gd=today();S.cfg.u=now();save();setStatus('Gold price updated')}else setStatus('No gold price available')}
 catch(e){setStatus('Gold price failed: '+String(e.message).slice(0,40))}}
@@ -496,17 +506,17 @@ S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat
 
 /* ---------- storage & merge ---------- */
 /* the ledger is saved in the browser's database (plenty of room); the small storage keeps a quick copy while it fits */
-const sdb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('ledger-store',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
+const sdb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('ledger-store'+IDS,1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
 let SDBOK=typeof indexedDB!='undefined';
 function storePut(json,t){if(!SDBOK)return;sdb().then(db=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put({t,json},'data');tx.oncomplete=()=>db.close();tx.onerror=()=>{logErr('storage','Could not save to the browser database: '+(tx.error&&tx.error.message));db.close()}}).catch(e=>{SDBOK=false;logErr('storage','Browser database unavailable: '+(e&&e.message))})}
 const storeGet=()=>sdb().then(db=>new Promise((ok,no)=>{const q=db.transaction('kv').objectStore('kv').get('data');q.onsuccess=()=>{ok(q.result);db.close()};q.onerror=()=>{no(q.error);db.close()}}));
 function persist(){if(IDBW)return true;const json=JSON.stringify(ME||S),t=Date.now();storePut(json,t);
-try{localStorage.setItem(K,json);localStorage.removeItem('ledger.big');return true}
-catch(e){if(!SDBOK)return false;try{localStorage.removeItem(K);localStorage.setItem('ledger.big','1')}catch(x){}return true}}
+try{LS.setItem(K,json);LS.removeItem('ledger.big');return true}
+catch(e){if(!SDBOK)return false;try{LS.removeItem(K);LS.setItem('ledger.big','1')}catch(x){}return true}}
 let PT=null;function flush(){if(!PT)return true;clearTimeout(PT);PT=null;const ok=persist();if(!ok){setStatus('⚠ This device could not save your ledger. Changes are kept for now and synced to your Google Sheet. Free up space on your phone, then reopen Ledger.');logErr&&logErr('storage','Phone storage is full — could not save on this device')}return ok}
 addEventListener('pagehide',()=>flush());document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 function save(){txDirty();clearTimeout(PT);PT=setTimeout(flush,400);render();clearTimeout(timer);timer=setTimeout(sync,1500)}
-function put(k,x){if(RO())return setStatus('👁 View only');const i=S[k].findIndex(y=>y.id==x.id);x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
+function put(k,x){if(RO())return setStatus('👁 View only');const i=S[k].findIndex(y=>y.id==x.id);if(SPC&&k=='tx'&&!x.by&&meName())x.by=meName();x.u=now();i<0?S[k].push(x):S[k][i]=x;save()}
 function rm(k,id){if(RO())return setStatus('👁 View only');S[k]=S[k].filter(x=>x.id!=id);S.del[id]=now();save()}
 function upd(k,id,f,v){const x=S[k].find(y=>y.id==id);x[f]=v;put(k,x)}
 function cfg(f,v){if(RO())return setStatus('👁 View only');S.cfg[f]=v;S.cfg.u=now();save()}
@@ -527,10 +537,10 @@ for(const k of['tx','stm','cats','accs','shops','bills','buds','govr','fixed','r
 S.del=del;if(r.cfg&&(r.cfg.u||0)>(S.cfg.u||0))S.cfg=r.cfg}
 
 /* ---------- Google Drive ---------- */
-function auth(){return new Promise((res,rej)=>{const id=localStorage.getItem(CID);
+function auth(){return new Promise((res,rej)=>{const id=LS.getItem(CID);
 if(!id)return rej(new Error('Add your Google Client ID in Settings'));if(!window.google)return rej(new Error('Google script not loaded (offline?)'));
 google.accounts.oauth2.initTokenClient({client_id:id,scope:'https://www.googleapis.com/auth/drive.file',
-callback:r=>{if(r.error)return rej(new Error(r.error));tok=r.access_token;tokExp=now()+r.expires_in*1000-60000;localStorage.setItem(ON,'1');res()},
+callback:r=>{if(r.error)return rej(new Error(r.error));tok=r.access_token;tokExp=now()+r.expires_in*1000-60000;LS.setItem(ON,'1');res()},
 error_callback:e=>rej(new Error(e.type||'auth failed'))}).requestAccessToken({prompt:''})})}
 async function api(url,o={}){if(!tok||now()>tokExp)await auth();
 const r=await fetch(url,{...o,headers:{Authorization:'Bearer '+tok,...(o.headers||{})}});if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,120));return r}
@@ -543,8 +553,8 @@ async function path(...p){let id=null;for(const n of p)id=await folder(n,id);ret
 async function upload(file,parent,name,existing){if(file&&file.type&&file.type.startsWith('image/')){const f2=await shrinkImg(file);if(f2!==file){name=String(name).replace(/\.(png|jpe?g|webp)$/i,'')+'.jpg';file=f2}}const fd=new FormData();
 fd.append('metadata',new Blob([JSON.stringify({name,...(existing?{}:{parents:[parent]})})],{type:'application/json'}));fd.append('file',file);
 return(await api(`https://www.googleapis.com/upload/drive/v3/files${existing?'/'+existing:''}?uploadType=multipart&fields=id,webViewLink`,{method:existing?'PATCH':'POST',body:fd})).json()}
-async function blobOf(id){const u=localStorage.getItem(SU);
-if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:localStorage.getItem(SK)||'',action:'get',fid:id})})).json();if(r.error)throw new Error(r.error);
+async function blobOf(id){const u=LS.getItem(SU);
+if(u){const r=await(await fetch(u,{method:'POST',body:JSON.stringify({key:LS.getItem(SK)||'',action:'get',fid:id})})).json();if(r.error)throw new Error(r.error);
 const b=atob(r.data),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:r.mime})}
 return await(await api(`${D}/${id}?alt=media`)).blob()}
 async function pv(id){const p=$('#p'),cl=`<button class="s" onclick="$('#p').className='modal'">Close</button>`;p.className='modal show';p.innerHTML='<div><small>Loading preview…</small></div>';
@@ -578,22 +588,22 @@ throw new Error('The script replied with a web page instead of data. Redeploy it
 let j;try{j=JSON.parse(t)}catch(e){throw new Error('The script replied with something unreadable: '+t.slice(0,80))}
 if(j.error)throw new Error(String(j.error).slice(0,160));return j}
 const SKEYS=['tx','stm','cats','accs','shops','bills','buds','govr','fixed','rec','pay','rcm','recs','goals'];
-const unsentLog=()=>{const t=+(localStorage.getItem('ledger.logsent')||0);return logs().filter(x=>x.t>t).slice(-50)};
-const scriptReq=async(action,extra)=>{const u=localStorage.getItem(SU);if(!u)throw new Error('Set up Google Sheet sync first (Settings › Google Sheet sync)');
-try{return await post(u,{key:localStorage.getItem(SK)||'',action,...(extra||{})})}catch(e){if(/Unknown request/i.test(e.message))throw new Error('Your Google script is older than the app. Paste the new ledger-sync.gs and deploy a New version.');throw e}};
+const unsentLog=()=>{const t=+(LS.getItem('ledger.logsent')||0);return logs().filter(x=>x.t>t).slice(-50)};
+const scriptReq=async(action,extra)=>{const u=LS.getItem(SU);if(!u)throw new Error('Set up Google Sheet sync first (Settings › Google Sheet sync)');
+try{return await post(u,{key:LS.getItem(SK)||'',action,...(extra||{})})}catch(e){if(/Unknown request/i.test(e.message))throw new Error('Your Google script is older than the app. Paste the new ledger-sync.gs and deploy a New version.');throw e}};
 function delta(since){const d={cfg:S.cfg,del:{}};SKEYS.forEach(k=>d[k]=(S[k]||[]).filter(x=>since<0||(x.u||0)>since));for(const k in S.del)if(since<0||S.del[k]>since)d.del[k]=S.del[k];return d}
 function pieces(d,max){const all=[];SKEYS.forEach(k=>d[k].forEach(x=>all.push([k,x])));const out=[];let cur={cfg:d.cfg,del:d.del},size=JSON.stringify(cur).length;
 const fresh=()=>{const c={cfg:d.cfg,del:{}};SKEYS.forEach(k=>c[k]=[]);return c};cur=fresh();cur.del=d.del;
 all.forEach(([k,x])=>{const n=JSON.stringify(x).length+1;if(size+n>max&&size>2000){out.push(cur);cur=fresh();size=200}cur[k].push(x);size+=n});out.push(cur);return out}
-async function sync(){if(IDBW)return;const u=localStorage.getItem(SU);if(RO()||busy||!(u||localStorage.getItem(ON)))return;busy=true;setStatus('Syncing…');
-let ge='';try{if(u){const key=localStorage.getItem(SK)||'',sent=+(localStorage.getItem('ledger.sent')||-1),rev=+(localStorage.getItem('ledger.rev')||0),t0=now(),
-cfgChanged=sent<0||(S.cfg.u||0)>sent,d=delta(sent),wantG=Date.now()-(+(localStorage.getItem('ledger.gt')||0))>600000,parts=pieces(d,250000);let r;
+async function sync(){if(IDBW)return;const u=LS.getItem(SU);if(RO()||busy||!(u||LS.getItem(ON)))return;busy=true;setStatus('Syncing…');
+let ge='';try{if(u){const key=LS.getItem(SK)||'',sent=+(LS.getItem('ledger.sent')||-1),rev=+(LS.getItem('ledger.rev')||0),t0=now(),
+cfgChanged=sent<0||(S.cfg.u||0)>sent,d=delta(sent),wantG=Date.now()-(+(LS.getItem('ledger.gt')||0))>600000,parts=pieces(d,250000);let r;
 for(let i=0;i<parts.length;i++){const last=i==parts.length-1;if(parts.length>1)setStatus('Syncing… '+(i+1)+'/'+parts.length);
-const lg_=last?unsentLog():[];try{r=await post(u,{key,action:'sync',data:parts[i],since:rev,full:sent<0?1:0,cfgChanged:cfgChanged&&i==0,part:last?'last':'more',garage:last&&wantG?1:0,...(lg_.length?{log:lg_}:{})});if(lg_.length&&!r.legacy)localStorage.setItem('ledger.logsent',String(lg_[lg_.length-1].t))}
+const lg_=last?unsentLog():[];try{r=await post(u,{key,action:'sync',data:parts[i],since:rev,full:sent<0?1:0,cfgChanged:cfgChanged&&i==0,part:last?'last':'more',garage:last&&wantG?1:0,...(lg_.length?{log:lg_}:{})});if(lg_.length&&!r.legacy)LS.setItem('ledger.logsent',String(lg_[lg_.length-1].t))}
 catch(e){if(!/Unknown request: sync/i.test(e.message))throw e;setStatus('Syncing (old script)…');r=await post(u,{key,data:S});r.legacy=1;break}
-if(r.busy)throw new Error(r.error);if(r.resend||(r.rev!=null&&r.rev<rev)){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev');busy=false;return sync()}}
-oldScript=!r.v||r.v<SCRIPT_V;if(r.lbk)localStorage.setItem('ledger.lbk',String(r.lbk));if(r.ep!=null&&!r.legacy){const le=localStorage.getItem('ledger.ep');if(le==null)localStorage.setItem('ledger.ep',r.ep);else if(le!==r.ep){busy=false;await reloadAll(r.ep,'Your ledger was restored from a backup on another device. Loading it…');return}}if(r.data)merge(r.data);if(r.legacy){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}else{if(r.rev!=null)localStorage.setItem('ledger.rev',String(r.rev));localStorage.setItem('ledger.sent',String(t0))}
-ge=r.gerr||'';if(r.garage){localStorage.setItem('ledger.g',JSON.stringify(r.garage));localStorage.setItem('ledger.gt',String(Date.now()))}}
+if(r.busy)throw new Error(r.error);if(r.resend||(r.rev!=null&&r.rev<rev)){LS.removeItem('ledger.sent');LS.removeItem('ledger.rev');busy=false;return sync()}}
+oldScript=!r.v||r.v<SCRIPT_V;if(r.lbk)LS.setItem('ledger.lbk',String(r.lbk));if(r.ep!=null&&!r.legacy){const le=LS.getItem('ledger.ep');if(le==null)LS.setItem('ledger.ep',r.ep);else if(le!==r.ep){busy=false;await reloadAll(r.ep,'Your ledger was restored from a backup on another device. Loading it…');return}}if(r.data)merge(r.data);if(r.legacy){LS.removeItem('ledger.sent');LS.removeItem('ledger.rev')}else{if(r.rev!=null)LS.setItem('ledger.rev',String(r.rev));LS.setItem('ledger.sent',String(t0))}
+ge=r.gerr||'';if(r.garage){LS.setItem('ledger.g',JSON.stringify(r.garage));LS.setItem('ledger.gt',String(Date.now()))}}
 else{const root=await path(S.cfg.root),id=await find('data.json',root);if(id)merge(await(await api(`${D}/${id}?alt=media`)).json());
 await upload(new Blob([JSON.stringify(S)],{type:'application/json'}),root,'data.json',id)}
 if(autoRec())setTimeout(save,300);persist();LASTERR='';LASTOK=Date.now();lastSync='Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(ge?' · Garage link error':'')+(oldScript?' · ⚠ Google script out of date':'');setStatus(lastSync,1)}
@@ -601,7 +611,7 @@ catch(e){LASTERR=String(e.message||e);const b=/another device is syncing/i.test(
 function sizeReport(){const z=x=>JSON.stringify(x||'').length,rows=SKEYS.map(k=>[k,(S[k]||[]).length,z(S[k])]),logos=[...S.accs,...S.shops].reduce((a,x)=>a+(x.logo?x.logo.length:0),0),
 N={tx:'Transactions',stm:'Statements',cats:'Categories',accs:'Accounts (incl. logos)',shops:'Shops (incl. logos)',bills:'Bills',buds:'Budgets',govr:'Garage edits',fixed:'Fixed assets',rec:'Recurring',pay:'Payslips',rcm:'Reconciliation ticks',recs:'Reconciliations',goals:'Goals'};
 return rows.filter(r=>r[2]>2000).sort((a,b)=>b[2]-a[2]).slice(0,5).map(r=>`${N[r[0]]}: ${r[1]} · ${Math.round(r[2]/1024)} KB`).join(' · ')+(logos>20000?` · uploaded logos ${Math.round(logos/1024)} KB`:'')}
-async function testScript(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',el=$('#dg_t'),say=(ok,t)=>{el.innerHTML+=`<div>${ok?'<span class="g">✔</span>':'<span class="r">✘</span>'} ${esc(t)}</div>`};el.innerHTML='<small>Testing…</small>';
+async function testScript(){const u=LS.getItem(SU)||'',k=LS.getItem(SK)||'',el=$('#dg_t'),say=(ok,t)=>{el.innerHTML+=`<div>${ok?'<span class="g">✔</span>':'<span class="r">✘</span>'} ${esc(t)}</div>`};el.innerHTML='<small>Testing…</small>';
 if(!u){el.innerHTML='';return say(0,'No Web App URL in Settings')}el.innerHTML='';let v='';
 try{const t=await(await fetch(u)).text();if(/^\s*</.test(t))say(0,/accounts\.google\.com|Sign in/i.test(t)?'The script needs a Google sign-in — redeploy with "Who has access: Anyone"':'The URL opens a web page, not your script — copy it again from Deploy › Manage deployments');
 else{const j=JSON.parse(t);v=j.v||'';say(1,'Script reachable'+(v?' · version '+v:' · old version (no version number)'))}}catch(e){return say(0,'Cannot reach the script: check your internet and the Web App URL')}
@@ -609,7 +619,7 @@ if(!v||v<SCRIPT_V)say(0,'Script is older than the app ('+(v||'unknown')+' < '+SC
 try{await post(u,{key:k,action:'read'});say(1,'Secret key accepted')}catch(e){say(0,String(e.message));return}
 try{const r=await post(u,{key:k,action:'sync',data:{cfg:S.cfg,del:{}},since:-1,part:'last'});say(1,'The script can save your ledger'+(r.data?' · '+((r.data.tx||[]).length)+' transactions stored in the Sheet':''))}
 catch(e){say(0,/connection/i.test(e.message)?'The script was reached but stopped while saving. Paste the newest ledger-sync.gs and deploy a New version — it fixes this.':e.message)}}
-function diag(){const u=localStorage.getItem(SU)||'',k=localStorage.getItem(SK)||'',cid=localStorage.getItem(CID)||'',on=!!localStorage.getItem(ON),size=JSON.stringify(S).length,
+function diag(){const u=LS.getItem(SU)||'',k=LS.getItem(SK)||'',cid=LS.getItem(CID)||'',on=!!LS.getItem(ON),size=JSON.stringify(S).length,
 y=t=>'<span class="g">✔</span> '+t,n=t=>'<span class="r">✘</span> '+t;
 $('#m').innerHTML=`<div><h3>Sync check</h3>${LASTERR?`<div class="card"><small>Last error</small><p class="r">${esc(LASTERR)}</p></div>`:'<small>No error recorded in this session.</small>'}
 <div class="card"><div>${u?(/\/exec$/.test(u)?y('Web App URL looks right'):n('The URL should end in /exec — copy it from Deploy › Manage deployments')):n('No Web App URL — paste it in Settings › Google Sheet sync')}</div>
@@ -643,7 +653,7 @@ function render(){
 const ae=document.activeElement,ap=$('#app');if(ae&&ap&&ap.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))ae.blur();
 CH={};S.accs.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9));GT=RO()?[]:gt();txDirty();const h=document.documentElement;h.dataset.t=S.cfg.theme;h.style.setProperty('--acc',S.cfg.accent);
 const v=pulseFor(tab)+{ov,dy:dyv,tx:reg,ac:acm,rc:rcv,more:mre,rp:rpt,bd:bud,cm:cmv,imp:impv,sal:salv,tax:taxv,avl:avlv,rcn:rcnv,sv:savv,st:stv,set:sett,dsr:dsrv,wl:wlv,ff:ffv,car:carv,lc:lcv,fc:fcv,dp:dpv,mr:mrv,dv:dvv,ins:insv,hh:hhv,sp:spv,pl:wsv,cb:cbv,sb:sbv,ev:evv,wy:wyv}[tab]();
-const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(S.cfg.name)}</h1>${links().length?`<select onchange="sw(this.value)" style="width:auto;margin:0;padding:4px 8px"><option value="">👤 My ledger</option>${links().map(l=>`<option value="${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`:''}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
+const A_=ANIM;ANIM=0;paint(`<header><h1>${esc(SPC&&!view?((spaces().find(x=>x.id==SPC)||{}).name||S.cfg.name):S.cfg.name)}${SPC&&!view?' <small class="spc">👫 Shared</small>':''}</h1>${swSel()}<div class="hdr">${pillHtml()}<button class="gear${tab=='set'?' on':''}" aria-label="Settings" title="Settings" onclick="go('set')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div></header><main><h2 class="sr">${esc(TABN[tab]||'')}</h2>${RO()?`<div class="card fl"><span>👁 Viewing ${esc((links().find(l=>l.id==view)||{}).name||'')} · read only</span><a onclick="sw('')">Back to mine</a></div>`:''}${v}</main>
 <nav>${[['ov','📊','Overview'],['dy','👛','Daily'],['tx','🧾','Register'],['ac','🏦','Accounts'],['rc','🔁','Recurring'],['rp','📑','Reports'],['bd','🎯','Budget'],['sv','💰','Savings'],['more','☰','More']].map(([k,i,l])=>`<a href="#${RT[k]}" aria-label="${l}" class="${tab==k||(k=='more'&&['cm','st','imp','sal','tax','avl','rcn','dsr','wl','ff','car','lc','fc','dp','mr','dv','ins','hh','sp','pl','cb','sb','ev','wy'].includes(tab))?'on':''}" onclick="event.preventDefault();go('${k}')"><span aria-hidden="true">${i}</span><small>${l}</small>${k=='rc'&&rcBadge()?`<b class="nbg" aria-label="${rcBadge()} not paid">${rcBadge()}</b>`:''}</a>`).join('')}</nav>
 ${(tab=='ov'||tab=='tx')&&!RO()&&!(tab=='tx'&&selMode)?'<button class="fab" aria-label="Add a record" onclick="haptic(12);edit()">+</button>':''}`);if(A_){const m_=document.querySelector('main');if(m_)m_.classList.add('anim')}if(SWDIR){const m_=document.querySelector('main');if(m_)m_.classList.add(SWDIR>0?'swl':'swr');SWDIR=0}countUp()}
 // swaps the page in while keeping the toast and pull-to-refresh elements, so a message shown just before a re-render stays visible
@@ -685,7 +695,7 @@ ${l.map(x=>`<div class="sfr" onclick="GV='${x.g.id}';go('sv')"><div class="fl"><
 ${ro?'':`<div class="sfs">${sug.slice(0,4).map(n=>`<a onclick="sfNew('${n}')">+ ${n}</a>`).join('')}<a onclick="sfNew('')">+ Other</a></div>`}</div>`}
 /* ===== MY CAR: what your Garage app knows, synced through your Google Sheet ===== */
 let CARSEL='';
-const gItems=()=>{try{return JSON.parse(localStorage.getItem('ledger.g')||'[]').filter(i=>i&&!i.deleted)}catch(e){return[]}};
+const gItems=()=>{try{return JSON.parse(LS.getItem('ledger.g')||'[]').filter(i=>i&&!i.deleted)}catch(e){return[]}};
 const carOf=i=>i.carId||i.car;
 /* ===== GARAGE CAR LOANS: worked out the same way as the Garage app, and linked into Ledger ===== */
 // 'eir' = reducing balance (hire purchase agreements from 1 June 2026); 'flat' = flat rate with the Rule of 78 rebate when settling early
@@ -736,8 +746,8 @@ function carPhoto(id,f){if(!f)return;const im=new Image();im.onload=()=>{const W
 function carEdit(id,name,sub){const x=carX(id);$('#m').innerHTML=`<div><h3>Car details in Ledger</h3><small>Shown on this page only. Garage keeps its own name.</small>
 <small>Model</small><input id="cx_m" value="${esc(x.model||name||'')}" placeholder="e.g. Proton eMas 7"><small>Type</small><input id="cx_s" value="${esc(x.sub||sub||'')}" placeholder="e.g. Electric SUV">
 <button onclick="carXSet('${id}',{model:$('#cx_m').value.trim(),sub:$('#cx_s').value.trim()});closeM()">Save</button>${x.img?`<button class="d" onclick="carXSet('${id}',{img:'',src:'',noAuto:1});closeM()">Remove photo</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
-function carSyncNow(){localStorage.removeItem('ledger.gt');setStatus('Getting the latest from Garage…');sync()}
-function carv(){const G=gItems(),cars=G.filter(i=>i.kind=='car'),t=today(),gtAt=+(localStorage.getItem('ledger.gt')||0);
+function carSyncNow(){LS.removeItem('ledger.gt');setStatus('Getting the latest from Garage…');sync()}
+function carv(){const G=gItems(),cars=G.filter(i=>i.kind=='car'),t=today(),gtAt=+(LS.getItem('ledger.gt')||0);
 const head=`<div class="fl"><small>${gtAt?'From Garage · updated '+(Date.now()-gtAt<6e4?'just now':new Date(gtAt).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'Not linked to Garage yet'}</small>${RO()?'':`<button class="s" style="width:auto;white-space:nowrap;font-size:13px;padding:6px 12px" onclick="carSyncNow()">↻ Sync now</button>`}</div>`;
 if(!cars.length)return head+`<div class="card empty"><span>🚗</span><b>No car from Garage yet</b><small>Ledger reads your Garage app through your Google Sheet when it syncs. Make sure Garage is linked in Settings › Google Sheet sync, then tap Sync with Garage now.</small></div>`;
 const car=cars.find(c=>c.id==CARSEL)||cars[0],cx=carX(car.id),mine=G.filter(i=>carOf(i)==car.id||(cars.length==1&&!carOf(i))),
@@ -915,27 +925,28 @@ ${Object.keys(INT).filter(k=>l.some(x=>x.type==k)).map(k=>`<h4>${INT[k]}</h4>${l
 ${l.some(x=>x.type=='medical'||x.type=='life')?`<small>💡 Life and takaful premiums, and education or medical insurance, can reduce your income tax. Tag the payments with the tax relief when you record them, and they appear in Tax.</small>`:''}`}
 /* ===== HOUSEHOLD: you and your partner, from their shared view link ===== */
 let HHD=null,HHT=0,HHB=0,HHE='';
-async function hhLoad(force){const id=localStorage.getItem('ledger.hh'),l=links().find(x=>x.id==id);if(!l)return;if(HHB||(!force&&HHD&&Date.now()-HHT<300000))return;HHB=1;HHE='';
-try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);HHD=r.data;HHT=Date.now();if(HHD)localStorage.setItem('ledger.o.'+id,JSON.stringify(HHD))}
-catch(e){try{HHD=JSON.parse(localStorage.getItem('ledger.o.'+id));HHT=Date.now()}catch(x){}if(!HHD)HHE=String(e.message||e).slice(0,80);setStatus(HHD?'Offline: showing the last saved copy of your partner':'Could not load your partner')}HHB=0;if(tab=='hh')render()}
+async function hhLoad(force){const id=LS.getItem('ledger.hh'),l=links().find(x=>x.id==id);if(!l)return;if(HHB||(!force&&HHD&&Date.now()-HHT<300000))return;HHB=1;HHE='';
+try{const r=await(await fetch(l.url,{method:'POST',body:JSON.stringify({key:l.key,action:'read'})})).json();if(r.error)throw new Error(r.error);HHD=r.data;HHT=Date.now();if(HHD)LS.setItem('ledger.o.'+id,JSON.stringify(HHD))}
+catch(e){try{HHD=JSON.parse(LS.getItem('ledger.o.'+id));HHT=Date.now()}catch(x){}if(!HHD)HHE=String(e.message||e).slice(0,80);setStatus(HHD?'Offline: showing the last saved copy of your partner':'Could not load your partner')}HHB=0;if(tab=='hh')render()}
 // run f with another ledger's data in place of your own, then put yours back
-function withLedger(d,f){const k=S,g=GT;S=clean(norm(JSON.parse(JSON.stringify(d))),1);GT=[];txDirty();RCS={};try{return f()}finally{S=k;GT=g;txDirty();RCS={}}}
+function withLedger(d,f){const k=S,g=GT;S=clean(norm(JSON.parse(JSON.stringify(d))),1);if(!S.cfg.cur)S.cfg.cur=k.cfg.cur;GT=[];txDirty();RCS={};try{return f()}finally{S=k;GT=g;txDirty();RCS={}}}
 function hhStats(){const t=today(),m=t.slice(0,7),c=TXM(m).filter(x=>!x.tr&&!x.set&&!isNC(x)&&!isTax(x)),inc=c.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0),exp=-c.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0),by={};
 c.filter(x=>x.amt<0).forEach(x=>{const k=cat(mainOf(x.cat)).name||'Other';by[k]=(by[k]||0)-x.amt});
 return{name:S.cfg.who||S.cfg.name||'',nw:S.accs.reduce((s,a)=>s+bal(a),0)+fxNBV(t),inc,exp,debt:S.accs.filter(a=>isL(a)).reduce((s,a)=>s+owedOf(a),0),by,goals:gAll().filter(x=>!x.g.done).map(x=>({n:x.g.name,f:x.funded,t:x.target}))}}
-function hhv(){if(RO())return'<div class="card"><small>Go back to your own ledger to see the household view.</small></div>';const L=links(),sel=localStorage.getItem('ledger.hh');
+function hhv(){if(RO())return'<div class="card"><small>Go back to your own ledger to see the household view.</small></div>';const L=links(),sel=LS.getItem('ledger.hh');
 if(!L.length)return`<div class="card empty"><span>👫</span><b>Link your partner's ledger</b><small>Ask your partner for their Web App URL and view key, then add them in ⚙️ Settings › 👥 Linked ledgers. It stays read-only: you can see their numbers but not change them.</small><button onclick="op.lk=1;go('set')">Open Linked ledgers</button></div>`;
-const l=L.find(x=>x.id==sel);if(!l)return`<h4>Whose ledger is your partner's?</h4>${L.map(x=>`<div class="card fl" style="cursor:pointer" onclick="localStorage.setItem('ledger.hh','${x.id}');HHD=null;HHE='';render()"><span>👤 ${esc(x.name)}</span><span>›</span></div>`).join('')}`;
-if(!HHD){if(HHE)return`<div class="card"><b>Could not load ${esc(l.name)}'s ledger</b><br><small>${esc(HHE)}. Check you are online and that the Web App URL and view key in ⚙️ Settings › 👥 Linked ledgers are right.</small><button onclick="HHE='';hhLoad(1)">↻ Try again</button><button class="s" onclick="localStorage.removeItem('ledger.hh');HHE='';render()">Choose another</button></div>`;hhLoad();return`<div class="card"><small>Loading ${esc(l.name)}…</small></div>`}if(Date.now()-HHT>300000&&!HHB)hhLoad();
+const l=L.find(x=>x.id==sel);if(!l)return`<h4>Whose ledger is your partner's?</h4>${L.map(x=>`<div class="card fl" style="cursor:pointer" onclick="LS.setItem('ledger.hh','${x.id}');HHD=null;HHE='';render()"><span>👤 ${esc(x.name)}</span><span>›</span></div>`).join('')}`;
+if(!HHD){if(HHE)return`<div class="card"><b>Could not load ${esc(l.name)}'s ledger</b><br><small>${esc(HHE)}. Check you are online and that the Web App URL and view key in ⚙️ Settings › 👥 Linked ledgers are right.</small><button onclick="HHE='';hhLoad(1)">↻ Try again</button><button class="s" onclick="LS.removeItem('ledger.hh');HHE='';render()">Choose another</button></div>`;hhLoad();return`<div class="card"><small>Loading ${esc(l.name)}…</small></div>`}if(Date.now()-HHT>300000&&!HHB)hhLoad();
 const me=hhStats(),pa=withLedger(HHD,hhStats),tg={nw:me.nw+pa.nw,inc:me.inc+pa.inc,exp:me.exp+pa.exp,debt:me.debt+pa.debt},rate=x=>x.inc>0?Math.round((x.inc-x.exp)/x.inc*100)+'%':'–',by={};
 [me.by,pa.by].forEach(o=>Object.entries(o).forEach(([k,v])=>by[k]=(by[k]||0)+v));
 const col=(h,x)=>`<div class="card"><small>${h}</small><h3>${money(x.nw)}</h3><small>net worth</small></div>`,row=(n,f)=>`<tr><td>${n}<td class="n">${f(me)}<td class="n">${f(pa)}<td class="n"><b>${f(tg)}</b>`;
-return`<div class="fl"><small>With ${esc(l.name)} · updated ${HHT?new Date(HHT).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</small><span class="sfs" style="margin:0"><a onclick="hhLoad(1)">↻ Refresh</a><a onclick="localStorage.removeItem('ledger.hh');HHD=null;render()">Change</a></span></div>
+return`<div class="fl"><small>With ${esc(l.name)} · updated ${HHT?new Date(HHT).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</small><span class="sfs" style="margin:0"><a onclick="hhLoad(1)">↻ Refresh</a><a onclick="LS.removeItem('ledger.hh');HHD=null;render()">Change</a></span></div>
 <div class="pulse" style="cursor:default"><div class="pm"><div class="pk">Household net worth</div><div class="pv">${money(tg.nw)}</div><div class="ps">You ${money(me.nw)} · ${esc(l.name)} ${money(pa.nw)}</div></div></div>
 <h4>This month</h4><div class="tw"><table><tr><th><th class="n">You<th class="n">${esc(l.name)}<th class="n">Together${row('Income',x=>money(x.inc))}${row('Spending',x=>money(x.exp))}${row('Saved',x=>money(x.inc-x.exp))}${row('Savings rate',rate)}${row('Debts owed',x=>money(x.debt))}</table></div>
 <h4>Top spending together</h4><div class="card">${Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`<div style="margin:5px 0"><div class="fl"><span>${esc(k)}</span><span>${money(v)}</span></div>${pbar(tg.exp?v/tg.exp*100:0,'var(--acc)')}</div>`).join('')||'<small>No spending yet this month</small>'}</div>
 <h4>Goals</h4><div class="card">${[...me.goals.map(g=>({...g,w:'You'})),...pa.goals.map(g=>({...g,w:l.name}))].map(g=>`<div style="margin:6px 0"><div class="fl"><span>${esc(g.n)} <small>· ${esc(g.w)}</small></span><small>${money(g.f)} / ${money(g.t)}</small></div>${pbar(g.t?g.f/g.t*100:0,'var(--g)')}</div>`).join('')||'<small>No active goals</small>'}</div>
-<small>Your partner's numbers come from their read-only view link and refresh every few minutes while this page is open.</small>`}
+<h4>${esc(l.name)}'s recent spending</h4><div class="card rl">${withLedger(HHD,()=>TXD().filter(isSp).slice(0,12).map(t=>`<div class="rr" style="cursor:default">${cbadge(cat(t.cat),34)}<div class="rrm"><b>${esc(t.desc||cat(t.cat).name)}</b><small>${fmtD(t.date)} · ${esc(cat(t.cat).name)}${t.note?' · '+esc(t.note):''}</small></div><b class="r">−${money(-t.amt)}</b></div>`).join(''))||'<small>No spending yet</small>'}</div>
+<small>Your partner's numbers come from their read-only view link and refresh every few minutes while this page is open. They see yours the same way once they add your view key.</small>`}
 /* ===== LOAN CALCULATORS: house loan and car loan (car loan works like the Garage app's) ===== */
 let LCT='h';
 const lcD=()=>{const d=S.cfg.lc||{};return{h:{price:500000,mar:90,rate:4,yrs:35,extra:0,first:1,...(d.h||{})},c:{price:120000,dp:10,rate:3,yrs:9,mode:'eir',at:0,...(d.c||{})}}};
@@ -1139,7 +1150,7 @@ document.addEventListener('touchend',e=>{if(mode!='h'){mode=null;return}mode=nul
  if((Math.abs(dx)>innerWidth*.22||fast)&&n>=0&&n<SWT.length){SWDIR=dx<0?1:-1;m=null;haptic(8);go(SWT[n])}else reset()});
 document.addEventListener('touchcancel',()=>{if(mode=='h')reset();mode=null});
 // a one-time tip on touch screens
-setTimeout(()=>{try{if(!matchMedia('(pointer:coarse)').matches||localStorage.getItem('ledger.swtip'))return;localStorage.setItem('ledger.swtip','1');toast('👆 Tip: swipe left or right to switch tabs')}catch(e){}},6500)})();
+setTimeout(()=>{try{if(!matchMedia('(pointer:coarse)').matches||LS.getItem('ledger.swtip'))return;LS.setItem('ledger.swtip','1');toast('👆 Tip: swipe left or right to switch tabs')}catch(e){}},6500)})();
 /* ===== DAILY: the account used for everyday spending, at a glance ===== */
 // the chosen account, or the debit account with the most spending in the last 30 days
 function dyAcc(){const pick=S.accs.find(a=>a.id==S.cfg.dAcc);if(pick)return pick;const f=new Date();f.setDate(f.getDate()-30);const from=f.toLocaleDateString('en-CA'),n={};
@@ -1256,7 +1267,7 @@ const PUL={rcn:cmbBanner,tx:regP,ac:acP,rc:rcP,rp:rpP,bd:bdP,sv:()=>GV?'':svP(),
 function pulseFor(k){if(RO()||!PUL[k])return'';try{return PUL[k]()}catch(e){logErr('app','Summary card failed: '+e.message,k);return''}}
 
 /* ===== ACHIEVEMENTS ===== */
-function bestStreak(n){let b=+(localStorage.getItem('ledger.best')||0);if(n>b){b=n;try{localStorage.setItem('ledger.best',String(b))}catch(e){}}return b}
+function bestStreak(n){let b=+(LS.getItem('ledger.best')||0);if(n>b){b=n;try{LS.setItem('ledger.best',String(b))}catch(e){}}return b}
 function badges(){const st=streak(),best=bestStreak(st.n),n=S.tx.length,att=S.tx.filter(t=>(t.att||[]).length).length,lm=mAdd(today().slice(0,7),-1),r=savRate(lm),
 bl=BL().filter(b=>b.per=='m'&&!dup(b)),tb=bl.reduce((a,b)=>a+b.amt,0),ts=bl.reduce((a,b)=>a+bspent(b,lm),0),rl=recList(),up=rl.filter(a=>{const x=lastRec(a.id);return x&&(!a.stmt||x>=lastStmt(a))}).length,
 liq=S.accs.filter(a=>grp(a)=='debit').reduce((s,a)=>s+bal(a),0),avg=[1,2,3].map(i=>TXM(mAdd(today().slice(0,7),-i)).filter(isSp).reduce((s,x)=>s-x.amt,0)).reduce((a,b)=>a+b,0)/3,
@@ -1269,9 +1280,9 @@ B('bud','🎯','Under budget','Spend less than your budget last month',tb>0&&ts<
 B('ef3','🛟','Safety net','Cash covers 3 months of spending',avg>0?Math.floor(liq/avg*10)/10:0,3),B('goal','🏁','Goal getter','Reach a savings goal',S.goals.filter(g=>g.done).length,1),
 B('nsd','🌱','No-spend days','3 no-spend days in the last 7',nsd,3),B('rcpt','📎','Paper trail','50 records with a receipt',att,50),B('pay','💼','Payday','Add a payslip',S.pay.length,1)]}
 function achHtml(){if(RO())return'';let L;try{L=badges()}catch(e){return''}const ok=L.filter(b=>b.ok),nx=L.filter(b=>!b.ok).sort((a,b)=>b.v/b.goal-a.v/a.goal)[0];
-let seen=[];try{seen=JSON.parse(localStorage.getItem('ledger.badges')||'null')}catch(e){}
-if(seen===null){try{localStorage.setItem('ledger.badges',JSON.stringify(ok.map(b=>b.id)))}catch(e){}}
-else{const nw=ok.filter(b=>!seen.includes(b.id));if(nw.length){try{localStorage.setItem('ledger.badges',JSON.stringify(ok.map(b=>b.id)))}catch(e){}setTimeout(()=>{haptic(30);toast('🏆 Unlocked: '+nw[0].i+' '+nw[0].n+(nw.length>1?' +'+(nw.length-1)+' more':''))},700)}}
+let seen=[];try{seen=JSON.parse(LS.getItem('ledger.badges')||'null')}catch(e){}
+if(seen===null){try{LS.setItem('ledger.badges',JSON.stringify(ok.map(b=>b.id)))}catch(e){}}
+else{const nw=ok.filter(b=>!seen.includes(b.id));if(nw.length){try{LS.setItem('ledger.badges',JSON.stringify(ok.map(b=>b.id)))}catch(e){}setTimeout(()=>{haptic(30);toast('🏆 Unlocked: '+nw[0].i+' '+nw[0].n+(nw.length>1?' +'+(nw.length-1)+' more':''))},700)}}
 return`<div class="card ach" onclick="achView()"><span style="font-size:30px">🏆</span><div style="flex:1;min-width:0"><b>Achievements ${ok.length}/${L.length}</b><br><small>${nx?`Next: ${nx.i} ${nx.n} — ${nx.goal>1?Math.round(nx.v)+' / '+nx.goal:nx.d}`:'You have them all! 🎉'}</small>${nx?`<div class="pr"><i style="width:${nx.v/nx.goal*100}%"></i></div>`:''}</div><span>›</span></div>`}
 function achView(){const L=badges();$('#m').className='modal show';$('#m').innerHTML=`<div style="max-width:520px"><h3>🏆 Achievements · ${L.filter(b=>b.ok).length}/${L.length}</h3><small>Best streak: ${bestStreak(streak().n)} days. Keep recording to unlock the rest.</small>
 <div class="bdg" style="margin:10px 0">${L.map(b=>`<div class="${b.ok?'':'off'}"><span>${b.i}</span><b>${b.n}</b><small>${b.d}</small>${!b.ok&&b.goal>1?`<small>${Math.round(b.v)} / ${b.goal}</small>`:''}</div>`).join('')}</div><button class="s" onclick="closeM()">Close</button></div>`}
@@ -1312,7 +1323,7 @@ ${Object.entries(OVS).map(([k,n])=>`<label class="fl wl-l" style="cursor:pointer
 function ov(){const tm=TXM(ym).filter(t=>isTax(t)).reduce((a,t)=>a-t.amt,0),m=TXM(ym).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0));
 return`<div class="mn ovm"><a onclick="mo(-1)" aria-label="Previous month">‹</a><b>${MN[+ym.slice(5)-1]} ${ym.slice(0,4)}</b><a onclick="mo(1)" aria-label="Next month">›</a></div>
 ${heroHtml(inc,exp,tm)}${tm?`<small class="ovn">Tax &amp; zakat ${money(tm)} is included in Out, but not counted as spending.</small>`:''}${quickHtml()}
-${dueBanner()}${fcAlert()}${ovOn('rv')?rvCard():''}${ovOn('bp')?bpCard():''}${ovOn('ef')?efCard():''}${ovOn('dsr')?dsrCard():''}${ovOn('ins')?insightsHtml():''}${ovOn('rec')?recentHtml():''}${ovOn('bud')?bovw():''}${ovOn('goal')?gCard():''}${ovOn('avl')?avlCard():''}${ovOn('tr')?chv():''}
+${SPC&&!RO()?spCard():''}${dueBanner()}${fcAlert()}${ovOn('rv')?rvCard():''}${ovOn('bp')?bpCard():''}${ovOn('ef')?efCard():''}${ovOn('dsr')?dsrCard():''}${ovOn('ins')?insightsHtml():''}${ovOn('rec')?recentHtml():''}${ovOn('bud')?bovw():''}${ovOn('goal')?gCard():''}${ovOn('avl')?avlCard():''}${ovOn('tr')?chv():''}
 ${ovOn('acc')?`<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="acSheet('${a.id}')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>`:''}
 ${ovOn('ach')?achHtml():''}${RO()?'':'<div class="ovc"><a onclick="ovCustom()">⚙️ Customize overview</a></div>'}`}
 /* ===== REGISTER ===== */
@@ -1322,11 +1333,11 @@ const by=[];list.forEach(x=>{const t=x.t||x,last=by[by.length-1];if(last&&last.d
 return by.map(g=>{const net=g.l.reduce((s,x)=>{const t=x.t||x;return t.tr||t.set||isNC(t)?s:s+(aid?dl(t,aid):t.amt)},0);
 return`<div class="dh"><b>${dayLbl(g.d)}</b><small class="${net<0?'r':net>0?'g':''}">${net?money(net):''}</small></div><div class="card rl">${g.l.map(x=>{const t=x.t||x,run=x.run,v=t.tr&&aid?dl(t,aid):t.amt,
 k=t.tr?{i:'⇄',name:'Transfer → '+acc(t.to).name,color:'#94a3b8'}:t.f?{i:'🏗️',name:'Fixed asset',color:'#94a3b8'}:t.set?{i:'💵',name:'Bill payment',color:'#94a3b8'}:cat(t.cat),h=S.shops.find(y=>y.id==t.shop),a=acc(t.acc);
-return`<div class="rr" onclick="edit('${t.id}')"><span class="ibt" onclick="event.stopPropagation();${!t.tr&&!t.f&&!t.set&&S.cats.find(c=>c.id==t.cat)?`catIco('${t.cat}','${t.g?'':t.id}')`:`edit('${t.id}')`}">${cbadge(k,38)}</span><div class="rrm"><b>${esc(k.name)}</b><small>${h?lg(h)+' '+esc(h.name)+' · ':''}${t.place?'📍 '+esc(t.place)+' · ':''}${t.ev&&evL().find(e=>e.id==t.ev)?(evL().find(e=>e.id==t.ev).i||'🎒')+' '+esc(evL().find(e=>e.id==t.ev).n)+' · ':''}${t.wty?'🧾 · ':''}${SPX().has(t.id)?'🤝 split · ':''}${t.desc&&t.desc!=k.name?esc(t.desc)+' · ':''}${lg(a)} ${esc(a.name)}${t.g?' · 🔗':''}${t.rc?' · 🔁':''}${t.adj?' · ⚖️':''}${isRecd(t)?' · 🔒':''}${t.att&&t.att.length?' · 📎':''}</small>${t.note?`<small class="rrn">📝 ${esc(t.note)}</small>`:''}</div><span style="text-align:right"><b class="${t.tr?'':v<0?'r':'g'}">${money(v)}</b>${run!=null?`<br><small>${money(run)}</small>`:''}</span></div>`}).join('')}</div>`}).join('')+(total>300?`<small>Showing the newest 300 of ${total}.</small>`:'')}
+return`<div class="rr" onclick="edit('${t.id}')"><span class="ibt" onclick="event.stopPropagation();${!t.tr&&!t.f&&!t.set&&S.cats.find(c=>c.id==t.cat)?`catIco('${t.cat}','${t.g?'':t.id}')`:`edit('${t.id}')`}">${cbadge(k,38)}</span><div class="rrm"><b>${esc(k.name)}</b><small>${h?lg(h)+' '+esc(h.name)+' · ':''}${t.place?'📍 '+esc(t.place)+' · ':''}${t.ev&&evL().find(e=>e.id==t.ev)?(evL().find(e=>e.id==t.ev).i||'🎒')+' '+esc(evL().find(e=>e.id==t.ev).n)+' · ':''}${t.wty?'🧾 · ':''}${SPX().has(t.id)?'🤝 split · ':''}${t.desc&&t.desc!=k.name?esc(t.desc)+' · ':''}${lg(a)} ${esc(a.name)}${t.g?' · 🔗':''}${t.rc?' · 🔁':''}${t.adj?' · ⚖️':''}${isRecd(t)?' · 🔒':''}${t.by?' · 👤 '+esc(t.by):''}${t.att&&t.att.length?' · 📎':''}</small>${t.note?`<small class="rrn">📝 ${esc(t.note)}</small>`:''}</div><span style="text-align:right"><b class="${t.tr?'':v<0?'r':'g'}">${money(v)}</b>${run!=null?`<br><small>${money(run)}</small>`:''}</span></div>`}).join('')}</div>`}).join('')+(total>300?`<small>Showing the newest 300 of ${total}.</small>`:'')}
 function reg(){let run=null;if(fa){const A=acc(fa);run=isL(A)?-(A.open||0):(A.open||0)}
 const all=TXA().filter(t=>!fa||t.acc==fa||t.to==fa).map(t=>{if(run!==null)run+=dl(t,fa);return{t,run}});
 const inP=t=>rmode=='a'||(rmode=='m'&&t.date.startsWith(ym))||(rmode=='r'&&inR(t.date,xf,xt)),
-rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||((t.desc||'')+' '+(t.note||'')+' '+(t.place||'')).toLowerCase().includes(q.toLowerCase()))),
+rows=all.filter(({t})=>inP(t)&&(!fc||t.cat==fc||mainOf(t.cat)==fc)&&(!q||((t.desc||'')+' '+(t.note||'')+' '+(t.place||'')+' '+(t.by||'')).toLowerCase().includes(q.toLowerCase()))),
 ids=(LASTIDS=rows.map(x=>x.t).filter(t=>!t.g&&!t.f).map(t=>t.id)),tm=rows.map(x=>x.t).filter(isTax).reduce((a,t)=>a-t.amt,0),cash=rows.map(x=>x.t).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(cash.filter(t=>t.amt>0)),exp=-sum(cash.filter(t=>t.amt<0)),gp={};
 cash.forEach(t=>{const k=(t.amt>0?'i':'e')+t.cat;gp[k]=gp[k]||{c:t.cat,ty:t.amt>0?'i':'e',n:0,v:0};gp[k].n++;gp[k].v+=Math.abs(t.amt)});
 const gl=Object.values(gp).sort((a,b)=>b.v-a.v),mx=Math.max(1,...gl.map(x=>x.v));
@@ -1356,7 +1367,7 @@ $('#m').innerHTML=`<div><h3>Edit statement</h3><small>Name</small><input id="e_n
 <small>If the account or year changes, the file is also moved to the right folder in Google Drive.</small><button onclick="saveStm('${id}')">Save</button><button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
 async function saveStm(id){const x=S.stm.find(y=>y.id==id),a=$('#e_a').value,mo=$('#e_m').value,y=$('#e_y').value,n=$('#e_n').value.trim()||x.name,
 mv=a!=x.acc||y!=stM(x).slice(0,4),rn=n!=x.name,H={'Content-Type':'application/json'};
-try{if(localStorage.getItem(ON)&&(mv||rn)){const f=fid(x);
+try{if(LS.getItem(ON)&&(mv||rn)){const f=fid(x);
 if(mv){const ps=((await(await api(`${D}/${f}?fields=parents`)).json()).parents||[]).join(','),d=await path(S.cfg.root,'Statements',safe(acc(a).name),y);
 await api(`${D}/${f}?addParents=${d}${ps?'&removeParents='+ps:''}&fields=id`,{method:'PATCH',headers:H,body:JSON.stringify(rn?{name:n}:{})})}
 else await api(`${D}/${f}`,{method:'PATCH',headers:H,body:JSON.stringify({name:n})})}}
@@ -1591,6 +1602,33 @@ ${bpSection()}<h4>🔔 With reminders (${T.length})</h4><div class="card rl">${T
 <div class="card rl">${D.map(x=>`<div class="sbr"><div class="fl"><span style="min-width:0">${cbadge(cat(x.cat),30)} <b>${esc(x.n)}</b><br><small>${money(x.amt)} a month · last ${fmtD(x.last)} · next about ${fmtD(x.next)}</small>${x.amt>x.prev+.5?`<br><small class="r">⬆ went up from ${money(x.prev)}</small>`:''}</span><b class="r">${money(x.amt*12)}<small>/yr</small></b></div>${ro?'':`<div class="sfs" style="margin:4px 0 0"><a onclick="sbTrack('${esc(x.k)}')">🔔 Remind me</a><a onclick="q=${esc(JSON.stringify(x.n))};go('tx')">Records</a><a onclick="cfg('sbx',[...(S.cfg.sbx||[]),'${esc(x.k)}'])">Not a subscription</a></div>`}</div>`).join('')||'<small>Nothing found yet. It needs at least 3 months of the same charge.</small>'}</div>
 ${(S.cfg.sbx||[]).length&&!ro?`<div class="ovc"><a onclick="cfg('sbx',[])">Show ${(S.cfg.sbx||[]).length} hidden</a></div>`:''}`}
 
+/* ===== SHARED LEDGERS: switch, add, leave; who spent what ===== */
+function swSel(){const L=links(),P=spaces();if(!L.length&&!P.length)return'';
+return`<select onchange="swGo(this.value)" aria-label="Switch ledger" style="width:auto;max-width:44vw;margin:0;padding:4px 8px"><option value="s:" ${!view&&!SPC?'selected':''}>👤 My ledger</option>${P.map(x=>`<option value="s:${esc(x.id)}" ${!view&&SPC==x.id?'selected':''}>👫 ${esc(x.name)}</option>`).join('')}${L.map(l=>`<option value="v:${l.id}" ${view==l.id?'selected':''}>👁 ${esc(l.name)}</option>`).join('')}</select>`}
+function swGo(v){const k=v.slice(0,1),id=v.slice(2);if(k=='v')return sw(id);if(id==SPC){if(view)sw('');return}if(ME){S=ME;ME=null;view=''}flush();localStorage.setItem('ledger.space',id);setStatus('Opening…');setTimeout(()=>location.reload(),60)}
+function spAdd(){const g=x=>(($('#sp_'+x)||{}).value||'').trim(),c=g('c');let u=g('u'),k=g('k');
+if(c){try{const j=JSON.parse(decodeURIComponent(escape(atob(c.replace(/^LEDGER1:/,'')))));u=j.u;k=j.k||''}catch(e){return setStatus('That setup code is not valid')}}
+if(!safeUrl(u))return setStatus('Paste a setup code, or enter the Web App URL and key');
+if(u==localStorage.getItem('ledger.sheet'))return setStatus('That is your own ledger, not a shared one');
+const P=spaces();if(P.some(x=>localStorage.getItem('sp.'+x.id+'.ledger.sheet')==u))return setStatus('You already have that shared ledger');
+const id=uid().replace(/[^a-z0-9]/g,'').slice(0,10);localStorage.setItem('sp.'+id+'.ledger.sheet',u);localStorage.setItem('sp.'+id+'.ledger.key',k);
+localStorage.setItem('ledger.spaces',JSON.stringify([...P,{id,name:g('n')||'Shared'}]));if(g('me'))localStorage.setItem('ledger.me',g('me'));flush();localStorage.setItem('ledger.space',id);setStatus('Opening the shared ledger…');setTimeout(()=>location.reload(),60)}
+function spLeave(id){const x=spaces().find(y=>y.id==id);if(!x||!confirm('Remove "'+x.name+'" from this device?\n\nThe shared ledger stays in its Google Sheet and on your partner\'s phone. You can add it again with a setup code.'))return;
+if(id==SPC){flush();spForget(id);location.replace(location.pathname);return}spForget(id);render()}
+function spRen(id,n){if(!n.trim())return;localStorage.setItem('ledger.spaces',JSON.stringify(spaces().map(x=>x.id==id?{...x,name:n.trim()}:x)));render()}
+function spSettings(){const P=spaces(),me=meName();
+return`<small>Keep your own ledger private, and add a <b>shared ledger</b> for money you both spend: house, groceries, bills, holidays. You both add and edit records in it, and each record shows who added it.</small>
+<small style="display:block;margin-top:8px">Your name on this phone</small><input value="${esc(me)}" placeholder="e.g. Aiman" onchange="localStorage.setItem('ledger.me',this.value.trim());render()">
+${P.length?`<h4>Your shared ledgers</h4>${P.map(x=>`<div class="fl wl-l"><input value="${esc(x.name)}" onchange="spRen('${esc(x.id)}',this.value)" style="margin:0;flex:1"><span class="sfs" style="margin:0 0 0 8px">${SPC==x.id?'<small>Open now</small>':`<a onclick="swGo('s:${esc(x.id)}')">Open</a>`}<a onclick="spLeave('${esc(x.id)}')">✕</a></span></div>`).join('')}`:''}
+${SPC?`<div class="ffn">👫 You are in the shared ledger. To invite your partner, tap <b>Setup code for a new device</b> in Google Sheet sync above and send them the code. They paste it here, under <b>Add a shared ledger</b>.</div>${SPC?`<button class="s" onclick="swGo('s:')">👤 Back to my own ledger</button>`:''}`:''}
+<h4>Add a shared ledger</h4><input id="sp_n" placeholder="Name (e.g. Home, Us)"><input id="sp_c" placeholder="Paste the setup code from your partner">
+${me?'':'<input id="sp_me" placeholder="Your name (shown on records you add)">'}
+${det('spm','Or set up a new one yourself',`<small><b>1.</b> Make a new Google Sheet and add the same Ledger script (ledger-sync.gs) the way you set up your own, with a <b>new secret KEY</b>. Deploy it as a Web app (Execute as Me, Who has access Anyone).<br><b>2.</b> Enter its Web App URL and key here, then Add.<br><b>3.</b> In the shared ledger, open Settings › Google Sheet sync › Setup code and send it to your partner.</small><input id="sp_u" placeholder="Web App URL of the shared Sheet"><input id="sp_k" placeholder="Its secret key">`)}
+<button onclick="spAdd()">Add &amp; open</button><small>Your own ledger is not shared. To also see each other's own spending, swap view keys under Linked ledgers below; it shows in Household.</small>`}
+function spCard(){const me=meName();if(!me)return`<div class="card"><b>👤 What's your name?</b><small style="display:block">So your partner can see who added each record in this shared ledger.</small><div class="fl" style="gap:8px"><input id="sp_mn" placeholder="e.g. Aiman" style="margin:0;flex:1"><button style="width:auto;margin:0" onclick="const v=$('#sp_mn').value.trim();if(v){localStorage.setItem('ledger.me',v);render()}">Save</button></div></div>`;
+const m=today().slice(0,7),L=TXM(m).filter(isSp),by={};L.forEach(t=>{const k=t.by||'Not marked';by[k]=(by[k]||0)-t.amt});const E=Object.entries(by).sort((a,b)=>b[1]-a[1]),tot=E.reduce((s,x)=>s+x[1],0),P=E.filter(x=>x[0]!='Not marked');
+let sp='';if(P.length==2){const half=(P[0][1]+P[1][1])/2,d=P[0][1]-half;if(d>0.5)sp=`<div class="ffn">⚖️ Split equally, <b>${esc(P[1][0])}</b> owes <b>${esc(P[0][0])}</b> ${money(d)} this month.</div>`}
+return`<div class="card"><div class="fl"><b>👫 Who spent what · ${MN[+m.slice(5)-1]}</b><b>${money(tot)}</b></div>${E.map(([n,v])=>`<div style="margin:6px 0"><div class="fl"><span>${n==me?'🙋 ':'👤 '}${esc(n)}${n==me?' <small>(you)</small>':''}</span><span>${money(v)} <small>${tot?Math.round(v/tot*100):0}%</small></span></div>${pbar(tot?v/tot*100:0,n==me?'var(--acc)':'#f59e0b')}</div>`).join('')||'<small>No spending yet this month.</small>'}${sp}<small>Records you add here are marked with your name, ${esc(me)}.</small></div>`}
 /* ===== RATE MY MONTH: a one-minute check-in, kept with the report ===== */
 const rvL=()=>S.cfg.rv||{},RVF=['😣','🙁','😐','🙂','🤩'],RVN=['Rough','Not great','Okay','Good','Great'];let RVS=0;
 const mLbl=m=>MN[+m.slice(5)-1]+' '+m.slice(0,4);
@@ -1714,7 +1752,7 @@ return{amt,date,shop}}
 async function rcptScan(f){if(!f)return;const o=$('#f_ocr');if(!o)return;o.textContent='🔎 Reading the receipt… The first scan downloads the reader, so it takes a little longer.';
 try{const w=await ocrW(),c=await ocrImg(f),r=await w.recognize(c),p=rcptParse((r.data||{}).text||'');if(!$('#f_amt'))return;
 if($('#f_type').value!='e')setT('e');if(p.amt)$('#f_amt').value=p.amt.toFixed(2);if(p.date)$('#f_date').value=p.date;const sh=$('#f_shop'),de=$('#f_desc');if(p.shop&&sh&&!sh.value)sh.value=p.shop;if(p.shop&&de&&!de.value)de.value=p.shop;
-let at=false;if(localStorage.getItem(SU)){try{const dt=new DataTransfer();[...$('#f_files').files,f].forEach(x=>dt.items.add(x));$('#f_files').files=dt.files;at=true}catch(e){}}
+let at=false;if(LS.getItem(SU)){try{const dt=new DataTransfer();[...$('#f_files').files,f].forEach(x=>dt.items.add(x));$('#f_files').files=dt.files;at=true}catch(e){}}
 o.innerHTML=p.amt||p.date||p.shop?`✔ Read ${[p.amt?money(p.amt):'',p.date?fmtD(p.date):'',p.shop?esc(p.shop):''].filter(Boolean).join(' · ')}${at?' · photo attached':''}. Please check before saving.`:'Could not read this receipt. Try a sharper photo, flat and well lit.'}
 catch(e){o.textContent='Could not read the receipt: '+e.message}}
 
@@ -1865,8 +1903,8 @@ function rcDueCard(){if(RO())return'';const l=S.rec.filter(r=>r.on&&!r.auto).map
 const late=l.filter(x=>x.st.s!='soon').length;
 return`<div class="card rdue ${late?'late':''}"><div class="fl"><b>${late?`⏰ ${late} not ${late==1?'paid':'paid'} yet`:'📅 Coming up this week'}</b><small>tap Record once it's done</small></div>${l.map(({r,st})=>`<div class="rdr"><div><span>${ico(r.name,'',18)}${esc(r.name)}</span><br>${rcTag(r)}</div><div><b class="${r.ty=='i'?'g':''}">${money(r.amt*(st.k||1))}</b><button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">${st.s=='soon'?'Record early':st.k>1?'Record '+st.k:'Record'}</button></div></div>`).join('')}</div>`}
 // once a day, when the app opens, a short reminder if payments are overdue or due today
-function rcNag(){if(RO())return;try{const t=today();if(localStorage.getItem('ledger.rcnag')==t)return;const l=S.rec.filter(r=>r.ty!='i'&&rcLate(r));if(!l.length)return;
-localStorage.setItem('ledger.rcnag',t);toast('⏰ '+(l.length==1?l[0].name+' is':l.length+' payments are')+' due and not recorded yet. See Recurring.')}catch(e){}}
+function rcNag(){if(RO())return;try{const t=today();if(LS.getItem('ledger.rcnag')==t)return;const l=S.rec.filter(r=>r.ty!='i'&&rcLate(r));if(!l.length)return;
+LS.setItem('ledger.rcnag',t);toast('⏰ '+(l.length==1?l[0].name+' is':l.length+' payments are')+' due and not recorded yet. See Recurring.')}catch(e){}}
 // a repeating calendar event with alerts the day before (6 pm) and on the day (9 am), so the phone reminds you even when Ledger is closed
 function rcIcs(id){const r=S.rec.find(x=>x.id==id);if(!r||!r.start)return setStatus('Save the item with a first date first');
 const d8=x=>x.replace(/-/g,''),e=x=>String(x).replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n'),day=+r.start.slice(8,10),
@@ -1985,7 +2023,7 @@ catch(e){const m=String(e.message||e),why=/Client ID/i.test(m)?'Google Drive is 
 if(!confirm(why+'\n\nSave the payslip without the file? You can attach it later.'))return setStatus('Payslip not saved');setStatus(why.slice(0,70))}}
 const rem=PE.rem||[],q={...PE,id:PE.id||uid(),rev:(PE.rev||0)+1};delete q.rem;delete q.so;if(!pg(q)&&!(q.att||[]).length)return setStatus('Enter the basic salary or attach a payslip');
 const prevQ=S.pay.find(x=>x.id==q.id),mvY=!!prevQ&&prevQ.date.slice(0,4)!=q.date.slice(0,4);let rnFail=0;
-if((q.att||[]).length&&localStorage.getItem(ON)){const n=q.att.length,H={'Content-Type':'application/json'};let dF=null;
+if((q.att||[]).length&&LS.getItem(ON)){const n=q.att.length,H={'Content-Type':'application/json'};let dF=null;
 for(let i=0;i<n;i++){const a=q.att[i],nm=safe(payName(q,i,n,extOf(a.name)));if(a.name==nm&&!mvY)continue;
 try{if(mvY){dF=dF||await path(S.cfg.root,'Payslips',q.date.slice(0,4));const ps=((await(await api(`${D}/${a.id}?fields=parents`)).json()).parents||[]).join(',');
 await api(`${D}/${a.id}?addParents=${dF}${ps?'&removeParents='+ps:''}&fields=id`,{method:'PATCH',headers:H,body:JSON.stringify({name:nm})})}
@@ -2158,7 +2196,7 @@ function guessCat(d,amt,card){d=String(d||'').toLowerCase();if(/cash ?back|rebat
 if(/interest|finance charge|late (payment )?(fee|charge)|annual fee|service tax|\bsst\b|stamp duty|over ?limit|retail interest|caj lewat|faedah/.test(d))return card?intCat():feeCat();
 if(/service charge|bank charge|\bfee\b|commission|ibg charge|duitnow charge/.test(d))return feeCat();if(/profit paid|interest credit|hibah|dividend/.test(d)&&amt>0){const c=S.cats.find(x=>x.ty=='i'&&/interest|dividend|profit/i.test(x.name));return c?c.id:''}return''}
 /* ===== DUPLICATES ===== */
-const nodup=()=>{try{return new Set(JSON.parse(localStorage.getItem('ledger.nodup')||'[]'))}catch(e){return new Set()}};
+const nodup=()=>{try{return new Set(JSON.parse(LS.getItem('ledger.nodup')||'[]'))}catch(e){return new Set()}};
 const dnorm=d=>String(d||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function dupFind(list,aid,stl){const ks=nodup(),key=t=>aid?dl(t,aid).toFixed(2):(t.tr?'T':'')+t.acc+'>'+(t.to||'')+'|'+(+t.amt).toFixed(2),by={},out=[];
 list.forEach(t=>{const k=key(t);if(+k.split('|').pop()===0)return;(by[k]=by[k]||[]).push(t)});
@@ -2173,7 +2211,7 @@ const same=cl.every(t=>dnorm(t.desc)==dnorm(cl[0].desc)),day=lo==hi;return{keep,
 function dupDel(ids,keepId){if(RO())return;const k=S.tx.find(t=>t.id==keepId);let n=0;ids.forEach(id=>{const t=S.tx.find(x=>x.id==id);if(!t)return;
 if(k&&(t.att||[]).length){k.att=[...(k.att||[]),...t.att.filter(a=>!(k.att||[]).some(b=>b.id==a.id))];k.u=now()}
 if(k&&!k.cat&&t.cat){k.cat=t.cat;k.u=now()}if(RCX.mt)delete RCX.mt[id];S.del[id]=now();S.tx=S.tx.filter(x=>x.id!=id);n++});save();setStatus(n+' duplicate'+(n==1?'':'s')+' removed')}
-function dupKeep(a,b){const s_=nodup();s_.add([a,b].sort().join('|'));try{localStorage.setItem('ledger.nodup',JSON.stringify([...s_]))}catch(e){}render();if($('#m').className.includes('show')&&DUPV)dupView()}
+function dupKeep(a,b){const s_=nodup();s_.add([a,b].sort().join('|'));try{LS.setItem('ledger.nodup',JSON.stringify([...s_]))}catch(e){}render();if($('#m').className.includes('show')&&DUPV)dupView()}
 function dupAll(groups){const l=groups;if(!confirm('Remove '+l.reduce((a,g)=>a+g.dup.length,0)+' duplicate transactions? Receipts on them are moved to the copy that is kept.'))return;l.forEach(g=>dupDel(g.dup.map(t=>t.id),g.keep[0].id));if(DUPV)dupView()}
 function dupHtml(G,aid){if(!G.length)return'';window.__dg=G;const cell=(t,lab,cls)=>`<div class="sc${cls}"><div class="fl"><small>${lab} · ${t.date}</small><b class="${(aid?dl(t,aid):t.amt)<0?'r':'g'}">${money(aid?dl(t,aid):t.amt)}</b></div><small>${t.g?'🔗 ':''}${esc(t.desc)}${aid?'':' · '+esc(acc(t.acc).name)}${(t.att||[]).length?' 📎':''}</small></div>`;
 return`<div class="card" style="border-left:4px solid #f59e0b"><div class="fl"><b>🧹 Possible duplicates (${G.reduce((a,g)=>a+g.dup.length,0)})</b><a onclick="dupAll(window.__dg)">Remove all</a></div><small>The same amount recorded more than once within 3 days${G.some(g=>g.onSt!=null)?', more times than the statement shows it':''}. Check each one: two genuine purchases of the same amount can look like this.</small>
@@ -2458,7 +2496,7 @@ ${!lastRec(a.id)?'<small>First reconciliation for this card: tick everything up 
 ${owe!=null&&Math.abs(nb-owe)<0.005?`<div class="card"><div class="fl"><span>✔ New balance matches the statement</span><b>${money(owe)}</b></div>${owe>0?`<button class="s" onclick="trEd(payFrom(),'${a.id}',${owe.toFixed(2)})">💸 Pay the full ${money(owe)}</button>${m.minp?`<button class="s" onclick="trEd(payFrom(),'${a.id}',${(+m.minp).toFixed(2)})">Pay the minimum ${money(m.minp)}</button>`:''}`:''}</div>`:''}`}
 function histHtml(aid){const l=S.recs.filter(r=>!aid||r.acc==aid).sort((a,b)=>b.end.localeCompare(a.end)||b.u-a.u);if(!l.length)return'';const latest={};l.forEach(r=>{if(!latest[r.acc])latest[r.acc]=r.id});
 return`<h4>Reconciliation history</h4>${l.slice(0,24).map(r=>{const A=acc(r.acc);return`<div class="card tap" onclick="recView('${r.id}')"><div class="fl"><b>${lg(A)} ${esc(A.name)} · ${r.end}</b><span>${money(isL(A)?-r.bal:r.bal)}</span></div><div class="fl"><small>${r.n} transactions${r.adj?` · adjustment ${money(r.adj)} <a onclick="fa='${r.acc}';fc='cadj';rmode='a';rv='l';go('tx')">view</a>`:''}${r.dueD?' · due '+fmtD(r.dueD):''}${r.minp!=null?' · min '+money(r.minp):''}${r.fid?` · <a onclick="pv('${r.fid}')">📄 statement</a>`:''}</small>${latest[r.acc]==r.id?`<a onclick="event.stopPropagation();rcUndo('${r.id}')">Undo</a>`:'<small>›</small>'}</div></div>`}).join('')}`}
-function rcnv(){try{localStorage.setItem('ledger.rcx',JSON.stringify(RCX))}catch(e){}if(RO())return'<div class="card">Switch back to your own ledger to reconcile.</div>';
+function rcnv(){try{LS.setItem('ledger.rcx',JSON.stringify(RCX))}catch(e){}if(RO())return'<div class="card">Switch back to your own ledger to reconcile.</div>';
 if(!RCX.acc||acc(RCX.acc).name=='?'){const l=recList();
 return`${(()=>{const l=recList(),up=l.filter(a=>{const lr=lastRec(a.id);return lr&&(!a.stmt||lr>=lastStmt(a))}).length,nt=S.rcm.filter(x=>x.rcn).length,last=S.recs.slice().sort((a,b)=>b.end.localeCompare(a.end))[0];
 return`<div class="row3"><div class="card">Up to date<h3 class="${up==l.length&&l.length?'g':''}">${up}/${l.length}</h3></div><div class="card">Reconciled lines<h3>${nt}</h3></div><div class="card">Last<h3 style="font-size:13px">${last?fmtD(last.end):'–'}</h3></div></div>
@@ -2590,23 +2628,23 @@ function gItemSave(id,k){const g=S.goals.find(x=>x.id==id),it=[...g.items];it[k]
 function gItemDel(id,k){const g=S.goals.find(x=>x.id==id);put('goals',{...g,items:g.items.filter((_,j)=>j!=k)});closeM()}
 /* ===== SETTINGS ===== */
 function sett(){if(RO())return'<div class="card">Switch back to your own ledger to change settings.</div>';const c=S.cfg,inp=(f,t='text')=>`<input type="${t}" value="${esc(c[f])}" onchange="cfg('${f}',this.value)">`;
-return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(localStorage.getItem(SU)||'')}" onchange="if(this.value.trim()!=(localStorage.getItem(SU)||'')){localStorage.removeItem('ledger.sent');localStorage.removeItem('ledger.rev')}localStorage.setItem(SU,this.value.trim())"><small>Secret key</small><div class="fl skw"><input id="sk_in" type="${SKV?'text':'password'}" autocomplete="off" spellcheck="false" autocapitalize="off" value="${esc(localStorage.getItem(SK)||'')}" onchange="localStorage.setItem(SK,this.value.trim());render()" style="font-family:${SKV?'ui-monospace,Menlo,monospace':'inherit'}"><button class="s skb" type="button" aria-label="${SKV?'Hide':'Show'} secret key" onclick="SKV=!SKV;const e=$('#sk_in');e.type=SKV?'text':'password';e.style.fontFamily=SKV?'ui-monospace,Menlo,monospace':'inherit';this.textContent=SKV?'🙈 Hide':'👁 Show'">${SKV?'🙈 Hide':'👁 Show'}</button><button class="s skb" type="button" aria-label="Copy secret key" onclick="const v=$('#sk_in').value;if(!v)return setStatus('No key to copy');(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>setStatus('Secret key copied'),()=>{const e=$('#sk_in');e.type='text';e.select();setStatus('Select and copy the key')})">📋 Copy</button></div>
-${(()=>{const k=localStorage.getItem(SK)||'';return k?`<small class="skp">🔑 ${esc(k.length>10?k.slice(0,4)+'…'+k.slice(-4):k.slice(0,2)+'…')} · ${k.length} characters</small>`:''})()}${localStorage.getItem(SU)&&!keyInfo(localStorage.getItem(SK)).ok?`<small class="r">⚠ ${keyInfo(localStorage.getItem(SK)).t}</small><button class="s" onclick="newKey()">🔑 Make a strong key</button>`:''}<button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>
+return`<div class="row3"><div class="card">Sync<h3 style="font-size:13px">${esc(status)}</h3></div><div class="card">Accounts<h3>${S.accs.length}</h3></div><div class="card">Categories<h3>${S.cats.length}</h3></div></div>`+det('sy','☁️ Google Sheet sync',`<small>Apps Script Web App URL</small><input value="${esc(LS.getItem(SU)||'')}" onchange="if(this.value.trim()!=(LS.getItem(SU)||'')){LS.removeItem('ledger.sent');LS.removeItem('ledger.rev')}LS.setItem(SU,this.value.trim())"><small>Secret key</small><div class="fl skw"><input id="sk_in" type="${SKV?'text':'password'}" autocomplete="off" spellcheck="false" autocapitalize="off" value="${esc(LS.getItem(SK)||'')}" onchange="LS.setItem(SK,this.value.trim());render()" style="font-family:${SKV?'ui-monospace,Menlo,monospace':'inherit'}"><button class="s skb" type="button" aria-label="${SKV?'Hide':'Show'} secret key" onclick="SKV=!SKV;const e=$('#sk_in');e.type=SKV?'text':'password';e.style.fontFamily=SKV?'ui-monospace,Menlo,monospace':'inherit';this.textContent=SKV?'🙈 Hide':'👁 Show'">${SKV?'🙈 Hide':'👁 Show'}</button><button class="s skb" type="button" aria-label="Copy secret key" onclick="const v=$('#sk_in').value;if(!v)return setStatus('No key to copy');(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>setStatus('Secret key copied'),()=>{const e=$('#sk_in');e.type='text';e.select();setStatus('Select and copy the key')})">📋 Copy</button></div>
+${(()=>{const k=LS.getItem(SK)||'';return k?`<small class="skp">🔑 ${esc(k.length>10?k.slice(0,4)+'…'+k.slice(-4):k.slice(0,2)+'…')} · ${k.length} characters</small>`:''})()}${LS.getItem(SU)&&!keyInfo(LS.getItem(SK)).ok?`<small class="r">⚠ ${keyInfo(LS.getItem(SK)).t}</small><button class="s" onclick="newKey()">🔑 Make a strong key</button>`:''}<button onclick="sync()">Sync now</button><button class="s" onclick="diag()">Why did it fail? (sync check)</button>
 <div class="two"><button class="s" onclick="setupCode()">Setup code for a new device</button><input placeholder="Paste a setup code" onchange="useCode(this.value)"></div>`)
-+det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(localStorage.getItem(CID)||'')}" onchange="localStorage.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
++det('dr','📁 Google Drive (receipts &amp; statements)',`<small>OAuth Client ID</small><input value="${esc(LS.getItem(CID)||'')}" onchange="LS.setItem(CID,this.value.trim())"><small>Drive root folder name</small>${inp('root')}<button onclick="connect()">Connect Google Drive</button>`)
 +det('ap','🎨 Appearance',`<small>App name</small>${inp('name')}<small>Your name (for the greeting on Overview)</small>${inp('who')}<div class="two"><div><small>Currency symbol</small>${inp('cur')}</div><div><small>Accent colour</small>${inp('accent','color')}</div></div><small>Theme</small><select onchange="cfg('theme',this.value)"><option value="dark" ${c.theme=='dark'?'selected':''}>Dark</option><option value="light" ${c.theme=='light'?'selected':''}>Light</option></select>`)
 +det('bu','🎯 Budget settings',`<button class="s" onclick="budEd('')">+ Add custom budget</button>${S.buds.filter(b=>!b.cat).map(b=>`<div class="fl" onclick="budEd('${b.id}')" style="cursor:pointer;margin:8px 0"><span>${esc(b.name)}</span><span>${money(b.amt)}</span></div>`).join('')}<small>Warn when spending reaches (%)</small><input type="number" value="${S.cfg.bw||80}" onchange="cfg('bw',parseFloat(this.value)||80)"><small>Monthly budget per expense category (repeats every month)</small>${catsOf('e').map(c=>`<div class="fl"><span>${isMain(c)?'':'　↳ '}<span class="ibt" onclick="catIco('${c.id}')">${cbadge(c,22)}</span> ${esc(c.name)}</span><input type="number" step="1" inputmode="decimal" placeholder="Budget" value="${(S.buds.find(b=>b.cat==c.id)||{}).amt||''}" style="width:120px;text-align:right" onchange="setBud('${c.id}',this.value)"></div>`).join('')}<small>Manage categories in More › Category manager.</small>`)
 +det('gd','🥇 Gold price',`<small>Price source</small><select onchange="cfg('gsrc',this.value)"><option value="spot" ${(c.gsrc||'spot')=='spot'?'selected':''}>Live gold price (XAU → MYR, automatic)</option><option value="web" ${c.gsrc=='web'?'selected':''}>A website I choose (via my Google script)</option><option value="manual" ${c.gsrc=='manual'?'selected':''}>Manual price</option></select>
 <small>Adjust % (dealer buy/sell difference or purity)</small><input type="number" step="0.1" value="${c.gadj||0}" onchange="cfg('gadj',parseFloat(this.value)||0)"><small>Manual price per gram</small><input type="number" step="0.01" value="${c.gman||''}" onchange="cfg('gman',parseFloat(this.value)||0)">
 <small>Website page address (for "a website I choose")</small><input value="${esc(c.gurl||'')}" onchange="cfg('gurl',this.value.trim())"><small>Text just before the price on that page</small><input value="${esc(c.gafter||'')}" onchange="cfg('gafter',this.value)">
 <small>Latest: ${c.gp?money(c.gp)+' per gram · '+c.gd:'none yet'}</small><button class="s" onclick="goldRefresh()">Update gold price now</button>`)
-+det('lk','👥 Linked ledgers (monitor each other)',`${links().map(l=>`<div class="fl" style="margin:6px 0"><span>👁 ${esc(l.name)}</span><a onclick="delLink('${l.id}')">✕</a></div>`).join('')||'<small>No linked ledgers yet</small>'}<h4>Add a ledger</h4><input id="lk_n" placeholder="Name (e.g. Aisyah)"><input id="lk_u" placeholder="Their Web App URL"><input id="lk_k" placeholder="Their view key"><button class="s" onclick="addLink()">Add</button><small>They set up their own copy of the app and share the Web App URL and view key with you. You can view their ledger from the switch at the top; it is read only.</small>`)
++det('spl','👫 Shared ledgers (record together)',spSettings())+det('lk','👥 Linked ledgers (see each other)',`${links().map(l=>`<div class="fl" style="margin:6px 0"><span>👁 ${esc(l.name)}</span><a onclick="delLink('${l.id}')">✕</a></div>`).join('')||'<small>No linked ledgers yet</small>'}<h4>Add a ledger</h4><input id="lk_n" placeholder="Name (e.g. Aisyah)"><input id="lk_u" placeholder="Their Web App URL"><input id="lk_k" placeholder="Their view key"><button class="s" onclick="addLink()">Add</button><small>They set up their own copy of the app and share the Web App URL and view key with you. You can view their ledger from the switch at the top; it is read only.</small>`)
 +det('sh',`🛒 Shops &amp; brands (${S.shops.length})`,S.shops.map(x=>`<div class="row5" style="grid-template-columns:44px 1fr 64px 36px"><span class="lgl ibt" title="Choose an icon" onclick="shopIco('${x.id}')">${lg(x)}</span><input value="${esc(x.name)}" onchange="upd('shops','${x.id}','name',this.value)"><label class="s" style="font-size:11px;text-align:center;cursor:pointer;color:var(--acc)">Logo…<input type="file" accept="image/*" hidden onchange="logoUp('shops','${x.id}',this.files[0])"></label><button class="d" onclick="rm('shops','${x.id}')">×</button></div>`).join('')+`<button class="s" onclick="put('shops',{id:uid(),name:'New shop',i:'🏷️',color:'#94a3b8'})">+ Add shop</button>`)
 +det('gl','🔗 Garage link',`<small>${GT.length} Garage costs found. They go to this account:</small><select onchange="cfg('gAcc',this.value)">${opts(S.accs,S.cfg.gAcc,a=>esc(a.name))}</select><div class="two"><select onchange="cfg('gFuel',this.value)">${catOpts('e',S.cfg.gFuel||'c8')}</select><select onchange="cfg('gSvc',this.value)">${catOpts('e',S.cfg.gSvc||'c9')}</select></div><small>Fuel category · service category</small><small>Tap a 🔗 entry in the Register to edit it here without changing Garage.</small>${S.govr.some(o=>o.h)?`<button class="s" onclick="gRestore()">Restore ${S.govr.filter(o=>o.h).length} hidden</button>`:''}`)
 +det('se','🛡️ Security &amp; privacy',`<button onclick="secView()">Run the security check</button>
 <div class="fl"><span>🔒 PIN lock on this device</span>${pinRec()?'<a onclick="pinOff()">Turn off</a>':'<a onclick="pinSet()">Turn on</a>'}</div>${pinRec()?`<small>Lock after the app has been in the background for</small><select onchange="pinAfter(this.value)">${[[0,'Straight away'],[1,'1 minute'],[5,'5 minutes'],[15,'15 minutes']].map(([v,n])=>`<option value="${v}" ${(pinRec().after??1)==v?'selected':''}>${n}</option>`).join('')}</select><button class="s" onclick="pinSet()">Change PIN</button>`:''}
 <button class="d" onclick="signOut()">Sign out of this device</button><small>Removes the ledger, keys and Google access from this device only.</small>`)
-+det('bk','💾 Backup &amp; restore',`<small>${localStorage.getItem('ledger.lbk')?'Last Google Drive backup: '+ago(+localStorage.getItem('ledger.lbk')):'Your Google script makes a daily backup once it is updated.'}</small>
++det('bk','💾 Backup &amp; restore',`<small>${LS.getItem('ledger.lbk')?'Last Google Drive backup: '+ago(+LS.getItem('ledger.lbk')):'Your Google script makes a daily backup once it is updated.'}</small>
 <button onclick="bkView()">Backups &amp; restore</button><div class="two"><button class="s" onclick="exp()">Download (JSON)</button><button class="s" onclick="csvTx()">Transactions (CSV)</button></div>
 <small>Lost or reset phone? Install the app, then enter your Web App URL and secret key (or paste a setup code) — everything syncs back from your Google Sheet.</small>
 ${logoSize()>15000?`<button class="s" onclick="shrinkLogos()">Make uploaded logos smaller (${Math.round(logoSize()/1024)} KB)</button>`:''}`)
@@ -2681,14 +2719,14 @@ function csvTx(){const q=v=>{v=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(v)&&i
 const rows=[['Date','Description','Amount','Type','Category','Main category','Account','To account','Shop','Note','Receipts']].concat(TXA().map(t=>[t.date,t.desc,t.amt.toFixed(2),t.tr?'Transfer':t.amt<0?'Expense':'Income',t.tr?'':cat(t.cat).name,t.tr?'':cat(mainOf(t.cat)).name,acc(t.acc).name,t.to?acc(t.to).name:'',(S.shops.find(x=>x.id==t.shop)||{}).name||'',t.note||'',(t.att||[]).map(a=>a.link).join(' ')]));
 dl_(new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}),'ledger-transactions-'+today()+'.csv');setStatus(TXA().length+' transactions exported')}
 /* safety copies kept on this device (IndexedDB) before anything replaces the local ledger */
-const idb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('ledger-safe',1);r.onupgradeneeded=()=>r.result.createObjectStore('copies',{keyPath:'t'});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
+const idb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('ledger-safe'+IDS,1);r.onupgradeneeded=()=>r.result.createObjectStore('copies',{keyPath:'t'});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
 async function safeCopy(why){try{const db=await idb(),d=JSON.parse(JSON.stringify(ME||S));await new Promise((ok,no)=>{const tx=db.transaction('copies','readwrite'),st=tx.objectStore('copies');st.put({t:Date.now(),why,n:d.tx.length,d});
 const ks=st.getAllKeys();ks.onsuccess=()=>{ks.result.sort((a,b)=>b-a).slice(5).forEach(k=>st.delete(k))};tx.oncomplete=ok;tx.onerror=()=>no(tx.error)});return true}catch(e){logErr('backup','Could not keep a safety copy on this device',e.message);return false}}
 async function safeList(){try{const db=await idb();return await new Promise(ok=>{const r=db.transaction('copies').objectStore('copies').getAll();r.onsuccess=()=>ok(r.result.sort((a,b)=>b.t-a.t));r.onerror=()=>ok([])})}catch(e){return[]}}
 async function safeGet(t){const l=await safeList(),x=l.find(c=>c.t==t);if(x)dl_(new Blob([JSON.stringify(x.d)],{type:'application/json'}),'ledger-safety-copy-'+new Date(t).toLocaleDateString('en-CA')+'.json')}
 // a restore happened: keep a copy of what is here, empty the local ledger and download everything again
 async function reloadAll(ep,msg){await safeCopy('before loading a restored ledger');setStatus(msg);const c=S.cfg;S=norm({cfg:{...c,u:0}});txDirty();
-['ledger.sent','ledger.rev'].forEach(k=>localStorage.removeItem(k));localStorage.setItem('ledger.ep',ep);persist();render();await sync()}
+['ledger.sent','ledger.rev'].forEach(k=>LS.removeItem(k));LS.setItem('ledger.ep',ep);persist();render();await sync()}
 const fmtT=t=>new Date(t).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),ago=t=>{const h=(Date.now()-t)/36e5;return h<1?'less than an hour ago':h<48?Math.round(h)+' hours ago':Math.round(h/24)+' days ago'};
 async function bkView(){const m=$('#m');m.className='modal show';m.innerHTML='<div><small>Loading your backups…</small></div>';let l=[],err='';
 try{l=(await scriptReq('backups')).list||[]}catch(e){err=e.message}const sc=await safeList();
@@ -2698,29 +2736,29 @@ ${err?`<div class="card r">${esc(err)}</div>`:''}<button onclick="bkNow()">Back 
 <h4>Safety copies on this device (${sc.length})</h4><small>Made automatically before a restore replaces what is here.</small>${sc.map(c=>`<div class="card fl"><span><b>${fmtT(c.t)}</b><br><small>${esc(c.why)} · ${c.n} transactions</small></span><button class="s" style="width:auto" onclick="safeGet(${c.t})">Download</button></div>`).join('')}
 <h4>From a file</h4><small>A .json file downloaded from Ledger (Settings › Backup › Download).</small><input type="file" accept=".json,application/json" onchange="fileRestore(this.files[0])">
 <button class="s" onclick="closeM()">Close</button></div>`}
-async function bkNow(){setStatus('Backing up…');try{await scriptReq('backup');localStorage.setItem('ledger.lbk',String(Date.now()));setStatus('Backed up to Google Drive');bkView()}catch(e){setStatus('Backup failed: '+e.message)}}
+async function bkNow(){setStatus('Backing up…');try{await scriptReq('backup');LS.setItem('ledger.lbk',String(Date.now()));setStatus('Backed up to Google Drive');bkView()}catch(e){setStatus('Backup failed: '+e.message)}}
 async function bkRestore(id,when){if(!confirm(`Restore the ledger from ${when}?\n\nEverything recorded after that time will be replaced on all your devices. A copy of the current ledger is saved first, so you can undo this.`))return;
 setStatus('Restoring…');try{flush();await safeCopy('before restoring '+when);const r=await scriptReq('restore',{fid:id});closeM();await reloadAll(r.ep,'Restored '+r.n+' transactions from '+when)}catch(e){setStatus('Restore failed: '+e.message)}}
 async function fileRestore(f){if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(e){return setStatus('Bad file — that is not a Ledger backup')}
 if(!d||!d.cfg||!Array.isArray(d.tx))return setStatus('Bad file — that is not a Ledger backup');
-if(!confirm(`Restore ${d.tx.length} transactions from “${f.name}”?\n\nThis replaces the ledger${localStorage.getItem(SU)?' on all your devices':' on this device'}. A copy of the current ledger is saved first.`))return;
+if(!confirm(`Restore ${d.tx.length} transactions from “${f.name}”?\n\nThis replaces the ledger${LS.getItem(SU)?' on all your devices':' on this device'}. A copy of the current ledger is saved first.`))return;
 flush();await safeCopy('before restoring '+f.name);clean(d);
-if(localStorage.getItem(SU)){try{setStatus('Restoring…');const r=await scriptReq('restore',{data:d});closeM();await reloadAll(r.ep,'Restored '+r.n+' transactions from the file')}catch(e){setStatus('Restore failed: '+e.message)}return}
+if(LS.getItem(SU)){try{setStatus('Restoring…');const r=await scriptReq('restore',{data:d});closeM();await reloadAll(r.ep,'Restored '+r.n+' transactions from the file')}catch(e){setStatus('Restore failed: '+e.message)}return}
 S=norm(d);txDirty();persist();closeM();render();setStatus('Restored '+d.tx.length+' transactions')}
 async function imp(f){return fileRestore(f)}
 /* a setup code moves the sync settings to a new phone in one paste (it contains the secret key) */
-function setupCode(){const c='LEDGER1:'+btoa(unescape(encodeURIComponent(JSON.stringify({u:localStorage.getItem(SU)||'',k:localStorage.getItem(SK)||'',c:localStorage.getItem(CID)||''}))));
+function setupCode(){const c='LEDGER1:'+btoa(unescape(encodeURIComponent(JSON.stringify({u:LS.getItem(SU)||'',k:LS.getItem(SK)||'',c:LS.getItem(CID)||''}))));
 $('#p').className='modal show';$('#p').innerHTML=`<div><h3>Setup code</h3><small>Paste this on a new phone or computer (Settings › Google Sheet sync › Paste a setup code) and it syncs your ledger straight away. <b class="r">It contains your secret key — keep it in a password manager, never in a chat or e-mail.</b></small><textarea rows="4" readonly onclick="this.select()">${esc(c)}</textarea><button onclick="navigator.clipboard&&navigator.clipboard.writeText('${c}').then(()=>setStatus('Copied'))">Copy</button><button class="s" onclick="$('#p').className='modal'">Close</button></div>`}
 function useCode(v){v=String(v||'').trim();if(!v)return;try{const j=JSON.parse(decodeURIComponent(escape(atob(v.replace(/^LEDGER1:/,'')))));if(!j.u)throw 0;
-localStorage.setItem(SU,j.u);localStorage.setItem(SK,j.k||'');if(j.c)localStorage.setItem(CID,j.c);['ledger.sent','ledger.rev'].forEach(k=>localStorage.removeItem(k));setStatus('Setup code accepted — syncing');render();sync()}catch(e){setStatus('That setup code is not valid')}}
+LS.setItem(SU,j.u);LS.setItem(SK,j.k||'');if(j.c)LS.setItem(CID,j.c);['ledger.sent','ledger.rev'].forEach(k=>LS.removeItem(k));setStatus('Setup code accepted — syncing');render();sync()}catch(e){setStatus('That setup code is not valid')}}
 /* secret key strength */
 function keyInfo(k){k=k||'';const kinds=[/[a-z]/,/[A-Z]/,/\d/,/[^\w]/].filter(r=>r.test(k)).length;if(!k)return{ok:0,t:'No secret key set'};if(k.length<12||(k.length<20&&kinds<3))return{ok:0,t:`Your secret key is easy to guess (${k.length} characters). Anyone who guesses it can read and change your ledger.`};return{ok:1,t:'Secret key is strong'}}
 function newKey(){const a=new Uint8Array(18);crypto.getRandomValues(a);const k=btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_');
 $('#p').className='modal show';$('#p').innerHTML=`<div><h3>🔑 A strong secret key</h3><input value="${k}" readonly onclick="this.select()"><button class="s" onclick="navigator.clipboard&&navigator.clipboard.writeText('${k}').then(()=>setStatus('Copied'))">Copy key</button>
 <div class="card"><small><b>1.</b> In the Apps Script editor, replace the text between the quotes in <code>const KEY = '…'</code> with this key.<br><b>2.</b> Deploy › Manage deployments › ✏️ › Version: <b>New version</b> › Deploy.<br><b>3.</b> Tap the button below on this device.<br><b>4.</b> On your other devices, paste the new key in Settings › Google Sheet sync (or use a setup code).</small></div>
-<button onclick="localStorage.setItem(SK,'${k}');$('#p').className='modal';setStatus('New key saved on this device');render();sync()">I've updated the script — use this key here</button><button class="s" onclick="$('#p').className='modal'">Cancel</button></div>`}
+<button onclick="LS.setItem(SK,'${k}');$('#p').className='modal';setStatus('New key saved on this device');render();sync()">I've updated the script — use this key here</button><button class="s" onclick="$('#p').className='modal'">Cancel</button></div>`}
 /* app PIN: a lock screen on this device. It hides the app; it does not encrypt the data. */
-const pinRec=()=>{try{return JSON.parse(localStorage.getItem('ledger.pin')||'null')}catch(e){return null}};
+const pinRec=()=>{try{return JSON.parse(LS.getItem('ledger.pin')||'null')}catch(e){return null}};
 async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 let PINBAD=0,PINWAIT=0,HIDT=0;
 function lockNow(){if(!pinRec())return;const l=$('#lock');l.className='show';document.body.classList.remove('blur');const i=$('#pin_in');i.value='';$('#pin_msg').textContent='';setTimeout(()=>i.focus(),50)}
@@ -2728,20 +2766,20 @@ async function unlock(v){if(Date.now()<PINWAIT){$('#pin_msg').textContent='Wait 
 if(await sha(p.s+v)==p.h){PINBAD=0;$('#lock').className='';$('#pin_in').value='';pull(1);return}
 if(v.length>=(p.n||4)){PINBAD++;$('#pin_in').value='';if(PINBAD>=5){PINWAIT=Date.now()+30000*(PINBAD-4);$('#pin_msg').textContent='Too many tries — wait '+30*(PINBAD-4)+' seconds'}else $('#pin_msg').textContent='Wrong PIN'}}
 async function pinSet(){const a=prompt('Choose a PIN (4–8 digits)');if(a==null)return;if(!/^\d{4,8}$/.test(a))return setStatus('The PIN must be 4 to 8 digits');const b=prompt('Type the PIN again');if(b!==a)return setStatus('The PINs did not match');
-const a8=new Uint8Array(8);crypto.getRandomValues(a8);const salt=[...a8].map(x=>x.toString(16)).join('');localStorage.setItem('ledger.pin',JSON.stringify({s:salt,h:await sha(salt+a),n:a.length,after:+(pinRec()||{}).after||1}));setStatus('PIN lock is on for this device');render()}
-function pinOff(){if(!confirm('Turn off the PIN lock on this device?'))return;localStorage.removeItem('ledger.pin');setStatus('PIN lock is off');render()}
-function pinAfter(v){const p=pinRec();if(!p)return;p.after=+v;localStorage.setItem('ledger.pin',JSON.stringify(p))}
+const a8=new Uint8Array(8);crypto.getRandomValues(a8);const salt=[...a8].map(x=>x.toString(16)).join('');LS.setItem('ledger.pin',JSON.stringify({s:salt,h:await sha(salt+a),n:a.length,after:+(pinRec()||{}).after||1}));setStatus('PIN lock is on for this device');render()}
+function pinOff(){if(!confirm('Turn off the PIN lock on this device?'))return;LS.removeItem('ledger.pin');setStatus('PIN lock is off');render()}
+function pinAfter(v){const p=pinRec();if(!p)return;p.after=+v;LS.setItem('ledger.pin',JSON.stringify(p))}
 function pinForgot(){if(!confirm('Forgot your PIN?\n\nThe only way in is to sign this device out. Your ledger stays safe in your Google Sheet: after signing out, enter your Web App URL and secret key (or a setup code) and it syncs back. Changes made on this device since the last sync are lost.\n\nSign out this device now?'))return;signOut(1)}
 document.addEventListener('visibilitychange',()=>{const p=pinRec();if(!p)return;if(document.hidden){HIDT=Date.now();document.body.classList.add('blur')}else{document.body.classList.remove('blur');if(Date.now()-HIDT>=(p.after??1)*60000)lockNow()}});
 /* sign out: removes the ledger, keys and Google access from this device only */
 async function signOut(force){if(!force&&!confirm('Sign out of this device?\n\nThis removes your ledger, sync key and Google access from this device only. Your data stays in your Google Sheet and on your other devices.'))return;
-if(!force&&localStorage.getItem(SU)){flush();try{await sync()}catch(e){}if(LASTERR&&!confirm('The last sync failed, so recent changes on this device may not be in your Sheet yet. Sign out anyway?'))return}
+if(!force&&LS.getItem(SU)){flush();try{await sync()}catch(e){}if(LASTERR&&!confirm('The last sync failed, so recent changes on this device may not be in your Sheet yet. Sign out anyway?'))return}
 try{if(tok&&window.google)google.accounts.oauth2.revoke(tok,()=>{})}catch(e){}tok=null;clearTimeout(PT);PT=null;
-Object.keys(localStorage).filter(k=>k.startsWith('ledger.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}
+if(SPC){spForget(SPC);location.replace(location.pathname);return}spWipeAll();
 try{caches&&caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)))}catch(e){}location.replace(location.pathname)}
 /* security check */
-async function secView(){const k=keyInfo(localStorage.getItem(SK)),lbk=+(localStorage.getItem('ledger.lbk')||0),pin=!!pinRec(),u=localStorage.getItem(SU),L=logs().filter(x=>Date.now()-x.t<7*864e5),
-pers=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted().catch(()=>false):false,used=(localStorage.getItem(K)||'').length,
+async function secView(){const k=keyInfo(LS.getItem(SK)),lbk=+(LS.getItem('ledger.lbk')||0),pin=!!pinRec(),u=LS.getItem(SU),L=logs().filter(x=>Date.now()-x.t<7*864e5),
+pers=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted().catch(()=>false):false,used=(LS.getItem(K)||'').length,
 I=(ok,t,d,b)=>`<div class="chk"><span>${ok==1?'✅':ok==2?'ℹ️':'⚠️'}</span><div><b>${t}</b>${d?`<small>${d}</small>`:''}${b||''}</div></div>`;
 $('#m').className='modal show';$('#m').innerHTML=`<div style="max-width:560px"><h3>🛡️ Security check</h3>
 ${I(location.protocol=='https:'?1:0,location.protocol=='https:'?'Secure connection (HTTPS)':'Not using HTTPS','In GitHub › your repository › Settings › Pages, tick <b>Enforce HTTPS</b>. The app also switches itself to HTTPS.')}
@@ -2762,7 +2800,7 @@ $('#m').className='modal show';$('#m').innerHTML=`<div style="max-width:620px"><
 <div class="seg">${Object.entries(by).map(([a,n])=>`<a>${esc(a)} · ${n}</a>`).join('')}</div>
 ${l.slice(0,100).map(x=>`<div class="logl"><b>${fmtT(x.t)}</b> · <span class="chip">${esc(x.a)}</span><br>${esc(x.m)}${x.d?`<br><small>${esc(x.d)}</small>`:''}</div>`).join('')||'<small>No errors recorded. 🎉</small>'}
 <button class="s" onclick="navigator.clipboard&&navigator.clipboard.writeText(logs().map(x=>new Date(x.t).toISOString()+' ['+x.a+'] '+x.m+(x.d?' — '+x.d:'')).join('\\n')).then(()=>setStatus('Copied'))">Copy all</button>
-<button class="s" onclick="if(confirm('Clear the error log on this device?')){localStorage.removeItem(LOGK);logView()}">Clear</button><button class="s" onclick="closeM()">Close</button></div>`}
+<button class="s" onclick="if(confirm('Clear the error log on this device?')){LS.removeItem(LOGK);logView()}">Clear</button><button class="s" onclick="closeM()">Close</button></div>`}
 /* checks every receipt, statement and payslip link against Google Drive */
 function fileRefs(){const o=[],add=(id,where,fix)=>{if(id)o.push({id:String(id),where,fix})};
 S.tx.forEach(t=>(t.att||[]).forEach(a=>add(a.id,{k:'tx',id:t.id,t:fmtD(t.date)+' · '+(t.desc||'transaction')},{k:'tx',p:t.id,a:a.id})));
@@ -2788,20 +2826,20 @@ rr(102,84,46,28,10);x.stroke();x.beginPath();x.arc(120,98,4.5,0,7);x.fillStyle=A
 const u=c.toDataURL();for(const r of['icon']){const l=document.createElement('link');l.rel=r;l.href=u;document.head.append(l)}})();
 document.addEventListener('click',e=>{const t=e.target;if(t&&t.matches&&t.matches('input[type=date],input[type=month]')&&t.showPicker){try{t.showPicker()}catch(x){}}});
 if(!IDBW&&autoRec())persist();
-try{const x=JSON.parse(localStorage.getItem('ledger.rcx')||'null');if(x&&x.acc&&S.accs.some(a=>a.id==x.acc))RCX=x}catch(e){}
+try{const x=JSON.parse(LS.getItem('ledger.rcx')||'null');if(x&&x.acc&&S.accs.some(a=>a.id==x.acc))RCX=x}catch(e){}
 if(window.innerWidth<700)rv='r';
 (()=>{let y0=null,pulled=0;const ind=()=>document.getElementById('ptr');
 document.addEventListener('touchstart',e=>{y0=window.scrollY<=0&&!document.querySelector('.modal.show')?e.touches[0].clientY:null;pulled=0},{passive:true});
 document.addEventListener('touchmove',e=>{if(y0==null||(typeof B5D!='undefined'&&B5D&&B5D.on))return;const d=e.touches[0].clientY-y0,el=ind();if(!el)return;if(d>10){pulled=d;el.style.transform=`translate(-50%,${Math.min(d,90)-40}px) rotate(${d*3}deg)`;el.style.opacity=Math.min(1,d/70)}},{passive:true});
 document.addEventListener('touchend',()=>{const el=ind();if(el){el.style.transform='';el.style.opacity=0}if(y0!=null&&pulled>70){haptic(15);toast('Syncing…');pull(1)}y0=null;pulled=0})})();
 let lastPull=0;
-function pull(force){if(!localStorage.getItem(SU)||RO()||busy||document.hidden)return;if(!force&&Date.now()-lastPull<20000)return;lastPull=Date.now();sync()}
+function pull(force){if(!LS.getItem(SU)||RO()||busy||document.hidden)return;if(!force&&Date.now()-lastPull<20000)return;lastPull=Date.now();sync()}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});window.addEventListener('focus',()=>pull());window.addEventListener('pageshow',()=>pull());window.addEventListener('online',()=>pull(1));setInterval(()=>pull(),120000);
 {const k0=RTI[location.hash.slice(1)];if(k0)tab=k0;else try{history.replaceState({t:tab},'','#'+RT[tab])}catch(e){}}
 addEventListener('popstate',()=>{const m=$('#p.show')||$('#m.show');if(m){MBACK=1;m.className='modal';return}const k=RTI[location.hash.slice(1)];if(k&&k!=tab)go(k,1)});
 let MBACK=0;try{const was={};new MutationObserver(()=>{['m','p'].forEach(id=>{const o=document.getElementById(id).classList.contains('show');if(o&&!was[id]){try{history.pushState({m:id},'',location.href)}catch(e){}}
 else if(!o&&was[id]){if(MBACK)MBACK=0;else if(history.state&&history.state.m==id)try{history.back()}catch(e){}}was[id]=o})}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}catch(e){}
 if(pinRec())lockNow();
-function BOOT(){render();setTimeout(goldAuto,1500);setTimeout(rcNag,2500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(localStorage.getItem(SU))setTimeout(sync,800);else if(localStorage.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}}
-if(IDBW){$('#app').innerHTML='<div style="padding:38vh 16px 0;text-align:center;color:var(--mut)">Loading your ledger…</div>';storeGet().then(r=>{if(!r||!r.json)throw new Error('nothing saved');S=norm(JSON.parse(r.json));IDBW=false;txDirty();if(autoRec())persist();BOOT()}).catch(e=>{logErr('storage','Could not open the saved ledger: '+(e&&e.message));$('#app').innerHTML='<div style="padding:30vh 16px 0;text-align:center"><b>Could not open your saved ledger</b><br><small>Close Ledger completely and open it again. Your data is also in your Google Sheet.</small>'+(localStorage.getItem(SU)?'<br><button style="max-width:320px;margin-top:14px" onclick="IDBW=false;[\'ledger.big\',\'ledger.sent\',\'ledger.rev\'].forEach(k=>localStorage.removeItem(k));BOOT()">Load from my Google Sheet</button>':'')+'</div>'})}else BOOT();
+function BOOT(){render();setTimeout(goldAuto,1500);setTimeout(rcNag,2500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(LS.getItem(SU))setTimeout(sync,800);else if(LS.getItem(ON)){setStatus('Tap Settings › Sync to reconnect');setTimeout(sync,1200)}}
+if(IDBW){$('#app').innerHTML='<div style="padding:38vh 16px 0;text-align:center;color:var(--mut)">Loading your ledger…</div>';storeGet().then(r=>{if(!r||!r.json)throw new Error('nothing saved');S=norm(JSON.parse(r.json));IDBW=false;txDirty();if(autoRec())persist();BOOT()}).catch(e=>{logErr('storage','Could not open the saved ledger: '+(e&&e.message));$('#app').innerHTML='<div style="padding:30vh 16px 0;text-align:center"><b>Could not open your saved ledger</b><br><small>Close Ledger completely and open it again. Your data is also in your Google Sheet.</small>'+(LS.getItem(SU)?'<br><button style="max-width:320px;margin-top:14px" onclick="IDBW=false;[\'ledger.big\',\'ledger.sent\',\'ledger.rev\'].forEach(k=>LS.removeItem(k));BOOT()">Load from my Google Sheet</button>':'')+'</div>'})}else BOOT();
 </script></body></html>
