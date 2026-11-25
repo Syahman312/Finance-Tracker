@@ -212,7 +212,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-25.4',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-25.5',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -526,9 +526,11 @@ const dl=(t,id)=>isG(id)?gMem(id).reduce((s,m)=>s+dl(t,m),0):t.tr?(t.acc==id?-t.
 const inR=(d,f,t)=>(!f||d>=f)&&(!t||d<=t),sum2=o=>Object.values(o).reduce((a,b)=>a+b,0);
 const paid=(b,d)=>TX().filter(x=>x.set==b.id&&(!d||x.date<=d)).reduce((s,x)=>s+Math.abs(x.amt),0),out=(b,d)=>b.amt-paid(b,d);
 const det=(k,t,b)=>`<details ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary>${t}</summary><div>${b}</div></details>`;
-function PL(f,t){const inc={},exp={};let txp=0;
-TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;if(isTax(x)){txp-=x.amt;return}const m=x.amt>0?inc:exp;m[x.cat]=(m[x.cat]||0)+Math.abs(x.amt)});
-S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp,tax:txp}}
+/* sp: keep balance adjustments and unidentified records out of income/expenses (shown after PAT) */
+const isUnk=x=>{const c=x.cat&&S.cats.find(y=>y.id==x.cat);return!c||/unidentif|unknown|uncategor|suspense|tak pasti/i.test(c.name)};
+function PL(f,t,sp){const inc={},exp={};let txp=0,adj=0,unk=0;
+TX().forEach(x=>{if(x.tr||x.set||!inR(x.date,f,t))return;if(isTax(x)){txp-=x.amt;return}if(sp&&(x.adj||x.cat=='cadj')){adj+=x.amt;return}if(sp&&isUnk(x)){unk+=x.amt;return}const m=x.amt>0?inc:exp;m[x.cat]=(m[x.cat]||0)+Math.abs(x.amt)});
+S.bills.forEach(b=>{if(!inR(b.date,f,t))return;const m=b.k=='ar'?inc:exp;m[b.cat]=(m[b.cat]||0)+b.amt});const dd=depIn(f,t||today());if(dd>0.005)exp._dep=dd;return{inc,exp,tax:txp,adj,unk}}
 
 /* ---------- storage & merge ---------- */
 /* the ledger is saved in the browser's database (plenty of room); the small storage keeps a quick copy while it fits */
@@ -1309,7 +1311,7 @@ out_=l.filter(x=>x.r.ty!='i').reduce((s,x)=>s+Math.abs(x.r.amt),0),inn=l.filter(
 return pulse({k:'Coming up in the next 14 days',v:money(out_),chip:inn?`<span class="tc up">+${money(inn)} coming in</span>`:'',sub:subs?`Subscriptions cost you ${money(subs)} a year — worth a review? 🔍`:'',
 chips:l.slice(0,8).map(x=>`<span>${x.r.ty=='i'?'💰':'📅'} ${esc(x.r.name)} · ${dayLbl(x.d)}</span>`).join('')||'<span>Nothing due — enjoy the quiet 😌</span>',viz:ring(l.length?Math.min(1,l.length/Math.max(1,S.rec.filter(r=>r.on).length)):0,'var(--acc)',62,String(l.length))})}
 function rpP(){const f=rf||'2000-01-01',t=rto||today(),D=Math.max(1,Math.round((new Date(t)-new Date(f))/864e5)+1),pe=new Date(f+'T00:00:00');pe.setDate(pe.getDate()-1);const ps=new Date(pe);ps.setDate(ps.getDate()-D+1);
-const A=PL(rf,rto),B=PL(ps.toLocaleDateString('en-CA'),pe.toLocaleDateString('en-CA')),ti=sum2(A.inc),np=ti-sum2(A.exp)-A.tax,np0=sum2(B.inc)-sum2(B.exp)-B.tax,rate=ti>0?np/ti:0,
+const A=PL(rf,rto,1),B=PL(ps.toLocaleDateString('en-CA'),pe.toLocaleDateString('en-CA'),1),ti=sum2(A.inc),np=ti-sum2(A.exp)-A.tax,np0=sum2(B.inc)-sum2(B.exp)-B.tax,rate=ti>0?np/ti:0,
 fa=famRows(A.exp),fb=Object.fromEntries(famRows(B.exp).map(x=>[x.id,x.v])),mv=fa.map(x=>({x,d:x.v-(fb[x.id]||0)})).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0];
 return pulse({k:'Profit for this period',v:money(np),chip:rf?tchip(np-np0,0,'')+` <small>${money(Math.abs(np-np0))} ${np>=np0?'better':'worse'} than the previous ${D} days</small>`:'',
 sub:mv&&Math.abs(mv.d)>0.5?`${mv.x.main.i||'🏷️'} ${esc(mv.x.main.name)} ${mv.d>0?'went up':'came down'} by ${money(Math.abs(mv.d))}`:'',viz:`<div style="text-align:center">${ring(rate,rate>=0.2?'var(--g)':rate>=0?'#f59e0b':'var(--r)',66,ti>0?Math.round(rate*100)+'%':'–')}<small style="display:block;font-size:10.5px;color:var(--mut)">of income kept</small></div>`})}
@@ -1450,14 +1452,18 @@ return{pct:1,lines:[{id:'emp',k:'s',n:'Employment income',ty:'i'},{id:'oin',k:'s
 {id:'op',k:'t',n:'Operating surplus',f:{ti:1,te:-1}},{id:'fin',k:'s',n:'Financing costs',ty:'e'},{id:'pbt',k:'t',n:'Surplus before tax',f:{op:1,fin:-1}},{id:'tax',k:'x',n:'Less: income tax (PCB) & zakat'},{id:'pat',k:'t',n:'Net surplus',f:{pbt:1,tax:-1}}],map:m}};
 const rlNow=()=>S.cfg.rl&&S.cfg.rl.lines&&S.cfg.rl.lines.length?S.cfg.rl:rlDef();
 function rlSec(L,cid,ty){const secs=L.lines.filter(l=>l.k=='s'&&l.ty==ty),ok=id=>secs.find(l=>l.id==id);return ok(L.map[cid])||ok(L.map[mainOf(cid)])||secs.find(l=>l.def)||secs[0]}
-function rlCalc(f,t,L){const{inc,exp,tax}=PL(f,t),V={},M={};L.lines.forEach(l=>{if(l.k=='s'){V[l.id]=0;M[l.id]={}}});const put_=(m,ty)=>Object.entries(m).forEach(([c,v])=>{const s=rlSec(L,c,ty);if(!s)return;V[s.id]+=v;M[s.id][c]=(M[s.id][c]||0)+v});
+function rlCalc(f,t,L){const{inc,exp,tax,adj,unk}=PL(f,t,1),V={},M={};L.lines.forEach(l=>{if(l.k=='s'){V[l.id]=0;M[l.id]={}}});const put_=(m,ty)=>Object.entries(m).forEach(([c,v])=>{const s=rlSec(L,c,ty);if(!s)return;V[s.id]+=v;M[s.id][c]=(M[s.id][c]||0)+v});
 put_(inc,'i');put_(exp,'e');L.lines.forEach(l=>{if(l.k=='x')V[l.id]=tax});L.lines.forEach(l=>{if(l.k=='t')V[l.id]=Object.entries(l.f||{}).reduce((s,[id,sg])=>s+(V[id]||0)*sg,0)});
-const ti=L.lines.filter(l=>l.k=='s'&&l.ty=='i').reduce((s,l)=>s+V[l.id],0),lost=(L.lines.some(l=>l.k=='s'&&l.ty=='i')?0:sum2(inc))+(L.lines.some(l=>l.k=='s'&&l.ty=='e')?0:sum2(exp));return{V,M,ti,lost,tax}}
+const ti=L.lines.filter(l=>l.k=='s'&&l.ty=='i').reduce((s,l)=>s+V[l.id],0),lost=(L.lines.some(l=>l.k=='s'&&l.ty=='i')?0:sum2(inc))+(L.lines.some(l=>l.k=='s'&&l.ty=='e')?0:sum2(exp));return{V,M,ti,lost,tax,adj,unk}}
 function plv(){const L=rlNow(),R=rlCalc(rf,rto,L),pc=v=>L.pct&&R.ti>0?`<td class="n"><small>${(v/R.ti*100).toFixed(1)}%</small>`:L.pct?'<td>':'',cs=L.pct?3:2,
 sub=m=>famRows(m).map(f=>{const d=f.v-f.subs.reduce((a,x)=>a+x.v,0);return`<tr><td>${f.main.i||''} ${esc(f.main.name)}<td class="n">${money(f.v)}${pc(f.v)}${f.subs.map(x=>`<tr><td>　↳ ${x.c.i} ${esc(x.c.name)}<td class="n"><small>${money(x.v)}</small>${pc(x.v)}`).join('')}${f.subs.length&&d>0.005?`<tr><td>　↳ General<td class="n"><small>${money(d)}</small>${pc(d)}`:''}`}).join('')||`<tr><td colspan="${cs}"><small>None</small>`;
 const body=L.lines.map(l=>{const v=R.V[l.id]||0;if(l.k=='s')return`<tr><th colspan="${cs}">${esc(l.n)}</th></tr>${sub(R.M[l.id])}<tr><td><b>Total ${esc(l.n.toLowerCase())}</b><td class="n"><b>${money(v)}</b>${pc(v)}`;
 if(l.k=='x')return`<tr><td>${esc(l.n)}<td class="n">${v?'−'+money(v):money(0)}${pc(v)}`;return`<tr style="border-top:2px solid #8886"><td><b>${esc(l.n)}</b><td class="n ${v<0?'r':'g'}"><b>${money(v)}</b>${pc(v)}`}).join('');
-return`<div class="fl" style="margin:6px 2px"><small>${S.cfg.rl?'Your own layout':'Standard layout'}</small><a onclick="rlEd()">✏️ Customise sections &amp; totals</a></div><div class="tw"><table><tr><th colspan="${cs}">Statement of Profit or Loss</th></tr>${L.pct?`<tr><th></th><th class="n">${S.cfg.cur}</th><th class="n">% of income</th></tr>`:''}${body}</table></div>${R.lost>0.005?`<small class="r">⚠ ${money(R.lost)} is not shown because the layout has no income or no expense section.</small>`:''}<small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses. Employer EPF is shown as non-cash income: you cannot spend it and it is not taxed, but it does add to your KWSP.</small>`}
+const lt=[...L.lines].reverse().find(l=>l.k=='t'),pat=lt?R.V[lt.id]||0:0,sg=v=>`<td class="n ${v<-0.005?'r':''}">${v<-0.005?'−'+money(-v):money(v)}${L.pct?'<td>':''}`,
+after=Math.abs(R.adj)>0.005||Math.abs(R.unk)>0.005?`<tr><th colspan="${cs}">Below ${esc(lt?lt.n.toLowerCase():'profit')} · not income or expenses</th></tr>
+<tr><td>⚖️ Balance adjustments <a onclick="q='Balance adjustment';go('tx')"><small>see</small></a>${sg(R.adj)}<tr><td>❓ Unidentified <small>(no category)</small>${sg(R.unk)}
+<tr style="border-top:2px solid #8886"><td><b>Net change after adjustments</b><td class="n ${pat+R.adj+R.unk<0?'r':'g'}"><b>${money(pat+R.adj+R.unk)}</b>${L.pct?'<td>':''}`:'';
+return`<div class="fl" style="margin:6px 2px"><small>${S.cfg.rl?'Your own layout':'Standard layout'}</small><a onclick="rlEd()">✏️ Customise sections &amp; totals</a></div><div class="tw"><table><tr><th colspan="${cs}">Statement of Profit or Loss</th></tr>${L.pct?`<tr><th></th><th class="n">${S.cfg.cur}</th><th class="n">% of income</th></tr>`:''}${body}${after}</table></div>${R.lost>0.005?`<small class="r">⚠ ${money(R.lost)} is not shown because the layout has no income or no expense section.</small>`:''}<small>Accrual basis: invoices and bills count when issued. Transfers, loan repayments and bill payments are not income or expenses. Employer EPF is shown as non-cash income: you cannot spend it and it is not taxed, but it does add to your KWSP.</small>`}
 let RLD=null,RLO=null;
 function rlEd(){RLD=JSON.parse(JSON.stringify(rlNow()));RLO=null;rlDraw()}
 function rlDraw(){const L=RLD,TY={i:'Income section',e:'Expense section'},nm=id=>(L.lines.find(x=>x.id==id)||{}).n||'?';
