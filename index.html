@@ -212,7 +212,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-25.5',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-25.6',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -513,13 +513,15 @@ if(p>0){S.cfg.gp=Math.round(p*100)/100;S.cfg.gd=today();S.cfg.u=now();save();set
 catch(e){setStatus('Gold price failed: '+String(e.message).slice(0,40))}}
 function goldAuto(){if(RO()||!S.accs.some(a=>a.t=='gold')||(S.cfg.gsrc||'spot')=='manual'||S.cfg.gd==today())return;goldRefresh()}
 const FQ={d:'day',w:'week',m:'month',y:'year'},RN={rep:'repeating item',ins:'installment',sub:'subscription'};
+/* recurring transfers: money moves between my own accounts (not income or expense). to-account filter per kind */
+const RTY={t:{n:'⇄ Transfer to my account',f:a=>1},cc:{n:'💳 Credit card payment',f:a=>a.t=='card'},bt:{n:'🔁 Balance transfer payment',f:a=>['card','loan','borrow'].includes(a.t)},lf:{n:'🏦 Loan / financing payment',f:a=>['loan','borrow'].includes(a.t)},bn:{n:'🛍️ BNPL payment',f:a=>a.t=='bnpl'}},isRT=r=>!!RTY[r.ty];
 const mq=r=>r.amt*({d:365/12,w:52/12,m:1,y:1/12}[r.freq])/(r.ev||1);
 const rdate=(r,i)=>{const[y,m,d]=r.start.split('-').map(Number),e=r.ev||1;let D;
 if(r.freq=='d')D=new Date(y,m-1,d+i*e);else if(r.freq=='w')D=new Date(y,m-1,d+7*i*e);else{const mm=m-1+i*e*(r.freq=='y'?12:1);D=new Date(y,mm,Math.min(d,new Date(y,mm+1,0).getDate()))}
 return D.toLocaleDateString('en-CA')};
 const rid=(r,d)=>'r:'+r.id+':'+d;
 function rocc(r,upTo){const o=[],max=r.k=='ins'?(r.n||0):1000;for(let i=0;i<max;i++){const d=rdate(r,i);if(r.end&&d>r.end)break;if(upTo&&d>upTo)break;o.push(d)}return o}
-function rtx(r,d){return{id:rid(r,d),u:now(),date:d,desc:r.name,amt:r.ty=='i'?r.amt:-r.amt,cat:r.cat,acc:r.acc,shop:r.shop||'',note:({rep:'Repeat',ins:'Installment',sub:'Subscription'})[r.k],att:[],rc:r.id,tr:0,to:''}}
+function rtx(r,d){const n=({rep:'Repeat',ins:'Installment',sub:'Subscription'})[r.k];if(isRT(r)&&r.to)return{id:rid(r,d),u:now(),date:d,desc:r.name,amt:r.amt,tr:1,acc:r.acc,to:r.to,cat:'',shop:'',note:n,att:[],rc:r.id};return{id:rid(r,d),u:now(),date:d,desc:r.name,amt:r.ty=='i'?r.amt:-r.amt,cat:r.cat,acc:r.acc,shop:r.shop||'',note:n,att:[],rc:r.id,tr:0,to:''}}
 function autoRec(){if(RO())return 0;const has=new Set(S.tx.map(x=>x.id));let n=0;S.rec.forEach(r=>{if(!r.on||!r.auto||!r.start||!r.amt)return;rocc(r,today()).forEach(d=>{const id=rid(r,d);if(!has.has(id)&&!S.del[id]){S.tx.push(rtx(r,d));has.add(id);n++}})});return n}
 function nextOcc(r){if(!r.start)return'';const has=new Set(S.tx.map(x=>x.id)),max=r.k=='ins'?(r.n||0):1000;for(let i=0;i<max;i++){const d=rdate(r,i);if(r.end&&d>r.end)return'';const id=rid(r,d);if(!has.has(id)&&!S.del[id])return d}return''}
 const dl=(t,id)=>isG(id)?gMem(id).reduce((s,m)=>s+dl(t,m),0):t.tr?(t.acc==id?-t.amt:0)+(t.to==id?t.amt:0):(t.acc==id?t.amt:0);
@@ -885,10 +887,11 @@ ${miss?`<small>${miss} expense${miss==1?'':'s'} in this period ${miss==1?'has':'
 /* ===== CASH-FLOW FORECAST: bank, cash and e-wallet balance day by day ===== */
 const fcD=()=>({days:30,min:500,daily:1,...(S.cfg.fc||{})});
 function fcEvents(H){const t=today(),end=addD(t,H),D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),ev=[],names=[];
-S.rec.filter(r=>r.on&&r.start&&+r.amt>0&&ids.has(r.acc)).forEach(r=>{names.push((r.name||'').toLowerCase());const sg=r.ty=='i'?1:-1;
+const rcE=[];S.rec.filter(r=>r.on&&r.start&&+r.amt>0).forEach(r=>{if(ids.has(r.acc))rcE.push([r,r.ty=='i'?1:-1]);if(isRT(r)&&ids.has(r.to))rcE.push([r,1])});
+rcE.forEach(([r,sg])=>{names.push((r.name||'').toLowerCase());
  if(!r.auto){const late=dueList(r).filter(d=>d<t);if(late.length)ev.push({d:t,n:r.name+' (not recorded yet)',v:sg*r.amt*late.length,k:'late'})}
  for(let i=0;i<3000;i++){const d=rdate(r,i);if(r.end&&d>r.end)break;if(r.k=='ins'&&r.n&&i>=r.n)break;if(d>end)break;if(d<=t)continue;ev.push({d,n:r.name,v:sg*r.amt,k:sg>0?'in':'out'})}});
-S.accs.filter(a=>isL(a)&&a.due&&!(a.lend&&a.lend<t)).forEach(a=>{const nm=(a.name||'').toLowerCase();if(names.some(n=>n&&(nm.includes(n)||n.includes(nm))))return;const i=dueInfo(a);if(!i)return;
+S.accs.filter(a=>isL(a)&&a.due&&!(a.lend&&a.lend<t)&&!S.rec.some(r=>r.on&&isRT(r)&&r.to==a.id)).forEach(a=>{const nm=(a.name||'').toLowerCase();if(names.some(n=>n&&(nm.includes(n)||n.includes(nm))))return;const i=dueInfo(a);if(!i)return;
  let d=i.date,first=1;for(let k=0;k<6&&d<=end;k++){const amt=first?(i.status=='paid'?0:i.amt):repAmt(a);const dd=first&&d<t?t:d;if(amt>0&&(first?dd>=t:dd>t))ev.push({d:dd,n:a.name+(a.t=='card'?' payment':' instalment'),v:-amt,k:'debt'});first=0;d=addMD(i.date,k+1)}});
 gLoose().forEach(x=>{for(let k=0;k<x.c.leftN&&k<6;k++){const d=gAddM(x.c.d0,x.c.paidN+k);if(d>end)break;if(d>t)ev.push({d,n:x.name+' (Garage)',v:-x.c.inst,k:'debt'})}});
 if(!S.rec.some(r=>r.on&&r.ty=='i')){const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];if(p){const day=+p.date.slice(8);for(let k=0;k<4;k++){const mm=mAdd(t.slice(0,7),k),d=mm+'-'+String(Math.min(day,dim(mm))).padStart(2,'0');if(d>t&&d<=end)ev.push({d,n:'Salary (from your payslip)',v:pn(p),k:'in'})}}}
@@ -1953,20 +1956,21 @@ return`<div class="row3"><div class="card">Monthly out<h3 class="r">${money(mo_)
 <div class="row3"><div class="card">Active<h3>${act.length}</h3></div><div class="card">Installments left<h3>${money(left)}</h3></div><div class="card">Auto-record<h3>${act.filter(r=>r.auto).length}</h3></div></div>
 ${rcDueCard()}<div class="seg">${[['rep','Repeat'],['ins','Installment'],['sub','Subscription']].map(([k,n])=>{const u=S.rec.filter(r=>r.k==k&&rcLate(r)).length;return`<a class="${rk==k?'on':''}" onclick="rk='${k}';render()">${n} (${S.rec.filter(r=>r.k==k).length})${u?` <b class="sdot">${u}</b>`:''}</a>`}).join('')}</div>
 <button onclick="rcEd('','${rk}')">+ Add ${RN[rk]}</button>
-${S.rec.filter(r=>r.k==rk).map(r=>{const n=nextOcc(r),pd=S.tx.filter(x=>x.rc==r.id).length,st=rcStat(r).s;return`<div class="card rci ${st=='over'?'over':st=='today'?'today':''}" onclick="rcEd('${r.id}')" style="cursor:pointer;opacity:${r.on?1:.5}"><div class="fl"><b>${ico(r.name+' '+((S.shops.find(x=>x.id==r.shop)||{}).name||''),'',22)}${esc(r.name)}</b><b class="${r.ty=='i'?'g':'r'}">${money(r.amt)}</b></div>
-<div class="fl"><small>Every ${r.ev>1?r.ev+' ':''}${FQ[r.freq]}${r.ev>1?'s':''}${r.freq=='m'&&r.start?' · due '+ord(+r.start.slice(8,10)):''} · ${esc(acc(r.acc).name)}${r.auto?' · 🤖 auto':''}${r.on?'':' · paused'}</small><small>${n?'Next '+fmtD(n):'Finished'}</small></div>${r.on&&rcTag(r)?`<div style="margin-top:6px">${rcTag(r)}</div>`:''}
+${S.rec.filter(r=>r.k==rk).map(r=>{const n=nextOcc(r),pd=S.tx.filter(x=>x.rc==r.id).length,st=rcStat(r).s;return`<div class="card rci ${st=='over'?'over':st=='today'?'today':''}" onclick="rcEd('${r.id}')" style="cursor:pointer;opacity:${r.on?1:.5}"><div class="fl"><b>${ico(r.name+' '+((S.shops.find(x=>x.id==r.shop)||{}).name||''),'',22)}${esc(r.name)}</b><b class="${r.ty=='i'?'g':isRT(r)?'':'r'}">${isRT(r)?'⇄ ':''}${money(r.amt)}</b></div>
+<div class="fl"><small>Every ${r.ev>1?r.ev+' ':''}${FQ[r.freq]}${r.ev>1?'s':''}${r.freq=='m'&&r.start?' · due '+ord(+r.start.slice(8,10)):''} · ${esc(acc(r.acc).name)}${isRT(r)&&r.to?' → '+esc(acc(r.to).name):''}${r.auto?' · 🤖 auto':''}${r.on?'':' · paused'}</small><small>${n?'Next '+fmtD(n):'Finished'}</small></div>${r.on&&rcTag(r)?`<div style="margin-top:6px">${rcTag(r)}</div>`:''}
 ${r.k=='ins'?`<div class="fl"><small>${pd} of ${r.n} paid</small><small>Left ${money(Math.max(0,r.n-pd)*r.amt)}</small></div>`:''}${!r.auto&&n&&r.on?`<button class="s" onclick="event.stopPropagation();rcPost('${r.id}')">${(()=>{const k=dueList(r).length;return k>1?'Record '+k+' due payments':'Record '+n+' now'})()}</button>`:''}</div>`}).join('')||'<small>None yet</small>'}
 <small>Items marked 🤖 are recorded automatically on their dates whenever you open the app, including any dates you missed. For the others, Ledger shows 🔴 when a date has passed without a payment recorded. Open an item and tap 📅 to get reminders in your phone's calendar.</small>`}
 function rcEd(id,k){const r=S.rec.find(x=>x.id==id)||{id:'',k,name:'',ty:'e',amt:0,acc:(S.accs[0]||{}).id,cat:'',shop:'',freq:'m',ev:1,start:today(),end:'',n:12,on:true,auto:true};
 $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} ${RN[r.k]}</h3><input id="r_n" placeholder="Name (e.g. Netflix, Car loan, Salary)" value="${esc(r.name)}">
-${r.k=='rep'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</option><option value="i" ${r.ty=='i'?'selected':''}>Income</option></select>`:`<input type="hidden" id="r_t" value="e">`}
+${r.k!='sub'?`<select id="r_t" onchange="rtg()"><option value="e">Expense</option>${r.k=='rep'?`<option value="i" ${r.ty=='i'?'selected':''}>Income</option>`:''}${Object.entries(RTY).map(([k,v])=>`<option value="${k}" ${r.ty==k?'selected':''}>${v.n}</option>`).join('')}</select>`:`<input type="hidden" id="r_t" value="e">`}
 <div class="two"><input id="r_a" type="number" step="0.01" inputmode="decimal" placeholder="Amount each time" value="${r.amt||''}">${r.k=='ins'?`<input id="r_x" type="number" placeholder="No. of installments" value="${r.n||''}">`:'<span></span>'}</div>
-<select id="r_c">${catOpts(r.ty=='i'?'i':'e',r.cat)}</select><select id="r_ac">${opts(S.accs,r.acc,a=>esc(a.name))}</select>
+<select id="r_c" ${isRT(r)?'style="display:none"':''}>${catOpts(r.ty=='i'?'i':'e',r.cat)}</select><small id="r_fl" ${isRT(r)?'':'style="display:none"'}>From</small><select id="r_ac">${opts(S.accs,r.acc,a=>esc(a.name))}</select>
+<div id="r_tw" ${isRT(r)?'':'style="display:none"'}><small>To</small><select id="r_to" data-v="${r.to||''}"></select><small id="r_th"></small></div>
 <small>Repeat every</small><div class="two"><input id="r_e" type="number" min="1" value="${r.ev||1}"><select id="r_f">${Object.entries(FQ).map(([k,v])=>`<option value="${k}" ${r.freq==k?'selected':''}>${v}(s)</option>`).join('')}</select></div>
 <div class="two"><div><small>First date</small><input id="r_s" type="date" value="${r.start}"></div><div><small>End date (optional)</small><input id="r_d" type="date" value="${r.end||''}"></div></div>
 <label class="fl"><span>🤖 Record automatically on the date</span><input type="checkbox" id="r_au" ${r.auto?'checked':''} style="width:auto"></label>
 <label class="fl"><span>Active</span><input type="checkbox" id="r_on" ${r.on?'checked':''} style="width:auto"></label>
-<button onclick="saveRc('${r.id}','${r.k}')">Save</button>${r.id?`<button class="s" onclick="rcIcs('${r.id}')">📅 Add reminder to my calendar</button><button class="d" onclick="delRc('${r.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+<button onclick="saveRc('${r.id}','${r.k}')">Save</button>${r.id?`<button class="s" onclick="rcIcs('${r.id}')">📅 Add reminder to my calendar</button><button class="d" onclick="delRc('${r.id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show';if(isRT(r))rtg()}
 /* ===== RECURRING REMINDERS: paid / not-yet-paid status, badge, daily nudge and calendar reminders ===== */
 let RCS={};
 // over = a past date is not recorded yet; today = due today; soon = due within 7 days; paid = the latest date is recorded.
@@ -2006,9 +2010,11 @@ L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ledger//Recurring reminder//EN','C
 'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+e(sum+' is due tomorrow'),'TRIGGER:-PT6H','END:VALARM',
 'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+e(sum+' is due today'),'TRIGGER:PT9H','END:VALARM','END:VEVENT','END:VCALENDAR'];
 dl_(new Blob([L.join('\r\n')+'\r\n'],{type:'text/calendar'}),(r.name.replace(/[^\w ]+/g,'').trim()||'Ledger reminder')+'.ics');setStatus('Open the downloaded file to add the reminder to your calendar')}
-function rtg(){const c=$('#r_c');c.innerHTML=catOpts($('#r_t').value=='i'?'i':'e',c.value)}
-function saveRc(id,k){const gv=x=>{const e=$('#r_'+x);return e?e.value:''},a=parseFloat(gv('a'))||0;if(!gv('n')||!a||!gv('s'))return setStatus('Enter name, amount and first date');
-put('rec',{...(S.rec.find(x=>x.id==id)||{}),id:id||uid(),k,name:gv('n'),ty:gv('t')||'e',amt:a,acc:gv('ac'),cat:gv('c'),freq:gv('f'),ev:Math.max(1,parseInt(gv('e'))||1),start:gv('s'),end:gv('d'),n:parseInt(gv('x'))||0,auto:$('#r_au').checked,on:$('#r_on').checked});closeM();if(autoRec())save()}
+function rtg(){const c=$('#r_c'),ty=$('#r_t').value,T=RTY[ty];if(!T){c.innerHTML=catOpts(ty=='i'?'i':'e',c.value)}c.style.display=T?'none':'';$('#r_fl').style.display=$('#r_tw').style.display=T?'':'none';if(!T)return;
+const s=$('#r_to'),cur=s.value||s.dataset.v,L=S.accs.filter(a=>T.f(a)),o=L.length?L:S.accs;s.innerHTML=opts(o,o.some(a=>a.id==cur)?cur:(o[0]||{}).id,a=>esc(a.name));
+$('#r_th').textContent=L.length?'Not income or an expense. It moves money between your own accounts and lowers what you owe.':'No matching account yet. Add one in Accounts first, or pick any account here.'}
+function saveRc(id,k){const gv=x=>{const e=$('#r_'+x);return e?e.value:''},a=parseFloat(gv('a'))||0;if(!gv('n')||!a||!gv('s'))return setStatus('Enter name, amount and first date');if(RTY[gv('t')]&&(!gv('to')||gv('to')==gv('ac')))return setStatus('Choose two different accounts');
+put('rec',{...(S.rec.find(x=>x.id==id)||{}),id:id||uid(),k,name:gv('n'),ty:gv('t')||'e',amt:a,acc:gv('ac'),cat:gv('c'),freq:gv('f'),ev:Math.max(1,parseInt(gv('e'))||1),start:gv('s'),end:gv('d'),n:parseInt(gv('x'))||0,to:RTY[gv('t')]?gv('to'):'',auto:$('#r_au').checked,on:$('#r_on').checked});closeM();if(autoRec())save()}
 function dueList(r){const has=new Set(S.tx.map(x=>x.id));return rocc(r,today()).filter(d=>!has.has(rid(r,d))&&!S.del[rid(r,d)])}
 function rcPost(id){if(RO())return;const r=S.rec.find(x=>x.id==id);if(!r)return;const due=dueList(r),l=due.length?due:[nextOcc(r)].filter(Boolean);if(!l.length)return;
 l.forEach(d=>S.tx.push(rtx(r,d)));save();setStatus(l.length+(l.length>1?' payments recorded':' payment recorded'))}
