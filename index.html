@@ -212,7 +212,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-25.7',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-26.1',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -283,7 +283,7 @@ const brandDom=n=>{n=' '+String(n||'').toLowerCase()+' ';const m=BRANDS.find(([r
 const logoDom=n=>bankDom(n)||brandDom(n);
 const ico=(n,fb,sz)=>{const d=logoDom(n);sz=sz||20;return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" style="width:${sz}px;height:${sz}px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:4px" onerror="this.remove()">`:(fb||'')};
 const IMG='style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle"';
-const lg=x=>{const em=esc(x.i||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',shares:'📊',crypto:'🪙',asnb:'💼',kwsp:'🏛️',member:'🪪',bnpl:'🛍️',gold:'🥇'}[x.t]||'🏦');
+const lg=x=>{const em=esc(x.i||(x.t=='loan'&&LK[x.lk]?LK[x.lk][0]:0)||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',shares:'📊',crypto:'🪙',asnb:'💼',kwsp:'🏛️',member:'🪪',bnpl:'🛍️',gold:'🥇'}[x.t]||'🏦');
 if(x.logo)return`<img alt="" src="${x.logo}" ${IMG}>`;if(x.ip&&x.i)return em;const d=x.open!==undefined?bankDom(x.name)||brandDom(x.name):logoDom(x.name);
 return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" ${IMG} onerror="this.replaceWith(document.createTextNode('${em}'))">`:em};
 const ICONS=[['Food & drink','🍔 burger fast food|🍜 noodles mee|🍚 rice nasi|🍗 chicken|🍕 pizza|🍣 sushi japanese|☕ coffee cafe|🧋 bubble tea boba|🥤 drink|🍰 cake dessert|🍎 fruit|🛒 groceries supermarket|🥡 takeaway delivery|🍽️ restaurant dining|🍳 cooking|🥐 bakery bread'],
@@ -697,11 +697,13 @@ if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-9]$/.
 /* ===== DSR CALCULATOR: debt service ratio for Malaysian loan applications (built from the user's DSR spreadsheet) ===== */
 // guide: the DSR with a high chance of approval for each net income range (from the spreadsheet). hi = edge of "borderline".
 const DSRB=[{max:3000,lo:40,hi:50,g:'40% – 50%',n:'RM3,000 and below'},{max:5000,lo:60,hi:65,g:'about 60%',n:'RM3,001 – RM5,000'},{max:10000,lo:70,hi:75,g:'about 70%',n:'RM5,001 – RM10,000'},{max:Infinity,lo:80,hi:90,g:'80% – 90%',n:'Above RM10,000'}];
+/* kinds of loan (account type 'loan' with a.lk) */
+const LK={home:['🏠','House loan (mortgage)','mg'],car:['🚗','Car loan (hire purchase)','hp'],pl:['💵','Personal loan','pl'],bt:['🔁','Balance transfer','cc'],edu:['🎓','Study loan (PTPTN etc.)','ot']},atN=a=>a&&a.t=='loan'&&LK[a.lk]?LK[a.lk][1]:AT[(a&&a.t)||'bank'];
 const DSRT={mg:['🏠','Mortgage'],hp:['🚗','Hire purchase'],pl:['💳','Personal loan'],ot:['📄','Other loan'],cc:['🧾','Card instalment']};
 // what Ledger already knows: card balances, loan and BNPL repayments, instalment plans (src links each back to its source)
 function dsrAuto(){const o={rows:[],cards:[]};
 S.accs.filter(a=>!(a.lend&&a.lend<today())).forEach(a=>{if(a.t=='card')o.cards.push({src:a.id,n:a.name,b:+owedOf(a).toFixed(2)});
- else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0)o.rows.push({src:a.id,t:a.t=='bnpl'?'cc':'ot',n:a.name,v:+repAmt(a).toFixed(2)})});
+ else if((a.t=='loan'||a.t=='bnpl')&&repAmt(a)>0)o.rows.push({src:a.id,t:a.t=='bnpl'?'cc':LK[a.lk]?LK[a.lk][2]:'ot',n:a.name,v:+repAmt(a).toFixed(2)})});
 S.rec.filter(r=>r.on&&r.k=='ins'&&r.ty!='i'&&nextOcc(r)).forEach(r=>o.rows.push({src:'r:'+r.id,t:'ot',n:r.name,v:+mq(r).toFixed(2)}));
 gLoose().forEach(x=>o.rows.push({src:'gl:'+x.L.id,t:'hp',n:x.name+' (Garage)',v:+x.c.inst.toFixed(2)}));return o}
 const dsrPay=()=>{const p=[...S.pay].sort((a,b)=>b.date.localeCompare(a.date))[0];return p?+pn(p).toFixed(2):0};
@@ -1602,7 +1604,7 @@ else body=`<div class="two"><button onclick="acEd('','${ag}')">+ Add ${GN[ag]} a
 ${(()=>{const i=dueInfo(a);return i?`<div style="margin-top:6px">${dueTag(i)}</div>`:''})()}</div>`}).join('')||'<small>No accounts here yet</small>');
 return`<div class="two"><div class="card">Assets<h3 class="g">${money(ta)}</h3></div><div class="card">Owed<h3 class="r">${money(tl)}</h3></div></div>
 ${nbv?`<small>🏗️ Fixed assets at net book value (${money(nbv)}) are included in assets.</small>`:''}${iv.length?`<small>📈 Investments with a market value: ${money(vv)} · cost ${money(vc)} · ${vv-vc<0?'loss':'gain'} ${money(Math.abs(vv-vc))}</small>`:''}${seg}${body}<small>Tap an account to open it: records, transfer, pay, adjust, reconcile, edit and reorder.</small>`}
-function tgi(){const t=$('#a_t').value;{const e=$('#a_shw');if(e)e.style.display=['card','bnpl'].includes(t)?'':'none';const sh=$('#a_sh'),lw=$('#a_lw');if(lw)lw.style.display=sh&&sh.value&&['card','bnpl'].includes(t)?'none':''}{const e=$('#a_dtl');if(e)e.textContent=t=='loan'||t=='borrow'?'Disbursed / started on':'Received / activated on'}{const e=$('#a_stw');if(e)e.style.display=stmtOk({t})?'':'none'}const g=Object.keys(GRP).find(k=>GRP[k].includes(t)),sh=(id,on)=>{const e=$('#'+id);if(e)e.style.display=on?'':'none'};sh('a_c1',g=='credit'||t=='borrow');sh('a_g',t=='gold');sh('a_v',g=='inv'&&t!='gold');sh('a_pw',HTY.includes(t))}
+function tgi(){const t=$('#a_t').value.split('|')[0];{const e=$('#a_shw');if(e)e.style.display=['card','bnpl'].includes(t)?'':'none';const sh=$('#a_sh'),lw=$('#a_lw');if(lw)lw.style.display=sh&&sh.value&&['card','bnpl'].includes(t)?'none':''}{const e=$('#a_dtl');if(e)e.textContent=t=='loan'||t=='borrow'?'Disbursed / started on':'Received / activated on'}{const e=$('#a_stw');if(e)e.style.display=stmtOk({t})?'':'none'}const g=Object.keys(GRP).find(k=>GRP[k].includes(t)),sh=(id,on)=>{const e=$('#'+id);if(e)e.style.display=on?'':'none'};sh('a_c1',g=='credit'||t=='borrow');sh('a_g',t=='gold');sh('a_v',g=='inv'&&t!='gold');sh('a_pw',HTY.includes(t))}
 /* ===== EMERGENCY FUND: months of spending your cash, bank and e-wallets would cover ===== */
 const efD=()=>({m:6,...(S.cfg.ef||{})});
 function efCalc(){const d=efD(),m=today().slice(0,7),ms=[1,2,3].map(i=>new Date(+m.slice(0,4),+m.slice(5)-1-i,1).toLocaleDateString('en-CA').slice(0,7)),auto=ms.reduce((a,x)=>a+savRate(x).e,0)/3,need=d.mo>0?+d.mo:auto,
@@ -1879,7 +1881,7 @@ const h={id:hid||uid(),n,p:g('p'),u:parseFloat(g('u'))||0,c:parseFloat(g('c'))||
 put('accs',{...a,hold:hid?(a.hold||[]).map(y=>y.id==hid?h:y):[...(a.hold||[]),h]});acSheet(aid)}
 function hDel(aid,hid){const a=acc(aid);if(!confirm('Delete this holding?'))return;put('accs',{...a,hold:(a.hold||[]).filter(y=>y.id!=hid)});acSheet(aid)}
 // the one short line under an account's name; everything else is in its panel
-function acSub(a,b){const o=[],T=AT[a.t||'bank'];if(T.toLowerCase()!=(a.name||'').toLowerCase())o.push(T);
+function acSub(a,b){const o=[],T=atN(a);if(T.toLowerCase()!=(a.name||'').toLowerCase())o.push(T);
 if(a.t=='card'){const g=limGrp(a);if(g&&g.shared&&g.lim)o.push(money(g.avail)+' available (shared)');else if(a.lim)o.push(money(a.lim+b)+' available')}
 else if(isL(a)&&repAmt(a))o.push(money(repAmt(a))+' a month');
 if(a.plat)o.push(a.plat);if((a.hold||[]).length)o.push(a.hold.length+' holding'+(a.hold.length>1?'s':''));if(a.t=='gold')o.push((a.gm||0)+' g');const mv=mval(a);if(mv!=null)o.push((mv-b<0?'▼ ':'▲ ')+money(Math.abs(mv-b)));if(a.dCls)o.push('closed');return o.join(' · ')}
@@ -1887,7 +1889,7 @@ if(a.plat)o.push(a.plat);if((a.hold||[]).length)o.push(a.hold.length+' holding'+
 function acSheet(id){const a=S.accs.find(x=>x.id==id);if(!a)return;const b=bal(a),lb=isL(a),i=dueInfo(a),ro=RO(),
 rec=TX().filter(t=>t.acc==id||t.to==id).sort((x,y)=>y.date.localeCompare(x.date)).slice(0,5),
 act=(ic,n,f)=>`<a onclick="closeM();${f}"><span>${ic}</span>${n}</a>`;
-$('#m').innerHTML=`<div><div class="fl" style="justify-content:flex-start;gap:12px"><span style="font-size:32px">${lg(a)}</span><div style="flex:1;min-width:0"><h3 style="margin:0">${esc(a.name)}</h3><small>${AT[a.t||'bank']}</small></div></div>
+$('#m').innerHTML=`<div><div class="fl" style="justify-content:flex-start;gap:12px"><span style="font-size:32px">${lg(a)}</span><div style="flex:1;min-width:0"><h3 style="margin:0">${esc(a.name)}</h3><small>${atN(a)}</small></div></div>
 <div class="acsb"><small>${lb?'Owed':'Balance'}</small><div class="${lb?'r':''}">${money(lb?-b:b)}</div>${i?dueTag(i):''}</div>
 ${(()=>{const mv=mval(a),d=[[lb&&(a.lim||limGrp(a))?'Limit':'',lb?limTxt(a,b).replace(/^ · /,'').replace(/^limit /,''):''],['Statement',a.stmt?ord(+a.stmt)+' of the month':''],['Payment due',lb&&a.due?ord(+a.due)+' of the month':''],['Repayment',lb&&repAmt(a)?money(repAmt(a))+' a month':''],['Since',lb&&(a.dApp||a.dAct)?fmtD(a.dAct||a.dApp)+' ('+ageStr(a.dAct||a.dApp)+')':''],['Ends',a.lend?fmtD(a.lend):''],['Closed',a.dCls?fmtD(a.dCls):''],['Gold',a.t=='gold'?(a.gm||0)+' g × '+money(gprice(a)):''],['Market value',mv!=null?money(mv)+' ('+(mv-b<0?'loss ':'gain ')+money(Math.abs(mv-b))+')':''],['Reconciled to',lastRec(id)?lastRec(id):'']].filter(x=>x[0]&&x[1]);
 return d.length?`<div class="acd">${d.map(([k,v])=>`<div class="fl"><small>${k}</small><small><b>${v}</b></small></div>`).join('')}</div>`:''})()}
@@ -1896,7 +1898,7 @@ ${hasH(a)?holdHtml(a):''}${a.t=='card'?cbHtml(a):''}${ro?'':`<div class="fl wl-l
 <h4>Latest records</h4>${rec.map(t=>{const v=dl(t,id),k=t.tr?'⇄ '+(t.acc==id?'To '+acc(t.to).name:'From '+acc(t.acc).name):(cat(t.cat).i||'')+' '+(t.desc||cat(t.cat).name);return`<div class="fl wl-l" style="cursor:pointer" onclick="closeM();edit('${t.id}')"><span>${esc(k)}<br><small>${dayLbl(t.date)}</small></span><b class="${v<0?'r':'g'}">${money(v)}</b></div>`}).join('')||'<small>No records yet</small>'}
 <button class="s" style="margin-top:10px" onclick="closeM()">Close</button></div>`;$('#m').className='modal show'}
 function acEd(id,g){const a=S.accs.find(x=>x.id==id)||{id:'',name:'',t:(GRP[g]||GRP.debit)[0],color:'#4f8cff',open:0,lim:0},t0=a.t||'bank',
-sel=Object.keys(GRP).map(k=>`<optgroup label="${GN[k]}">${GRP[k].map(t=>`<option value="${t}" ${t0==t?'selected':''}>${AT[t]}</option>`).join('')}</optgroup>`).join('');
+sel=Object.keys(GRP).map(k=>`<optgroup label="${GN[k]}">${GRP[k].map(t=>`<option value="${t}" ${t0==t&&!(t=='loan'&&LK[a.lk])?'selected':''}>${t=='loan'?'📉 Loan (other)':AT[t]}</option>`+(t=='loan'?Object.entries(LK).map(([lk,v])=>`<option value="loan|${lk}" ${t0=='loan'&&a.lk==lk?'selected':''}>${v[0]} ${v[1]}</option>`).join(''):'')).join('')}</optgroup>`).join('');
 $('#m').innerHTML=`<div><h3>${id?'Edit':'New'} account</h3><input id="a_n" placeholder="Name (e.g. Maybank, CIMB Visa, Atome)" value="${esc(a.name)}"><small>Type — you can change it any time, for example when an imported account should be a credit card</small><select id="a_t" onchange="tgi()">${sel}</select>
 <small>Opening balance (credit, BNPL, loans and borrowed money: the amount you owe; investments: what you paid)</small><input id="a_o" type="number" step="0.01" inputmode="decimal" value="${a.open||0}">
 <div id="a_c1"><div class="card" style="margin:6px 0"><b>Card / loan history</b><div class="two"><div><small>Applied on</small><input id="a_dl" type="date" value="${a.dApl||''}"></div><div><small>Approved on</small><input id="a_da" type="date" value="${a.dApp||''}"></div></div>
@@ -1917,13 +1919,13 @@ ${isLead?`<small>Statements &amp; reconciling for this shared limit</small><sele
 <small>Colour</small><input id="a_c" type="color" value="${a.color}">
 ${id?`<small>Logo (banks in Malaysia are found automatically from the name)</small><input type="file" accept="image/*" onchange="logoUp('accs','${id}',this.files[0])"><button class="s" onclick="accIco('${id}')">Choose an icon instead</button><button class="s" onclick="put('accs',{...acc('${id}'),logo:'',ip:0});closeM()">Use the automatic / default logo</button>`:''}
 <button onclick="saveAc('${a.id}')">Save</button>${id?`<button class="d" onclick="delAc('${id}')">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show';tgi();const pm=$('#a_pm');if(pm)pm.onchange()}
-function saveAc(id){const gv=x=>{const e=$('#a_'+x);return e?e.value:''};if(!gv('n'))return setStatus('Enter a name');
-const wo=S.accs.filter(a=>a.ord!=null);put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid(),...(wo.length?{ord:Math.max(...wo.map(a=>a.ord))+10}:{})}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,shr:['card','bnpl'].includes(gv('t'))?gv('sh'):'',pay:parseFloat(gv('py'))||0,due:parseInt(gv('du'))||0,no4:(gv('n4')||'').replace(/\D/g,'').slice(-4),plat:HTY.includes(gv('t'))?gv('pf').trim():'',...($('#a_gs')?{gsep:+$('#a_gs').value}:{}),dApl:gv('dl'),dApp:gv('da'),dAct:gv('dt'),dCls:gv('dc'),fee:!!($('#a_af')&&$('#a_af').checked),stmt:stmtOk({t:gv('t')})?parseInt(gv('st'))||0:0,lend:gv('le'),pmode:gv('pm'),minPct:parseFloat(gv('mp'))||5,minAmt:parseFloat(gv('ma'))||50,gm:parseFloat(gv('gm'))||0,gadj:parseFloat(gv('ga'))||0,gpx:parseFloat(gv('gx'))||0,mv:parseFloat(gv('mv'))||0,color:gv('c')});
+function saveAc(id){const tv=$('#a_t').value.split('|');$('#a_t').value=tv[0];const lk=tv[0]=='loan'?tv[1]||'':'';const gv=x=>{const e=$('#a_'+x);return e?e.value:''};if(!gv('n'))return setStatus('Enter a name');
+const wo=S.accs.filter(a=>a.ord!=null);put('accs',{...(S.accs.find(x=>x.id==id)||{id:uid(),...(wo.length?{ord:Math.max(...wo.map(a=>a.ord))+10}:{})}),name:gv('n'),t:gv('t'),open:parseFloat(gv('o'))||0,lim:parseFloat(gv('l'))||0,shr:['card','bnpl'].includes(gv('t'))?gv('sh'):'',pay:parseFloat(gv('py'))||0,due:parseInt(gv('du'))||0,no4:(gv('n4')||'').replace(/\D/g,'').slice(-4),plat:HTY.includes(gv('t'))?gv('pf').trim():'',...($('#a_gs')?{gsep:+$('#a_gs').value}:{}),dApl:gv('dl'),dApp:gv('da'),dAct:gv('dt'),dCls:gv('dc'),fee:!!($('#a_af')&&$('#a_af').checked),stmt:stmtOk({t:gv('t')})?parseInt(gv('st'))||0:0,lend:gv('le'),pmode:gv('pm'),minPct:parseFloat(gv('mp'))||5,minAmt:parseFloat(gv('ma'))||50,gm:parseFloat(gv('gm'))||0,gadj:parseFloat(gv('ga'))||0,gpx:parseFloat(gv('gx'))||0,mv:parseFloat(gv('mv'))||0,lk,color:gv('c')});
 if(id&&!['card','bnpl'].includes(gv('t')))S.accs.filter(x=>x.shr==id).forEach(x=>put('accs',{...x,shr:''}));
 ag=Object.keys(GRP).find(k=>GRP[k].includes(gv('t')))||ag;closeM()}
 function annivNext(a){const b=a.dAct||a.dApp;if(!b||a.dCls)return'';const t=today();let y=+t.slice(0,4),d=b.slice(4);let n=y+d;if(n<t)n=(y+1)+d;return n}
 function lifeView(id){const a=acc(id),c=cardLife(a),an=annivNext(a),G=limGrp(a),sh=G&&G.shared,lim=sh?G.lim:a.lim||0,owed=sh?G.owed:Math.max(0,-bal(a)),L=a.t=='loan'||a.t=='borrow';
-$('#m').innerHTML=`<div><h3>${lg(a)} ${esc(a.name)}</h3><small>${AT[a.t]||''}${c.age?' · held for '+c.age:''}</small>
+$('#m').innerHTML=`<div><h3>${lg(a)} ${esc(a.name)}</h3><small>${atN(a)||''}${c.age?' · held for '+c.age:''}</small>
 <div class="card">${c.ev.map(([d,n],i)=>`<div class="fl" style="margin:6px 0"><span>${n}</span><span><b>${fmtD(d)}</b>${i?`<br><small>${daysB(c.ev[i-1][0],d)} days later</small>`:''}</span></div>`).join('')||'<small>No dates yet. Add them in ✏️ Edit.</small>'}</div>
 ${c.wait!=null?`<small>Approval took ${c.wait} day${c.wait==1?'':'s'}.</small>`:''}
 ${an?`<div class="card"><div class="fl"><span>${L?'📅 Next anniversary':'📅 Card anniversary'}</span><b>${fmtD(an)}</b></div><small>${daysB(today(),an)} days away${a.fee&&!L?' · annual fee may be charged around this date, so check your statement or ask the bank to waive it':''}</small></div>`:''}
