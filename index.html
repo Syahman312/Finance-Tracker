@@ -34,6 +34,19 @@ header span{color:var(--mut);font-size:12px}
 .pie .pw{display:flex;align-items:center;gap:10px}.pie .pw svg{width:136px;height:136px;flex-shrink:0}.pie .lg{flex:1;min-width:0}.pie .sl{cursor:pointer;transition:opacity .2s,stroke-width .2s}.pie.sel .sl{opacity:.28}.pie.sel .sl.on{opacity:1;stroke-width:24}
 .pie .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 6px;margin:1px 0;border-radius:8px;font-size:12px;cursor:pointer;transition:opacity .2s,background .2s}.pie .li>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pie .li>span:last-child{white-space:nowrap}
 .pie .li i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px}.pie .li small{color:var(--mut)}.pie.sel .li{opacity:.45}.pie.sel .li.on{opacity:1;background:#8882}
+.hmap .hg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:8px;max-width:420px;margin-left:auto;margin-right:auto}.hmap .hg b{font-size:10px;color:var(--mut);text-align:center;font-weight:600}
+.hmap .d{aspect-ratio:5/4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-style:normal;color:var(--mut);background:#8881;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),opacity .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.hmap .d.e{background:none;cursor:default}.hmap .l1,.hmap .hl i.l1{background:color-mix(in srgb,var(--r) 32%,var(--card))}.hmap .l2,.hmap .hl i.l2{background:color-mix(in srgb,var(--r) 55%,var(--card))}.hmap .l3,.hmap .hl i.l3{background:color-mix(in srgb,var(--r) 78%,var(--card))}.hmap .l4,.hmap .hl i.l4{background:var(--r)}
+.hmap .d.l1,.hmap .d.l2{color:var(--fg)}.hmap .d.l3,.hmap .d.l4{color:#fff;font-weight:600}.hmap .d.td{box-shadow:inset 0 0 0 2px var(--acc)}.hmap .d.fu{opacity:.3;pointer-events:none}
+.hmap.sel .d[data-d]:not(.on):not(.fu){opacity:.45}.hmap .d.on{transform:scale(1.14);box-shadow:0 0 0 2px var(--fg),0 6px 16px #0006;z-index:1;position:relative}
+.hmap .hl{display:flex;gap:3px;align-items:center;justify-content:flex-end;font-size:10px;color:var(--mut);margin-top:8px}.hmap .hl i{width:10px;height:10px;border-radius:3px;background:#8881}.hmap .hl span{margin:0 3px}
+.hmap .cd,.sk .cd{min-height:36px;margin-top:8px;font-size:13px;line-height:1.5}.hmap .cd a,.sk .cd a{display:block;margin-top:4px;color:var(--acc);cursor:pointer;font-weight:600}
+main.anim .hmap .d[data-d]{animation:hpop .45s cubic-bezier(.2,.8,.2,1) both}@keyframes hpop{from{transform:scale(.3);opacity:0}}
+.sk{margin-top:8px}.sk svg{display:block;overflow:visible;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;max-width:680px;margin:0 auto}
+.sk .rb{opacity:.55;cursor:pointer;transition:opacity .2s}.sk .nd{cursor:pointer;transition:opacity .2s}.sk.sel .rb{opacity:.1}.sk.sel .rb.on{opacity:.85}.sk.sel .nd:not(.on){opacity:.4}
+.sk .fn,.sk .fv{pointer-events:none;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}.sk .fn{font-size:11px;font-weight:600;fill:var(--fg)}.sk .fv{font-size:10px;fill:var(--mut)}
+main.anim .sk .rb{transform-box:view-box;transform-origin:0 0;animation:skg .8s cubic-bezier(.2,.8,.2,1) both}@keyframes skg{from{opacity:0;clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.wf .wl{stroke:var(--mut);stroke-width:1;stroke-dasharray:3 3;opacity:.7}.wf .wv{font-size:10px;font-weight:700;fill:var(--fg)}
 .pc1,.pc3{font-size:10px;fill:var(--mut)}.pc2{font-size:15px;font-weight:700;fill:var(--fg)}.pact{min-height:4px;text-align:center}
 main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
 main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
@@ -98,7 +111,7 @@ main.anim .pb>i{animation:pbg .8s cubic-bezier(.2,.8,.2,1) both}@keyframes pbg{f
 main.anim .stk .sb i{transform-origin:left;animation:sbg .6s cubic-bezier(.2,.8,.2,1) both}@keyframes sbg{from{transform:scaleX(0)}}
 .stk.sel .sb i{opacity:.3}.stk.sel .sb i.on{opacity:1}.stk .sd{font-size:12.5px;min-height:0}.stk.sel .sd{min-height:34px;margin:4px 0 6px}.stk .sd small{color:var(--mut)}
 .stk .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 6px;border-radius:8px;font-size:12px;cursor:pointer;transition:opacity .2s,background .2s}.stk .li i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px}.stk .li small{color:var(--mut)}.stk.sel .li{opacity:.45}.stk.sel .li.on{opacity:1;background:#8882}
-@media (prefers-reduced-motion:reduce){main.swl,main.swr{animation:none}main.anim .pb>i,main.anim .stk .sb i,main.anim .chw *{animation:none!important}}
+@media (prefers-reduced-motion:reduce){main.swl,main.swr{animation:none}main.anim .pb>i,main.anim .stk .sb i,main.anim .chw *{animation:none!important}main.anim .hmap .d,main.anim .sk .rb{animation:none!important}}
 .hdr{display:flex;align-items:center;gap:6px;min-width:0}.hdr .pill{max-width:50vw}
 .gear{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;background:transparent;color:var(--mut);cursor:pointer;flex-shrink:0;transition:color .2s,background .2s,transform .3s}.gear:hover,.gear.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}.gear:active{transform:rotate(60deg)}
 /* ===== BASE LAYOUT ===== */
@@ -219,7 +232,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.8',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.9',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -463,10 +476,10 @@ const t=w.querySelector('.tip');t.innerHTML=c.tip(i);t.style.display='block';if(
 t.style.left=(px+off+tw<=ww?px+off:Math.max(0,px-off-tw))+'px'}
 // runs the chart's action (e.g. open that month) for the month whose details are showing
 function chAct(id){const c=CH[id],w=document.getElementById(id);if(c&&c.act&&w&&w._i!=null)c.act(w._i)}
-function chOff(w){if(!w)return;if(w.classList.contains('pie'))return pieSel(w.id,-1);if(w.classList.contains('stk'))return stkSel(w.id,-1);w.classList.remove('on');w._i=null;const t=w.querySelector('.tip');if(t)t.style.display='none';w.querySelectorAll('.hb,.xh,.hd').forEach(x=>x.style.opacity=0)}
+function chOff(w){if(!w)return;if(w.classList.contains('hmap'))return calSel(w.id,'');if(w.classList.contains('sk'))return flowSel(w.id,'');if(w.classList.contains('pie'))return pieSel(w.id,-1);if(w.classList.contains('stk'))return stkSel(w.id,-1);w.classList.remove('on');w._i=null;const t=w.querySelector('.tip');if(t)t.style.display='none';w.querySelectorAll('.hb,.xh,.hd').forEach(x=>x.style.opacity=0)}
 // a mouse leaving hides the details; on touch they stay until you tap somewhere else
 function chOut(e,id){if(e.pointerType=='mouse')chOff(document.getElementById(id))}
-document.addEventListener('pointerdown',e=>{document.querySelectorAll('.chw.on,.pie.sel,.stk.sel').forEach(w=>{if(!w.contains(e.target))chOff(w)})});
+document.addEventListener('pointerdown',e=>{document.querySelectorAll('.chw.on,.pie.sel,.stk.sel,.hmap.sel,.sk.sel').forEach(w=>{if(!w.contains(e.target))chOff(w)})});
 // income vs expenses style: two bars per month. o: n=[name a,name b], sel=highlighted month, full=tooltip titles, open=i=>js to open that month
 function barSvg(lb,a,b,o){o=o||{};const nm=o.n||['Income','Expenses'],id='ch'+(++CHN),W=340,H=158,L=38,R=4,T=8,B=22,pw=W-L-R,ph=H-T-B,n=lb.length,g=pw/n,bw=Math.max(4,Math.min(14,g*.3)),
 tk=ticks(0,Math.max(1,...a,...b),4),mx=tk[tk.length-1],y=v=>T+ph-v/mx*ph,base=T+ph;
@@ -507,6 +520,43 @@ const x=c.it[i],s=w.querySelectorAll('svg text'),pa=w.querySelector('.pact');
 if(!x){s[0].textContent=c.o.lbl||'Total';s[1].textContent=mshort(c.t);s[2].textContent=c.it.length+(c.it.length==1?' category':' categories');pa.innerHTML='';return}
 const nm=new DOMParser().parseFromString(x.n,'text/html').body.textContent;s[0].textContent=nm.length>16?nm.slice(0,15)+'…':nm;s[1].textContent=mshort(x.v);s[2].textContent=(Math.round(x.v/c.t*1000)/10)+'% of '+(c.o.lbl||'total').toLowerCase();
 pa.innerHTML=x.id&&c.o.open?`<a onclick="${c.o.open(x.id)}">View ${x.n} records ›</a>`:''}
+// spending calendar: one square per day, a deeper colour means more spent. by={'YYYY-MM-DD':{v,n}}
+function calHeat(m,by){const id='ch'+(++CHN),y=+m.slice(0,4),mo=+m.slice(5)-1,nd=new Date(y,mo+1,0).getDate(),lead=(new Date(y,mo,1).getDay()+6)%7,td=today(),
+vs=Object.values(by).map(x=>x.v),mx=Math.max(1,...vs),lv=v=>v>0?Math.max(1,Math.ceil(Math.sqrt(v/mx)*4)):0,tot=vs.reduce((a,b)=>a+b,0),
+past=Math.min(nd,m<td.slice(0,7)?nd:m>td.slice(0,7)?0:+td.slice(8)),zero=Array.from({length:past},(_,i)=>m+'-'+String(i+1).padStart(2,'0')).filter(d=>!(by[d]&&by[d].v>0)).length,
+top=Object.entries(by).sort((a,b)=>b[1].v-a[1].v)[0];
+CH[id]={k:'cal',by,sum:`<small>${money(tot)} spent · ${zero} no-spend day${zero==1?'':'s'}${top?` · Biggest: ${esc(dayLbl(top[0]))} (${esc(mshort(top[1].v))})`:''}<br>Tap a day to see it.</small>`};
+let c='';for(let i=0;i<lead;i++)c+='<i class="d e"></i>';
+for(let d=1;d<=nd;d++){const ds=m+'-'+String(d).padStart(2,'0'),x=by[ds];c+=`<i class="d l${x?lv(x.v):0}${ds==td?' td':''}${ds>td?' fu':''}" data-d="${ds}" style="animation-delay:${(lead+d)*12}ms" onclick="calSel('${id}','${ds}')" onpointerenter="if(event.pointerType=='mouse')calSel('${id}','${ds}')">${d}</i>`}
+return`<div class="hmap" id="${id}" onpointerleave="if(event.pointerType=='mouse')calSel('${id}','')" role="img" aria-label="${esc('Spending per day: '+Object.entries(by).map(([d,x])=>+d.slice(8)+' '+money(x.v)).join(', '))}"><div class="hg">${['M','T','W','T','F','S','S'].map(x=>`<b>${x}</b>`).join('')}${c}</div>
+<div class="hl"><span>Less</span>${[0,1,2,3,4].map(i=>`<i class="l${i}"></i>`).join('')}<span>More</span></div><div class="cd">${CH[id].sum}</div></div>`}
+function calSel(id,d){const w=document.getElementById(id),c=CH[id];if(!w||!c)return;w.classList.toggle('sel',!!d);w.querySelectorAll('.d[data-d]').forEach(e=>e.classList.toggle('on',e.dataset.d===d));
+const x=c.by[d]||{v:0,n:0};w.querySelector('.cd').innerHTML=d?`<b>${esc(dayLbl(d))}</b> · ${x.v?`<span class="r">${money(x.v)}</span> · ${x.n} record${x.n==1?'':'s'}`:'No spending 🌱'}${x.n?`<a onclick="rv='r';rmode='r';xf='${d}';xt='${d}';fa='';fc='';q='';go('tx')">View that day's records ›</a>`:''}`:c.sum}
+// money flow: where income went. src=[{n,v,c}] on the left, dst=[{n,v,c,id}] on the right; both sides add up to the same total
+function flowSvg(src,dst,o){o=o||{};const T=src.reduce((a,x)=>a+x.v,0);if(!T)return'<small>Add income and spending to see where your money goes</small>';const id='ch'+(++CHN),W=340,gap=6,nw=9,
+H=Math.max(150,dst.length*30+14),side=l=>{const k=(H-8-(l.length-1)*gap)/T;let y=4;return l.map(x=>{const h=Math.max(1.5,x.v*k),r={...x,y,h};y+=h+gap;return r})},
+S=side(src),D=side(dst),so=S.map(x=>x.y),to=D.map(x=>x.y),mid=W/2;let rb='';
+S.forEach((a,i)=>D.forEach((b,j)=>{const v=a.v*b.v/T;if(v<=0)return;const ha=v/a.v*a.h,hb=v/b.v*b.h,y1=so[i],y2=to[j];so[i]+=ha;to[j]+=hb;
+rb+=`<path class="rb" data-s="s${i}" data-t="t${j}" d="M${nw},${y1.toFixed(1)}C${mid},${y1.toFixed(1)} ${mid},${y2.toFixed(1)} ${W-nw},${y2.toFixed(1)}V${(y2+hb).toFixed(1)}C${mid},${(y2+hb).toFixed(1)} ${mid},${(y1+ha).toFixed(1)} ${nw},${(y1+ha).toFixed(1)}Z" fill="${b.c}" style="animation-delay:${(i*D.length+j)*35}ms" onclick="flowSel('${id}','t${j}')" onpointerenter="if(event.pointerType=='mouse')flowSel('${id}','t${j}')"/>`}));
+const lbl=(x,X,anc,k)=>{const cy=x.y+x.h/2,big=x.h>=24;return`<text class="fn" x="${X}" y="${(big?cy-2:cy+3.5).toFixed(1)}" text-anchor="${anc}">${x.n}</text>${big?`<text class="fv" x="${X}" y="${(cy+11).toFixed(1)}" text-anchor="${anc}">${esc(mshort(x.v))}</text>`:''}`};
+CH[id]={k:'flow',S,D,T,o};
+return`<div class="sk" id="${id}" onpointerleave="if(event.pointerType=='mouse')flowSel('${id}','')"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc('Money in: '+src.map(x=>x.n.replace(/<[^>]*>/g,'')+' '+money(x.v)).join(', ')+'. Money out: '+dst.map(x=>x.n.replace(/<[^>]*>/g,'')+' '+money(x.v)).join(', '))}">${rb}
+${S.map((x,i)=>`<rect class="nd" data-n="s${i}" x="0" y="${x.y.toFixed(1)}" width="${nw}" height="${x.h.toFixed(1)}" rx="3" fill="${x.c}" onclick="flowSel('${id}','s${i}')"/>${lbl(x,nw+5,'start')}`).join('')}
+${D.map((x,j)=>`<rect class="nd" data-n="t${j}" x="${W-nw}" y="${x.y.toFixed(1)}" width="${nw}" height="${x.h.toFixed(1)}" rx="3" fill="${x.c}" onclick="flowSel('${id}','t${j}')"/>${lbl(x,W-nw-5,'end')}`).join('')}</svg><div class="cd"><small>Tap a band to see where the money went.</small></div></div>`}
+function flowSel(id,k){const w=document.getElementById(id),c=CH[id];if(!w||!c)return;w.classList.toggle('sel',!!k);
+w.querySelectorAll('.rb').forEach(e=>e.classList.toggle('on',e.dataset.s===k||e.dataset.t===k));w.querySelectorAll('.nd').forEach(e=>e.classList.toggle('on',e.dataset.n===k));
+const x=k?(k[0]=='s'?c.S:c.D)[+k.slice(1)]:null,pc=x?Math.round(x.v/c.T*1000)/10:0,nm=x?new DOMParser().parseFromString(x.n,'text/html').body.textContent:'';
+w.querySelector('.cd').innerHTML=x?`<b>${esc(nm)}</b> · ${money(x.v)} · ${pc}% of ${k[0]=='s'?'money in':'where it went'}${x.d?`<br><small>${esc(x.d)}</small>`:''}${x.id&&c.o.open?`<a onclick="${c.o.open(x.id)}">View ${esc(nm)} records ›</a>`:''}`:'<small>Tap a band to see where the money went.</small>'}
+// waterfall: a starting total, the changes that move it up or down, and the end total. it=[{n,full,v,tot}]
+function wfSvg(it){const id='ch'+(++CHN),W=340,H=170,L=40,R=4,T=14,B=22,pw=W-L-R,ph=H-T-B,n=it.length,g=pw/n,bw=Math.min(34,g*.56);let run=0;
+const bars=it.map(x=>{const a=x.tot?0:run,b=x.tot?x.v:run+x.v;run=b;return{...x,a,b}}),lo=Math.min(0,...bars.map(x=>Math.min(x.a,x.b))),hi=Math.max(0,...bars.map(x=>Math.max(x.a,x.b))),
+tk=ticks(lo,hi,4),y0=tk[0],y1=tk[tk.length-1],y=v=>T+ph-(v-y0)/(y1-y0)*ph;
+CH[id]={k:'bar',n,L,g,W,tip:i=>{const x=bars[i];return`<b>${esc(x.full||x.n)}</b>${x.tot?tRow('Cash',money(x.v)):tRow('Change',(x.v>=0?'+':'')+money(x.v),'',x.v<0?'r':'g')+tRow('Cash after',money(x.b))}`}};
+return`<div class="chw wf" id="${id}"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(bars.map(x=>x.n+' '+money(x.v)).join(', '))}" ${chEv(id)}>
+${tk.map(v=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3.5}" text-anchor="end">${kfmt(v)}</text>`).join('')}<rect class="hb" x="${L}" y="${T}" width="${g}" height="${ph+B-4}" rx="8"/>
+${bars.map((x,i)=>{const cx=L+i*g+g/2,top=y(Math.max(x.a,x.b)),h=Math.max(1.5,Math.abs(y(x.a)-y(x.b))),col=x.tot?'var(--acc)':x.v<0?'var(--r)':'var(--g)';
+return`${i<n-1?`<line class="wl" x1="${cx+bw/2}" x2="${cx+g-bw/2}" y1="${y(x.b)}" y2="${y(x.b)}"/>`:''}<rect class="bar" style="animation-delay:${i*90}ms" x="${cx-bw/2}" y="${top}" width="${bw}" height="${h}" rx="4" fill="${col}"/><text class="wv" x="${cx}" y="${top-4}" text-anchor="middle">${!x.tot&&Math.abs(x.v)<0.5?'':(x.tot||x.v<0?'':'+')+kfmt(x.v)}</text><text class="ax" x="${cx}" y="${H-6}" text-anchor="middle">${esc(x.n)}</text>`}).join('')}
+<line class="bl" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/></svg><div class="tip"></div></div>`}
 // progress bar. pace (0..1, optional) draws a thin marker where spending would be if spread evenly through the month
 const pbar=(pct,col,pace,tip)=>`<div class="pb"${tip?` title="${esc(tip)}"`:''}><i style="width:${Math.max(0,Math.min(100,pct||0))}%;background:${col}"></i>${pace>0&&pace<1?`<b style="left:${pace*100}%"></b>`:''}</div>`;
 const barRow=(s,b,pace)=>pbar(b?s/b*100:0,s>b?'var(--r)':s>=b*(S.cfg.bw||80)/100?'#f59e0b':'var(--g)',pace,b?Math.round(s/b*100)+'% used'+(pace>0&&pace<1?' · '+Math.round(pace*100)+'% of the month gone':''):'');
@@ -712,7 +762,7 @@ function paint(h){const app=$('#app');if(!document.getElementById('toast'))app.i
 [...app.children].forEach(c=>{if(c.id!='toast'&&c.id!='ptr'&&c.parentNode===app)c.remove()});app.insertAdjacentHTML('afterbegin',h)}
 // computer keyboard: N = new record, 1–9 = tabs, Esc = close the open window or chart details
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target||{},typing=/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)||t.isContentEditable,open=[...document.querySelectorAll('.modal.show')];
-if(e.key=='Escape'){if(open.length){const m=open[open.length-1];if(m.id=='m')closeM();else m.className='modal';e.preventDefault()}else document.querySelectorAll('.chw.on,.pie.sel,.stk.sel').forEach(chOff);return}
+if(e.key=='Escape'){if(open.length){const m=open[open.length-1];if(m.id=='m')closeM();else m.className='modal';e.preventDefault()}else document.querySelectorAll('.chw.on,.pie.sel,.stk.sel,.hmap.sel,.sk.sel').forEach(chOff);return}
 if(typing||open.length||($('#lock')||{}).className=='show')return;
 if((e.key=='n'||e.key=='N')&&!RO()){e.preventDefault();edit()}else if(/^[1-9]$/.test(e.key))go(['ov','dy','tx','ac','rc','rp','bd','sv','more'][+e.key-1])});
 /* ===== DSR CALCULATOR: debt service ratio for Malaysian loan applications (built from the user's DSR spreadsheet) ===== */
@@ -2135,7 +2185,12 @@ const lb=ms.map(m=>MN[+m.slice(5)-1]),cs=m=>TXM(m).filter(t=>!t.tr&&!t.set&&!isN
 cs(ym).filter(t=>t.amt<0).forEach(t=>by[t.cat]=(by[t.cat]||0)-t.amt);
 let it=famRows(by).map((f,i)=>({n:esc(f.main.name),v:f.v,c:f.main.color||PAL[i%8],id:f.id}));const full=ms.map(m=>MN[+m.slice(5)-1]+' '+m.slice(0,4));
 if(it.length>6){const r=it.slice(5).reduce((x,y)=>x+y.v,0);it=it.slice(0,5).concat([{n:'Others',v:r,c:'#94a3b8'}])}
-return`<h4>Trends</h4><div class="tgrid"><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it,{lbl:'Spent',open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp,{sel:5,full,open:i=>{ym=ms[i];render()}})}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw,{n:'Net worth',full})}</div></div>`}
+const days={};cs(ym).filter(t=>t.amt<0).forEach(t=>{const d=days[t.date]=days[t.date]||{v:0,n:0};d.v-=t.amt;d.n++});
+const ib={};cs(ym).filter(t=>t.amt>0).forEach(t=>ib[t.cat]=(ib[t.cat]||0)+t.amt);let src=famRows(ib).map((f,i)=>({n:esc(cat(f.id).name),v:f.v,c:['#34c38f','#22b8cf','#7c8cff','#20c997'][i%4]}));
+if(src.length>3){const r=src.slice(2).reduce((x,y)=>x+y.v,0);src=src.slice(0,2).concat([{n:'Other income',v:r,c:'#20c997'}])}
+const tin=src.reduce((x,y)=>x+y.v,0),tex=it.reduce((x,y)=>x+y.v,0),dst=it.map(x=>({...x}));
+if(tin>tex+0.005)dst.push({n:'Saved 💰',v:tin-tex,c:'#34c38f',d:'Income left after spending this month'});else if(tex>tin+0.005)src.push({n:'From savings',v:tex-tin,c:'#f5a524',d:'Spending above this month\'s income, paid from money you had'});
+return`<h4>Trends</h4><div class="tgrid"><div class="card"><small>Spending by category (${ym})</small>${pieSvg(it,{lbl:'Spent',open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div><div class="card"><small>Income <span class="g">■</span> vs expenses <span class="r">■</span> · last 6 months</small>${barSvg(lb,inc,exp,{sel:5,full,open:i=>{ym=ms[i];render()}})}</div><div class="card"><small>Net worth · last 6 months</small>${lineSvg(lb,nw,{n:'Net worth',full})}</div><div class="card"><small>Spending calendar (${ym})</small>${calHeat(ym,days)}</div><div class="card"><small>Money flow (${ym}) · money in → where it went</small>${flowSvg(src,dst,{open:id=>`fc='${id}';rmode='m';rv='r';go('tx')`})}</div></div>`}
 function cfv(){const f=rf,t=rto,D=S.accs.filter(a=>grp(a)=='debit'),ids=new Set(D.map(a=>a.id)),eff=x=>D.reduce((a,c)=>a+dl(x,c.id),0),sec={op:[],inv:[],fin:[]},add=(k,n,v)=>{const r=sec[k].find(x=>x.n==n);if(r)r.v+=v;else sec[k].push({n,v})};
 TX().filter(x=>inR(x.date,f,t)).forEach(x=>{const e=eff(x);if(Math.abs(e)<0.005)return;
 if(x.f)add('inv','🏗️ Fixed assets purchased',e);
@@ -2148,6 +2203,7 @@ const tot=k=>sec[k].reduce((a,x)=>a+x.v,0),net=tot('op')+tot('inv')+tot('fin'),o
 rows=k=>sec[k].sort((a,b)=>b.v-a.v).map(x=>`<tr><td>${esc(x.n)}<td class="n ${x.v<0?'r':'g'}">${money(x.v)}`).join('')||'<tr><td colspan="2"><small>None</small>',
 sh=(k,n)=>`<tr><th colspan="2">${n}</th></tr>${rows(k)}<tr><td><b>Net cash from ${n.toLowerCase()}</b><td class="n"><b>${money(tot(k))}</b>`;
 return`<div class="row3"><div class="card">Opening cash<h3>${money(open)}</h3></div><div class="card">Net change<h3 class="${net<0?'r':'g'}">${money(net)}</h3></div><div class="card">Closing cash<h3>${money(open+net)}</h3></div></div>
+<div class="card"><small>How cash moved: start → changes → end. Tap a bar.</small>${wfSvg([{n:'Open',full:'Opening cash',v:open,tot:1},{n:'Operating',full:'Operating activities',v:tot('op')},{n:'Investing',full:'Investing activities',v:tot('inv')},{n:'Financing',full:'Financing activities',v:tot('fin')},{n:'Close',full:'Closing cash',v:open+net,tot:1}])}</div>
 <div class="tw"><table><tr><th colspan="2">Cash flow statement</th></tr><tr><td>Opening cash<td class="n">${money(open)}${sh('op','Operating activities')}${sh('inv','Investing activities')}${sh('fin','Financing activities')}<tr><td><b>Net change in cash</b><td class="n"><b>${money(net)}</b><tr><td><b>Closing cash</b><td class="n"><b>${money(open+net)}</b></table></div>
 ${Math.abs(open+net-close)>0.005?`<small class="r">⚠ Differs from account balances by ${money(close-open-net)}</small>`:'<small>Matches your cash, bank and e-wallet balances ✔</small>'}
 <small>Cash = cash, bank and e-wallet accounts. Spending on credit cards, BNPL and loans shows up when you repay it.</small>`}
