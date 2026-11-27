@@ -212,7 +212,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.1',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.2',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -285,7 +285,15 @@ const ico=(n,fb,sz)=>{const d=logoDom(n);sz=sz||20;return d?`<img alt="" loading
 const IMG='style="width:26px;height:26px;border-radius:7px;object-fit:cover;vertical-align:middle"';
 const lg=x=>{const em=esc(x.i||(x.t=='loan'&&LK[x.lk]?LK[x.lk][0]:0)||{cash:'💵',bank:'🏦',ewallet:'📱',card:'💳',loan:'📉',borrow:'🤝',lend:'🤝',invest:'📈',shares:'📊',crypto:'🪙',asnb:'💼',kwsp:'🏛️',member:'🪪',bnpl:'🛍️',gold:'🥇'}[x.t]||'🏦');
 if(x.logo)return`<img alt="" src="${x.logo}" ${IMG}>`;if(x.ip&&x.i)return em;const d=(x.open!==undefined?bankDom(x.name)||brandDom(x.name):logoDom(x.name))||(x.open!==undefined&&TDOM(x));
-return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" ${IMG} data-d="${d}" onerror="favErr(this,'${em}')">`:em};
+return d?`<img alt="" loading="lazy" src="https://www.google.com/s2/favicons?sz=64&domain=${d}" ${IMG} data-d="${d}" onerror="favErr(this,'${em}')"${x.virt||!x.id?'':` onload="favOk(this,'${x.open!==undefined?'accs':'shops'}','${x.id}')"`}>`:em};
+// with the owner's OK, a logo found online is copied into the ledger, so it syncs to the Google Sheet and works offline
+const LGA='ledger.logoAuto',FAVT=new Set();
+function favOk(im,k,id){if(LS.getItem(LGA)!='1'||FAVT.has(k+id))return;FAVT.add(k+id);
+const j=new Image();j.crossOrigin='anonymous';j.onload=()=>{try{if(j.naturalWidth<24)return;const c=document.createElement('canvas');c.width=c.height=96;c.getContext('2d').drawImage(j,0,0,96,96);
+const v=small(c),x=(S[k]||[]).find(y=>y.id==id);if(!x||x.logo)return;x.logo=v;x.lgA=1;put(k,x)}catch(e){}};j.src=im.src}
+const logoWant=()=>S.accs.some(a=>!a.logo&&!a.virt&&(bankDom(a.name)||brandDom(a.name)||TDOM(a)));
+function logoAsk(v){LS.setItem(LGA,v?'1':'0');FAVT.clear();setStatus(v?'🖼️ Logos will be saved to your Google ledger as they load':'OK — logos stay online only. Change it in ⚙️ Settings › Backup');render()}
+const logoCard=()=>LS.getItem(LGA)==null&&logoWant()?`<div class="card"><b>🖼️ Save account logos to your Google ledger?</b><br><small>Logos found online are copied into your ledger, so they sync to your Google Sheet in Drive, show offline and never go missing.</small><div class="two"><button onclick="logoAsk(1)">Yes, save them</button><button class="s" onclick="logoAsk(0)">No thanks</button></div></div>`:'';
 // account types with a well-known home: EPF, ASNB, PTPTN study loans
 const TDOM=x=>x.t=='kwsp'?'kwsp.gov.my':x.t=='asnb'?'asnb.com.my':x.t=='loan'&&x.lk=='edu'?'ptptn.gov.my':'';
 // Google favicon failed: try DuckDuckGo, then the site's own icon, then the emoji
@@ -1615,7 +1623,7 @@ if(ag=='fx'){const t=today();body=`<button onclick="faEd('')">+ Add fixed asset<
 else body=`<div class="two"><button onclick="acEd('','${ag}')">+ Add ${GN[ag]} account</button><button class="s" onclick="trEd('')">⇄ Transfer</button></div>`+(as.filter(a=>grp(a)==ag).map(a=>{const b=bal(a),lb=isL(a),mv=mval(a);return`<div class="card acc" onclick="acSheet('${a.id}')"><div class="fl"><span style="font-size:24px">${lg(a)}</span><div style="flex:1;min-width:0"><b>${esc(a.name)}</b><br><small>${acSub(a,b)}</small></div>${mv!=null?`<div style="text-align:right"><b>${money(mv)}</b><br>${glTag(mv,b)}</div>`:`<b class="${lb?'r':''}">${money(lb?-b:b)}</b>`}</div>
 ${(()=>{const i=dueInfo(a);return i?`<div style="margin-top:6px">${dueTag(i)}</div>`:''})()}</div>`}).join('')||'<small>No accounts here yet</small>');
 return`<div class="two"><div class="card">Assets<h3 class="g">${money(ta)}</h3></div><div class="card">Owed<h3 class="r">${money(tl)}</h3></div></div>
-${nbv?`<small>🏗️ Fixed assets at net book value (${money(nbv)}) are included in assets.</small>`:''}${iv.length?`<small>📈 Investments with a market value: ${money(vv)} · cost ${money(vc)} · ${vv-vc<0?'loss':'gain'} ${money(Math.abs(vv-vc))}</small>`:''}${seg}${body}<small>Tap an account to open it: records, transfer, pay, adjust, reconcile, edit and reorder.</small>`}
+${nbv?`<small>🏗️ Fixed assets at net book value (${money(nbv)}) are included in assets.</small>`:''}${logoCard()}${iv.length?`<small>📈 Investments with a market value: ${money(vv)} · cost ${money(vc)} · ${vv-vc<0?'loss':'gain'} ${money(Math.abs(vv-vc))}</small>`:''}${seg}${body}<small>Tap an account to open it: records, transfer, pay, adjust, reconcile, edit and reorder.</small>`}
 function tgi(){const t=$('#a_t').value.split('|')[0];{const e=$('#a_shw');if(e)e.style.display=['card','bnpl'].includes(t)?'':'none';const sh=$('#a_sh'),lw=$('#a_lw');if(lw)lw.style.display=sh&&sh.value&&['card','bnpl'].includes(t)?'none':''}{const e=$('#a_dtl');if(e)e.textContent=t=='loan'||t=='borrow'?'Disbursed / started on':'Received / activated on'}{const e=$('#a_stw');if(e)e.style.display=stmtOk({t})?'':'none'}const g=Object.keys(GRP).find(k=>GRP[k].includes(t)),sh=(id,on)=>{const e=$('#'+id);if(e)e.style.display=on?'':'none'};sh('a_c1',g=='credit'&&t!='lend');sh('a_g',t=='gold');sh('a_v',g=='inv'&&t!='gold');sh('a_pw',HTY.includes(t));lnForm()}
 /* show only the fields that fit this kind of account / loan */
 function lnForm(){const v=($('#a_t')||{}).value||'',[t,lk0]=v.split('|'),loan=t=='loan',lk=loan?lk0||'':null,F=loan?LKF[lk]||LKF['']:null,sh=(id,on)=>{const e=$('#'+id);if(e)e.style.display=on?'':'none'},tx=(id,x)=>{const e=$('#'+id);if(e)e.textContent=x};
@@ -2811,7 +2819,7 @@ ${S.cfg.nsAuto=='all'?'':`<small style="display:block;margin-top:6px"><b>Offer o
 +det('bk','💾 Backup &amp; restore',`<small>${LS.getItem('ledger.lbk')?'Last Google Drive backup: '+ago(+LS.getItem('ledger.lbk')):'Your Google script makes a daily backup once it is updated.'}</small>
 <button onclick="bkView()">Backups &amp; restore</button><div class="two"><button class="s" onclick="exp()">Download (JSON)</button><button class="s" onclick="csvTx()">Transactions (CSV)</button></div>
 <small>Lost or reset phone? Install the app, then enter your Web App URL and secret key (or paste a setup code) — everything syncs back from your Google Sheet.</small>
-${logoSize()>15000?`<button class="s" onclick="shrinkLogos()">Make uploaded logos smaller (${Math.round(logoSize()/1024)} KB)</button>`:''}`)
+<div class="fl"><span>🖼️ Save logos found online to my Google ledger</span>${LS.getItem(LGA)=='1'?'<a onclick="logoAsk(0)">Turn off</a>':'<a onclick="logoAsk(1)">Turn on</a>'}</div>${logoSize()>15000?`<button class="s" onclick="shrinkLogos()">Make uploaded logos smaller (${Math.round(logoSize()/1024)} KB)</button>`:''}`)
 +det('lg',`🪵 Error log (${logs().length})`,`<button class="s" onclick="logView()">Open the error log</button><button class="s" onclick="fileCheck()">📎 Check receipt &amp; statement links</button><small>Finds attached files that were deleted or moved to the Drive trash.</small>`)}
 
 /* ---------- transaction form ---------- */
