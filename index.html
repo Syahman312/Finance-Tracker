@@ -132,8 +132,14 @@ header h1{font-size:17px;margin:0;font-weight:700}
 #lock input{max-width:240px;text-align:center;font-size:24px;letter-spacing:8px}body.blur #app,body.blur .modal{filter:blur(18px)}
 .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0}.chk>span{font-size:18px;line-height:1.2}.chk small{display:block}
 .logl{font-size:12px;border-bottom:1px solid #8883;padding:6px 0;word-break:break-word}
-.modal{display:none;position:fixed;inset:0;background:#0009;z-index:9;overflow:auto}.modal.show{display:block}
-.modal>div{background:var(--card);max-width:480px;margin:5vh auto;padding:18px;border-radius:20px;animation:fu .22s ease both}
+.modal{display:none;position:fixed;inset:0;background:#0009;z-index:9;overflow:auto;padding-top:max(12px,env(safe-area-inset-top))}.modal.show,.modal.out{display:flex;flex-direction:column}
+.modal>div{background:var(--card);max-width:480px;margin:auto max(12px,calc((100% - 480px)/2)) calc(12px + env(safe-area-inset-bottom));padding:18px;border-radius:22px;box-shadow:0 20px 60px #000a,0 0 0 1px #ffffff12}
+.modal.show{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.modal.op{animation:mbg .28s ease both}.modal.op>div{animation:msl .28s cubic-bezier(.2,.85,.25,1) both}
+.modal.out{animation:mbg .28s ease reverse both}.modal.out>div{animation:msl .28s cubic-bezier(.5,0,.75,.2) reverse both}
+@keyframes mbg{from{background:#0000;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0)}to{background:#0009}}
+@keyframes msl{from{transform:translateY(calc(100% + 24px));opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.modal.op,.modal.op>div,.modal.out,.modal.out>div{animation-duration:.01s}}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.two>*{min-width:0}input[type=date],input[type=month]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;min-height:42px}.three{display:grid;grid-template-columns:60px 1fr 60px 40px;gap:6px}
 .row5{display:grid;grid-template-columns:44px 1fr 80px 46px 36px;gap:6px;align-items:center}.lgl{display:flex;justify-content:center;cursor:pointer;font-size:24px}
 .seg{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.seg a{padding:6px 12px;border-radius:16px;background:var(--card);color:var(--mut);white-space:nowrap;cursor:pointer;font-size:13px}.seg a.on{background:var(--acc);color:#fff}
@@ -213,7 +219,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.6',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.7',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -2882,7 +2888,10 @@ function fxm(){const m=$('#fx_m');if(!m)return;$('#fx_rb').style.display=m.value
 function tg(){const v=$('#f_type').value,t=v=='t',f=v=='f';if(!t&&!f){const c=$('#f_cat');c.innerHTML=catOpts(v=='i'?'i':'e',c.value)}
 $('#f_to').style.display=t?'':'none';$('#f_c').style.display=t||f?'none':'';$('#f_shop').style.display=t||f?'none':'';$('#f_tag').style.display=v=='e'?'':'none';$('#f_fx').style.display=f?'':'none';
 ['e','i','t','f'].forEach(x=>{const a=$('#ts_'+x);if(a)a.className=v==x?'on':''});$('#f_desc').placeholder=f?'Asset name (e.g. Laptop, Car)':'Description / payee';fxm()}
-const closeM=()=>{$('#m').className='modal'};
+// pop-ups slide out (0.28s); opening again during the slide cancels it
+const closeM=()=>{const m=$('#m');if(!m.classList.contains('show'))return;m.classList.remove('op');m.classList.add('out');clearTimeout(closeM.t);closeM.t=setTimeout(()=>{if(m.classList.contains('out'))m.className='modal'},280)};
+// pop-ups slide in (0.28s) when they open, not each time their content is refreshed
+(()=>{const m=document.getElementById('m');if(!m)return;let was=false;new MutationObserver(()=>{const on=m.classList.contains('show')&&!m.classList.contains('out');if(on&&!was){m.classList.add('op');clearTimeout(m._op);m._op=setTimeout(()=>m.classList.remove('op'),300)}was=on}).observe(m,{attributes:true,attributeFilter:['class']})})();
 /* ===== PLACES: where a transaction happened. Your phone's GPS only; you name the place yourself ===== */
 const geoKm=(a,b)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dg=r(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 // past places, nearest first when you have a location, otherwise the ones you use most
