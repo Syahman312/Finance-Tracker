@@ -212,7 +212,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.4',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.5',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -1405,8 +1405,13 @@ return`<div class="fl" style="margin:14px 4px 4px"><b>Recent records</b><a oncli
 // overview sections you can hide (Customize overview)
 const OVS={rv:'📝 Month review',bp:'📈 Bill price alerts',ef:'🛟 Emergency fund',dsr:'📐 DSR check',ins:'💡 Insights',rec:'🧾 Recent records',bud:'🎯 Budget',goal:'💰 Savings goals',avl:'🧭 Available income',tr:'📈 Trends',inv:'📈 Investments',acc:'🏦 Accounts',ach:'🏆 Achievements'};
 const ovOn=k=>!(S.cfg.ovh||[]).includes(k);
-function ovCustom(){if(RO())return;$('#m').innerHTML=`<div><h3>Customize overview</h3><small>Choose what shows on Overview. Alerts about payments and low balances always show.</small>
-${Object.entries(OVS).map(([k,n])=>`<label class="fl wl-l" style="cursor:pointer"><span>${n}</span><input type="checkbox" style="width:auto;margin:0" ${ovOn(k)?'checked':''} onchange="const h=(S.cfg.ovh||[]).filter(x=>x!='${k}');if(!this.checked)h.push('${k}');cfg('ovh',h)"></label>`).join('')}
+// Overview sections in the owner's order (new sections join at their default place)
+const OVF={rv:()=>rvCard(),bp:()=>bpCard(),ef:()=>efCard(),dsr:()=>dsrCard(),ins:()=>insightsHtml(),rec:()=>recentHtml(),bud:()=>bovw(),goal:()=>gCard(),avl:()=>avlCard(),tr:()=>chv(),inv:()=>invCard(),
+acc:()=>`<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="acSheet('${a.id}')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>`,ach:()=>achHtml()};
+function ovOrder(){const d=Object.keys(OVS),o=(S.cfg.ovo||[]).filter(k=>d.includes(k));d.forEach((k,i)=>{if(!o.includes(k)){const prev=d.slice(0,i).reverse().find(x=>o.includes(x));o.splice(prev?o.indexOf(prev)+1:0,0,k)}});return o}
+function ovMove(k,dir){const o=ovOrder(),i=o.indexOf(k),j=i+dir;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];cfg('ovo',o);ovCustom()}
+function ovCustom(){if(RO())return;$('#m').innerHTML=`<div><h3>Customize overview</h3><small>Tick what shows on Overview, and use ▲ ▼ to change the order. Alerts about payments and low balances always stay at the top.</small>${S.cfg.ovo?'<a onclick="cfg(\'ovo\',null);ovCustom()" style="display:block;margin:6px 0">↺ Back to the usual order</a>':''}
+${ovOrder().map((k,i,L)=>[k,OVS[k],i,L.length]).map(([k,n,i,N])=>`<label class="fl wl-l" style="cursor:pointer;gap:6px"><span style="flex:1">${n}</span><a class="ovmv" aria-label="Move up" style="padding:4px 8px;${i?'':'opacity:.25;pointer-events:none'}" onclick="event.preventDefault();ovMove('${k}',-1)">▲</a><a class="ovmv" aria-label="Move down" style="padding:4px 8px;${i<N-1?'':'opacity:.25;pointer-events:none'}" onclick="event.preventDefault();ovMove('${k}',1)">▼</a><input type="checkbox" style="width:auto;margin:0" ${ovOn(k)?'checked':''} onchange="const h=(S.cfg.ovh||[]).filter(x=>x!='${k}');if(!this.checked)h.push('${k}');cfg('ovh',h)"></label>`).join('')}
 <button class="s" style="margin-top:10px" onclick="closeM()">Done</button></div>`;$('#m').className='modal show'}
 // once a day, keep this month's investment value (market where priced) and cost, so a history chart can be drawn
 const ivNow=()=>{const L=S.accs.filter(a=>grp(a)=='inv'&&!a.dCls);return[L.reduce((s,a)=>s+(mval(a)??bal(a)),0),L.reduce((s,a)=>s+bal(a),0)]};
@@ -1424,9 +1429,7 @@ ${R.map(r=>`<div class="fl" style="padding:8px 0;border-top:1px solid var(--line
 function ov(){const tm=TXM(ym).filter(t=>isTax(t)).reduce((a,t)=>a-t.amt,0),m=TXM(ym).filter(t=>!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),inc=sum(m.filter(t=>t.amt>0)),exp=-sum(m.filter(t=>t.amt<0));
 return`<div class="mn ovm"><a onclick="mo(-1)" aria-label="Previous month">‹</a><b>${MN[+ym.slice(5)-1]} ${ym.slice(0,4)}</b><a onclick="mo(1)" aria-label="Next month">›</a></div>
 ${heroHtml(inc,exp,tm)}${tm?`<small class="ovn">Tax &amp; zakat ${money(tm)} is included in Out, but not counted as spending.</small>`:''}${quickHtml()}
-${SPC&&!RO()?spCard():''}${dueBanner()}${fcAlert()}${ovOn('rv')?rvCard():''}${ovOn('bp')?bpCard():''}${ovOn('ef')?efCard():''}${ovOn('dsr')?dsrCard():''}${ovOn('ins')?insightsHtml():''}${ovOn('rec')?recentHtml():''}${ovOn('bud')?bovw():''}${ovOn('goal')?gCard():''}${ovOn('avl')?avlCard():''}${ovOn('tr')?chv():''}
-${ovOn('inv')?invCard():''}${ovOn('acc')?`<h4>Accounts</h4><div class="scroll">${S.accs.map(a=>`<div class="card" style="border-left:4px solid ${a.color}" onclick="acSheet('${a.id}')"><small>${lg(a)} ${esc(a.name)}${isL(a)?' · owed':''}</small><h3 class="${isL(a)?'r':''}">${money(isL(a)?-bal(a):bal(a))}</h3></div>`).join('')}</div>`:''}
-${ovOn('ach')?achHtml():''}${RO()?'':'<div class="ovc"><a onclick="ovCustom()">⚙️ Customize overview</a></div>'}`}
+${SPC&&!RO()?spCard():''}${dueBanner()}${fcAlert()}${ovOrder().filter(ovOn).map(k=>OVF[k]()).join('')}${RO()?'':'<div class="ovc"><a onclick="ovCustom()">⚙️ Customize overview</a></div>'}`}
 /* ===== REGISTER ===== */
 function dayLbl(d){const t=today(),y=new Date(t+'T00:00:00');y.setDate(y.getDate()-1);if(d==t)return'Today';if(d==y.toLocaleDateString('en-CA'))return'Yesterday';const x=new Date(d+'T00:00:00');return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.getDay()]+', '+x.getDate()+' '+MN[x.getMonth()]+(d.slice(0,4)!=t.slice(0,4)?' '+d.slice(0,4):'')}
 function recordsHtml(list,aid,total){if(!list.length)return'<div class="card empty"><span>🧾</span><b>No records here yet</b><small>Tap + to add your first one. It takes a few seconds.</small></div>';
