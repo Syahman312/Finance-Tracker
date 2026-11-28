@@ -47,6 +47,13 @@ main.anim .hmap .d[data-d]{animation:hpop .45s cubic-bezier(.2,.8,.2,1) both}@ke
 .sk .fn,.sk .fv{pointer-events:none;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}.sk .fn{font-size:11px;font-weight:600;fill:var(--fg)}.sk .fv{font-size:10px;fill:var(--mut)}
 main.anim .sk .rb{transform-box:view-box;transform-origin:0 0;animation:skg .8s cubic-bezier(.2,.8,.2,1) both}@keyframes skg{from{opacity:0;clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 .wf .wl{stroke:var(--mut);stroke-width:1;stroke-dasharray:3 3;opacity:.7}.wf .wv{font-size:10px;font-weight:700;fill:var(--fg)}
+.cpg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:6px}.cpg .card{margin:0;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:transform .15s}.cpg .card:active{transform:scale(.97)}.cpg .card:last-child:nth-child(odd){grid-column:1/-1}
+.cpg .ci{font-size:24px}.cpg small{color:var(--mut)}
+.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;background:#8882;color:var(--fg)}.chip.w-me{background:#4f8cff33;color:#7aa7ff}.chip.w-pt{background:#ec489933;color:#f472b6}
+.tl{position:relative;margin:10px 0 14px;padding-left:22px}.tl:before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--acc),#8884);border-radius:2px}
+.tn{position:relative;background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:10px;cursor:pointer}.tn:before{content:'';position:absolute;left:-21px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px var(--bg)}
+.tn.bh:before{background:#f59e0b}.tn.ok:before{background:var(--g)}.tn .tdt{font-size:11px;color:var(--mut);margin-bottom:4px;font-weight:600}.tn .tx{display:none;margin-top:6px}.tn.op .tx{display:block}.tn .tx a{display:block;margin-top:6px;color:var(--acc);font-weight:600}
+main.anim .tn{animation:fu .4s ease both}main.anim .tn:nth-child(2){animation-delay:.06s}main.anim .tn:nth-child(3){animation-delay:.12s}main.anim .tn:nth-child(n+4){animation-delay:.18s}
 .pc1,.pc3{font-size:10px;fill:var(--mut)}.pc2{font-size:15px;font-weight:700;fill:var(--fg)}.pact{min-height:4px;text-align:center}
 main.anim .chw .bar{transform-box:fill-box;transform-origin:50% 100%;animation:chg .55s cubic-bezier(.2,.8,.2,1) both}@keyframes chg{from{transform:scaleY(0)}}
 main.anim .chw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:chl .9s ease-out forwards}@keyframes chl{to{stroke-dashoffset:0}}main.anim .chw .ar,main.anim .chw .pt,main.anim .chw .vl{animation:chf .9s ease-out both}@keyframes chf{from{opacity:0}}
@@ -232,7 +239,7 @@ if(SPC&&!spaces().some(x=>x.id==SPC)){localStorage.removeItem('ledger.space');lo
 function spForget(id){Object.keys(localStorage).filter(k=>k.startsWith('sp.'+id+'.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe-'+id);indexedDB.deleteDatabase('ledger-store-'+id)}catch(e){}
 localStorage.setItem('ledger.spaces',JSON.stringify(spaces().filter(x=>x.id!=id)));if(localStorage.getItem('ledger.space')==id)localStorage.removeItem('ledger.space')}
 function spWipeAll(){spaces().forEach(x=>spForget(x.id));Object.keys(localStorage).filter(k=>k.startsWith('ledger.')||k.startsWith('sp.')).forEach(k=>localStorage.removeItem(k));try{indexedDB.deleteDatabase('ledger-safe');indexedDB.deleteDatabase('ledger-store')}catch(e){}}
-const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-27.9',LOGK='ledger.log';
+const K='ledger.data',CID='ledger.cid',ON='ledger.on',FM='application/vnd.google-apps.folder',APP_V='2026-11-28.1',LOGK='ledger.log';
 /* ===== ERROR LOG: the last 200 problems on this device; sent to the Sheet's "Log" tab when syncing ===== */
 const dev=()=>{const u=navigator.userAgent;return(/iPad/.test(u)?'iPad':/iPhone/.test(u)?'iPhone':/Android/.test(u)?((u.match(/;\s*([^;)]+)\sBuild/)||[])[1]||'Android'):/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Other')+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' app':' browser')};
 const logs=()=>{try{return JSON.parse(LS.getItem(LOGK)||'[]')}catch(e){return[]}};let LOGLAST={};
@@ -2809,7 +2816,100 @@ function gBar(x){return pbar(x.pct,x.pct>=100?'var(--g)':x.g.color||'var(--acc)'
 function gCard(){const l=gAll().filter(x=>!x.g.done);if(!l.length)return'';
 return`<h4>Savings goals</h4><div class="card" onclick="go('sv')" style="cursor:pointer">${l.slice(0,3).map(x=>`<div style="margin:4px 0"><div class="fl"><span>${gIco(x.g)} ${esc(x.g.name)}</span><small>${money(x.funded)} / ${money(x.target)}</small></div>${gBar(x)}</div>`).join('')}${l.length>3?`<small>+${l.length-3} more</small>`:''}</div>`}
 function savRate(m){const c=TX().filter(t=>t.date.startsWith(m)&&!t.tr&&!t.set&&!isNC(t)&&!isTax(t)),i=sum(c.filter(t=>t.amt>0)),e=-sum(c.filter(t=>t.amt<0)),tx=TX().filter(t=>t.date.startsWith(m)&&isTax(t)).reduce((a,t)=>a-t.amt,0);return{i,e:e+tx,s:i-e-tx}}
-function savv(){if(GV&&S.goals.find(g=>g.id==GV))return gView(GV);GV='';
+/* ===== COUPLE & FAMILY (Savings): joint net worth, bills hand-over, family support, baby fund, big plans timeline ===== */
+let CV='';
+const CPL=()=>{const c=S.cfg.cpl||{};return{pn:c.pn||'',pinc:+c.pinc||0,pa:c.pa||[],bills:c.bills||[],sp:c.sp==null?'inc':c.sp,fam:{cats:[],ppl:[],...(c.fam||{})},bg:c.bg||''}};
+const cplSet=(f,v)=>{if(RO())return setStatus('👁 View only');S.cfg.cpl={...CPL(),[f]:v};S.cfg.u=now();save()};
+const pNm=()=>CPL().pn||'Partner';
+const myInc=()=>{const m=today().slice(0,7);return[1,2,3].reduce((a,i)=>a+savRate(mAdd(m,-i)).i,0)/3};
+const RQ={d:30,w:52/12,b:26/12,m:1,q:1/3,h:1/6,y:1/12};
+// my share of shared bills: by income, 50/50 or a fixed %
+function cplPct(c){c=c||CPL();if(c.sp=='eq')return .5;if(typeof c.sp=='number')return c.sp/100;const a=myInc(),b=c.pinc;return a+b>0?a/(a+b):.5}
+function cplBills(){const c=CPL(),k=cplPct(c);let me=0,pt=0;c.bills.forEach(b=>{const a=+b.amt||0;if(b.who=='me')me+=a;else if(b.who=='pt')pt+=a;else{me+=a*k;pt+=a*(1-k)}});return{me,pt,k,c}}
+function famIn(t,c){return c.fam.cats.length&&!t.tr&&t.amt<0&&(c.fam.cats.includes(t.cat)||c.fam.cats.includes(mainOf(t.cat)))}
+function famM(m,c){return-TXM(m).filter(t=>famIn(t,c)).reduce((a,t)=>a+t.amt,0)}
+function cplNW(){const me=hhStats(),c=CPL(),pa=c.pa.filter(x=>x.k!='d').reduce((a,x)=>a+(+x.v||0),0),pd=c.pa.filter(x=>x.k=='d').reduce((a,x)=>a+(+x.v||0),0);return{ma:me.nw+me.debt,md:me.debt,mn:me.nw,pa,pd,pn:pa-pd,tn:me.nw+pa-pd}}
+function cplHub(){const c=CPL(),n=cplNW(),b=cplBills(),fs=famM(today().slice(0,7),c),bg=S.goals.find(g=>g.id==c.bg),bx=bg&&gStat(bg),pl=gAll().filter(x=>!x.g.done&&isTop(x.g)),nx=pl.filter(x=>x.g.date).sort((a,b)=>a.g.date.localeCompare(b.g.date))[0];
+const T=[['nw','💞','Joint net worth',c.pa.length?money(n.tn)+' together':'Add '+esc(pNm())+"'s side"],['bh','🧾','Bills hand-over',c.bills.length?'You pay '+mshort(b.me)+' / month':'Who pays which bill'],['fs','🤲','Family support',c.fam.cats.length?mshort(fs)+' this month':'Money for parents & in-laws'],['bb','👶','Baby fund',bx?Math.round(bx.pct)+'% · '+mshort(bx.funded)+' saved':'Costs checklist & savings'],['tl','🗺️','Big plans timeline',pl.length?pl.length+' plan'+(pl.length==1?'':'s')+(nx?' · next: '+esc(nx.g.name):''):'Wedding, house, baby…']];
+return`<h4>👫 Couple &amp; family</h4><div class="cpg">${T.map(([k,i,t,d])=>`<div class="card" onclick="CV='${k}';render();scrollTo(0,0)"><span class="ci">${i}</span><b>${t}</b><small>${d}</small></div>`).join('')}</div>`}
+function cplView(){const k=CV,f={nw:cpNW,bh:cpBH,fs:cpFS,bb:cpBB,tl:cpTL}[k];if(!f){CV='';return savv()}
+return`<div class="fl"><a onclick="CV='';render()">‹ Savings</a></div>`+f()}
+const cpIn=(id,v,ph,on,t)=>`<input id="${id}" type="${t||'text'}" ${t=='number'?'inputmode="decimal" step="0.01"':''} value="${esc(String(v??''))}" placeholder="${esc(ph||'')}" onchange="${on}">`;
+// --- joint net worth
+function cpNW(){const c=CPL(),n=cplNW(),P=esc(pNm());
+return`<h3 style="margin:10px 0">💞 Joint net worth</h3><small>Your side comes from your accounts. Add ${P}'s savings, investments and debts below (rough numbers are fine).</small>
+<div class="row3"><div class="card">You<h3 class="${n.mn<0?'r':''}">${money(n.mn)}</h3></div><div class="card">${P}<h3 class="${n.pn<0?'r':''}">${money(n.pn)}</h3></div><div class="card">Together<h3 class="${n.tn<0?'r':'g'}">${money(n.tn)}</h3></div></div>
+<div class="card"><small>Assets <span class="g">■</span> and debts <span class="r">■</span> · tap a bar</small>${barSvg(['You',pNm().slice(0,10),'Together'],[n.ma,n.pa,n.ma+n.pa],[n.md,n.pd,n.md+n.pd],{n:['Assets','Debts'],full:['You',pNm(),'Together']})}</div>
+<div class="card"><small>Partner's name</small>${cpIn('cp_pn',c.pn,'e.g. Aina',"cplSet('pn',this.value.trim())")}</div>
+<h4>${P}'s side</h4>${c.pa.map(x=>`<div class="card fl" style="cursor:pointer" onclick="cpItem('${x.id}')"><span>${x.k=='d'?'💳':'💰'} ${esc(x.n)}</span><b class="${x.k=='d'?'r':''}">${x.k=='d'?'−':''}${money(+x.v||0)}</b></div>`).join('')||'<small>Nothing added yet.</small>'}
+<div class="two"><button onclick="cpItem('','a')">+ Asset</button><button class="s" onclick="cpItem('','d')">+ Debt</button></div>
+${links().length?`<small>Linked ${P}'s own ledger? <a onclick="go('hh')">See live numbers in Household ›</a></small>`:''}`}
+function cpItem(id,k){if(RO())return;const c=CPL(),x=c.pa.find(y=>y.id==id)||{id:'',n:'',v:'',k:k||'a'};
+$('#m').innerHTML=`<div><h3>${x.id?'Edit':'Add'} ${x.k=='d'?'debt':'asset'}</h3><small>Name</small><input id="ci_n" value="${esc(x.n)}" placeholder="${x.k=='d'?'e.g. PTPTN, car loan':'e.g. ASB, savings, gold'}"><small>Amount</small><input id="ci_v" type="number" inputmode="decimal" step="0.01" value="${x.v}">
+<div class="seg"><a class="${x.k!='d'?'on':''}" onclick="this.parentNode.dataset.k='a';[...this.parentNode.children].forEach(e=>e.classList.toggle('on',e==this))">Asset</a><a class="${x.k=='d'?'on':''}" onclick="this.parentNode.dataset.k='d';[...this.parentNode.children].forEach(e=>e.classList.toggle('on',e==this))">Debt</a></div>
+<button onclick="cpItemSv('${x.id}','${x.k}')">Save</button>${x.id?`<button class="s" onclick="cplSet('pa',CPL().pa.filter(y=>y.id!='${x.id}'));closeM()">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function cpItemSv(id,k0){const n=$('#ci_n').value.trim(),v=parseFloat($('#ci_v').value)||0,k=$('#m .seg').dataset.k||k0;if(!n)return setStatus('Add a name');const l=CPL().pa.filter(y=>y.id!=id);l.push({id:id||uid(),n,v,k});cplSet('pa',l);closeM()}
+// --- bills hand-over
+function cpBH(){const{me,pt,k,c}=cplBills(),P=esc(pNm()),mi=myInc(),tot=me+pt,W={me:'You',pt:pNm(),sh:'Shared'};
+return`<h3 style="margin:10px 0">🧾 Bills hand-over</h3><small>List the monthly bills after you marry. Tap who pays to switch between you, shared and ${P}.</small>
+<div class="row3"><div class="card">You pay<h3>${money(me)}</h3><small>${mi>0?Math.round(me/mi*100)+'% of your income':''}</small></div><div class="card">${P} pays<h3>${money(pt)}</h3><small>${c.pinc>0?Math.round(pt/c.pinc*100)+'% of income':''}</small></div><div class="card">Total<h3>${money(tot)}</h3></div></div>
+${tot>0?`<div class="card">${pieSvg([{n:'You',v:me,c:'#4f8cff'},{n:esc(pNm()),v:pt,c:'#ec4899'}],{lbl:'Bills',unit:'payer'})}</div>`:''}
+<div class="card"><small>Split shared bills</small><div class="seg">${[['inc','By income'],['eq','50 / 50'],['fix','Fixed %']].map(([v,l])=>`<a class="${(v=='fix'?typeof c.sp=='number':c.sp==v)?'on':''}" onclick="cplSet('sp',${v=='fix'?Math.round(k*100):`'${v}'`})">${l}</a>`).join('')}</div>
+${typeof c.sp=='number'?`<div class="fl"><small>You ${c.sp}%</small><small>${P} ${100-c.sp}%</small></div><input type="range" min="0" max="100" step="5" value="${c.sp}" onchange="cplSet('sp',+this.value)">`:`<small>You pay ${Math.round(k*100)}% of shared bills, ${P} pays ${100-Math.round(k*100)}%.${c.sp=='inc'?` Your income: ${money(mi)} a month (average of the last 3 months).`:''}</small>`}
+${c.sp=='inc'?`<small>${P}'s monthly income</small>${cpIn('cp_pi',c.pinc||'','0.00',"cplSet('pinc',parseFloat(this.value)||0)",'number')}`:''}</div>
+<h4>Bills (${c.bills.length})</h4>${c.bills.map(b=>{const a=+b.amt||0,m=b.who=='me'?a:b.who=='pt'?0:a*k;return`<div class="card"><div class="fl"><b style="cursor:pointer" onclick="cpBill('${b.id}')">${esc(b.n)} ✏️</b><b>${money(a)}</b></div><div class="fl" style="margin-top:6px"><a class="chip w-${b.who||'sh'}" onclick="cpWho('${b.id}')">${esc(W[b.who||'sh'])} ⇄</a><small>You ${money(m)} · ${P} ${money(a-m)}</small></div></div>`}).join('')||'<small>No bills yet.</small>'}
+<div class="two"><button onclick="cpBill('')">+ Bill</button><button class="s" onclick="cpRec()">Add from Recurring</button></div>`}
+function cpWho(id){const o=['sh','me','pt'],l=CPL().bills.map(b=>b.id==id?{...b,who:o[(o.indexOf(b.who||'sh')+1)%3]}:b);cplSet('bills',l)}
+function cpBill(id){if(RO())return;const b=CPL().bills.find(y=>y.id==id)||{id:'',n:'',amt:'',who:'sh'};
+$('#m').innerHTML=`<div><h3>${b.id?'Edit':'Add'} bill</h3><small>Name</small><input id="cb_n" value="${esc(b.n)}" placeholder="e.g. Rent, TNB, Unifi, car loan"><small>Amount a month</small><input id="cb_a" type="number" inputmode="decimal" step="0.01" value="${b.amt}">
+<button onclick="cpBillSv('${b.id}','${b.who||'sh'}')">Save</button>${b.id?`<button class="s" onclick="cplSet('bills',CPL().bills.filter(y=>y.id!='${b.id}'));closeM()">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function cpBillSv(id,who){const n=$('#cb_n').value.trim(),amt=parseFloat($('#cb_a').value)||0;if(!n)return setStatus('Add a name');const l=CPL().bills.slice(),i=l.findIndex(y=>y.id==id),x={id:id||uid(),n,amt,who};i<0?l.push(x):l[i]=x;cplSet('bills',l);closeM()}
+function cpRec(){if(RO())return;const have=new Set(CPL().bills.map(b=>b.rid)),l=S.rec.filter(r=>r.on!==false&&(r.ty||'e')=='e'&&!have.has(r.id));
+$('#m').innerHTML=`<div><h3>Add from Recurring</h3><small>Tick the bills you will share or hand over.</small>${l.map(r=>`<label class="fl" style="padding:8px 0;border-bottom:1px solid #8883"><span><input type="checkbox" value="${r.id}" style="width:auto;margin-right:8px">${esc(r.name)}</span><small>${money((+r.amt||0)*(RQ[r.freq]||1))} / mo</small></label>`).join('')||'<small>No recurring bills to add.</small>'}
+<button onclick="cpRecSv()">Add ticked</button><button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function cpRecSv(){const ids=[...document.querySelectorAll('#m input:checked')].map(e=>e.value),l=CPL().bills.slice();ids.forEach(id=>{const r=S.rec.find(x=>x.id==id);if(r)l.push({id:uid(),rid:r.id,n:r.name,amt:+((+r.amt||0)*(RQ[r.freq]||1)).toFixed(2),who:'sh'})});cplSet('bills',l);closeM()}
+// --- family support
+function cpFS(){const c=CPL(),m=today().slice(0,7),y=m.slice(0,4),ms=[];for(let i=11;i>=0;i--)ms.push(mAdd(m,-i));const sent=ms.map(x=>famM(x,c)),plan=c.fam.ppl.reduce((a,p)=>a+(+p.amt||0),0),
+ytd=ms.filter(x=>x.startsWith(y)).reduce((a,x)=>a+famM(x,c),0),avg=sent.reduce((a,b)=>a+b,0)/12,E=S.cats.filter(x=>(x.ty||'e')=='e'&&isTop2(x)),yr=TX().filter(t=>t.date.startsWith(y)&&famIn(t,c));
+return`<h3 style="margin:10px 0">🤲 Family support</h3><small>Money you give to parents, in-laws and family. Pick the categories you record it under.</small>
+<div class="row3"><div class="card">This month<h3>${money(sent[11])}</h3></div><div class="card">This year<h3>${money(ytd)}</h3></div><div class="card">Monthly average<h3>${money(avg)}</h3></div></div>
+${plan?`<div class="card"><div class="fl"><small>This month vs plan</small><small>${money(sent[11])} / ${money(plan)}</small></div>${barRow(sent[11],plan)}</div>`:''}
+${c.fam.cats.length?`<div class="card"><small>Planned <span class="g">■</span> and sent <span class="r">■</span> · last 12 months</small>${barSvg(ms.map(x=>MN[+x.slice(5)-1]),ms.map(()=>plan),sent,{n:['Planned','Sent'],sel:11,full:ms.map(x=>MN[+x.slice(5)-1]+' '+x.slice(0,4))})}</div>`:''}
+<h4>People</h4>${c.fam.ppl.map(p=>{const got=-yr.filter(t=>new RegExp(p.n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test((t.desc||'')+' '+(t.place||'')+' '+(t.note||''))).reduce((a,t)=>a+t.amt,0);return`<div class="card fl" style="cursor:pointer" onclick="cpPpl('${p.id}')"><span>👤 ${esc(p.n)}<br><small>${got?money(got)+' this year (records that mention '+esc(p.n)+')':'Write their name in a record\'s note to track it'}</small></span><b>${money(+p.amt||0)} / mo</b></div>`}).join('')||'<small>Add who you support and how much you plan to give each month.</small>'}
+<button onclick="cpPpl('')">+ Person</button>
+<h4>Categories that count</h4><div class="card">${E.map(x=>`<label class="fl" style="padding:6px 0"><span>${x.i||''} ${esc(x.name)}</span><input type="checkbox" style="width:auto" ${c.fam.cats.includes(x.id)?'checked':''} onchange="cpFCat('${x.id}',this.checked)"></label>`).join('')}
+${S.cats.some(x=>/family|parent|ibu|mak|famil/i.test(x.name))?'':`<button class="s" onclick="cpFNew()">+ Create a "Family support" category</button>`}</div>`}
+const isTop2=x=>!x.par&&!x.p&&x.id!='cadj';
+function cpFCat(id,on){const c=CPL(),l=c.fam.cats.filter(x=>x!=id);if(on)l.push(id);cplSet('fam',{...c.fam,cats:l})}
+function cpFNew(){if(RO())return;const id=uid();put('cats',{id,name:'Family support',ty:'e',i:'🤲',color:'#ec4899'});const c=CPL();cplSet('fam',{...c.fam,cats:[...c.fam.cats,id]});setStatus('Category added. Use it when you send money to family.')}
+function cpPpl(id){if(RO())return;const p=CPL().fam.ppl.find(y=>y.id==id)||{id:'',n:'',amt:''};
+$('#m').innerHTML=`<div><h3>${p.id?'Edit':'Add'} person</h3><small>Name</small><input id="cf_n" value="${esc(p.n)}" placeholder="e.g. Mak, Abah, Mak mertua"><small>Planned each month</small><input id="cf_a" type="number" inputmode="decimal" step="0.01" value="${p.amt}">
+<button onclick="cpPplSv('${p.id}')">Save</button>${p.id?`<button class="s" onclick="const c=CPL();cplSet('fam',{...c.fam,ppl:c.fam.ppl.filter(y=>y.id!='${p.id}')});closeM()">Delete</button>`:''}<button class="s" onclick="closeM()">Cancel</button></div>`;$('#m').className='modal show'}
+function cpPplSv(id){const n=$('#cf_n').value.trim(),amt=parseFloat($('#cf_a').value)||0;if(!n)return setStatus('Add a name');const c=CPL(),l=c.fam.ppl.slice(),i=l.findIndex(y=>y.id==id),x={id:id||uid(),n,amt};i<0?l.push(x):l[i]=x;cplSet('fam',{...c.fam,ppl:l});closeM()}
+// --- baby fund: a savings goal with a ready checklist of costs
+const BABY=[['Prenatal check-ups & scans',1500],['Hospital delivery',6000],['Confinement (pantang) care & food',3000],['Newborn essentials (cot, stroller, car seat)',2500],['Diapers & milk, first 6 months',2400],['Aqiqah',1500],['Child takaful / insurance, first year',1200],['SSPN starting deposit',1000]];
+function cpBB(){const c=CPL(),g=S.goals.find(x=>x.id==c.bg);
+if(!g)return`<h3 style="margin:10px 0">👶 Baby fund</h3><small>A savings goal with a checklist of the usual costs. The amounts are rough guides — change them to your own after you create it.</small>
+<div class="card">${BABY.map(([n,v])=>`<div class="fl" style="padding:5px 0"><span>☐ ${esc(n)}</span><small>${money(v)}</small></div>`).join('')}<div class="fl" style="border-top:1px solid #8884;margin-top:6px;padding-top:8px"><b>Total</b><b>${money(BABY.reduce((a,x)=>a+x[1],0))}</b></div></div>
+<small>Delivery costs vary a lot: government hospitals are much cheaper than private ones.</small><small>Expected date (optional)</small><input id="bb_d" type="date"><button onclick="cpBBNew()">Create baby fund</button>`;
+const x=gStat(g),dd=g.date?Math.round((new Date(g.date+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5):null;
+return`<h3 style="margin:10px 0">👶 Baby fund</h3><div class="card" onclick="CV='';GV='${g.id}';render();scrollTo(0,0)" style="cursor:pointer"><div class="fl"><b>${gIco(g)} ${esc(g.name)}</b><b>${Math.round(x.pct)}%</b></div>${gBar(x)}<div class="fl"><small>${money(x.funded)} of ${money(x.target)} · ✓ ${x.nDone||0}/${x.nItems||0} done</small><small>Open ›</small></div></div>
+${dd!=null?`<div class="row3"><div class="card">${dd>=0?'Days to go':'Days since'}<h3>${Math.abs(dd)}</h3><small>${dd>=0?'about '+Math.max(0,Math.round(dd/7))+' weeks':''}</small></div><div class="card">Still needed<h3>${money(x.left)}</h3></div><div class="card">Per month<h3>${x.need?money(x.need):'–'}</h3></div></div>`:''}
+<div class="card"><b>Tips</b><br><small>• SSPN savings for the child's education can reduce your income tax — check LHDN for this year's limit.<br>• Once the baby arrives, add child relief in More › Tax.<br>• Add the baby's takaful as a Recurring bill so it shows in your monthly costs.</small></div>`}
+function cpBBNew(){if(RO())return;const id=uid(),d=$('#bb_d').value||'';put('goals',{id,name:'Baby fund',kind:'fund',target:0,date:d,mode:'man',accs:[],icon:'👶',color:'#ec4899',note:'',useItems:true,p:'',items:BABY.map(([n,c])=>({id:uid(),n,c,done:false}))});cplSet('bg',id)}
+// --- big plans timeline: every goal on one line, with what you'll have vs what you'll need by each date
+function cpTL(){const l=gAll().filter(x=>!x.g.done&&isTop(x.g)).sort((a,b)=>(a.g.date||'9').localeCompare(b.g.date||'9')),m=today().slice(0,7),
+sv=Math.max(0,[1,2,3].reduce((a,i)=>a+savRate(mAdd(m,-i)).s,0)/3),fnd=l.reduce((a,x)=>a+x.funded,0),dt=l.filter(x=>x.g.date),
+mo=d=>{const a=new Date(today()+'T00:00:00'),b=new Date(d+'T00:00:00');return Math.max(0,(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth())};
+let cum=0;const need=[],have=[];dt.forEach(x=>{cum+=x.target;need.push(cum);have.push(fnd+sv*mo(x.g.date))});
+const gap=dt.findIndex((_,i)=>have[i]<need[i]),T=[['Wedding','💍'],['Honeymoon','✈️'],['House deposit','🏠'],['Car','🚗'],['Baby','👶']];
+return`<h3 style="margin:10px 0">🗺️ Big plans timeline</h3><small>All your goals in date order. Tap one to see more.</small>
+${dt.length?`<div class="card"><small>If you keep saving ${money(sv)} a month: what you'll have <span class="g">■</span> vs what all plans need by then <span class="r">■</span></small>${barSvg(dt.map(x=>x.g.name.length>7?x.g.name.slice(0,6)+'…':x.g.name),have,need,{n:["You'll have",'Needed by then'],full:dt.map(x=>gIco(x.g)+' '+x.g.name+' · '+x.g.date)})}
+<small class="${gap<0?'g':'r'}">${gap<0?'✔ On track: your savings cover every plan on time.':'⚠ Short from '+esc(dt[gap].g.name)+' ('+dt[gap].g.date+') by '+money(need[gap]-have[gap])+'. Save more each month or move a date.'}</small></div>`:''}
+<div class="tl">${l.map(x=>{const g=x.g,mm=g.date?mo(g.date):null;return`<div class="tn${x.pace=='behind'||x.pace=='late'?' bh':x.pct>=100?' ok':''}" onclick="this.classList.toggle('op')"><div class="tdt">${g.date?MN[+g.date.slice(5,7)-1]+' '+g.date.slice(0,4)+(mm!=null?' · '+(mm?mm+' mo':'this month'):''):'No date'}</div>
+<div class="fl"><b>${gIco(g)} ${esc(g.name)}</b><b>${Math.round(x.pct)}%</b></div>${gBar(x)}<div class="tx"><div class="fl"><small>${money(x.funded)} of ${money(x.target)}</small>${paceTag(x.pace)}</div>${x.need?`<small>Save ${money(x.need)} a month to make it.</small>`:''}<a onclick="event.stopPropagation();CV='';GV='${g.id}';render();scrollTo(0,0)">Open goal ›</a></div></div>`}).join('')||'<small>No plans yet.</small>'}</div>
+<small>Add a plan</small><div class="sfs">${T.map(([n,i])=>`<a onclick="gEd('');setTimeout(()=>{const e=$('#g_n');if(e&&!e.value)e.value='${n}'},0)">${i} ${n}</a>`).join('')}<a onclick="gEd('')">+ Other</a></div>`}
+function savv(){if(GV&&S.goals.find(g=>g.id==GV))return gView(GV);GV='';if(CV)return cplView();
 const all=gAll(),act=all.filter(x=>!x.g.done),tf=act.reduce((a,x)=>a+x.funded,0),tt=act.reduce((a,x)=>a+x.target,0),nd=act.reduce((a,x)=>a+x.need,0),
 m=today().slice(0,7),r=savRate(m),liq=S.accs.filter(a=>grp(a)=='debit').reduce((a,x)=>a+bal(x),0),
 ms=[1,2,3].map(i=>new Date(+m.slice(0,4),+m.slice(5)-1-i,1).ymd().slice(0,7)),avgE=ms.reduce((a,x)=>a+savRate(x).e,0)/3,
@@ -2819,7 +2919,7 @@ return`<div class="row3"><div class="card">Saved for goals<h3 class="g">${money(
 <div class="row3"><div class="card">Saved this month<h3 class="${r.s<0?'r':'g'}">${money(r.s)}</h3></div><div class="card">Savings rate<h3>${r.i>0?Math.round(r.s/r.i*100)+'%':'–'}</h3></div><div class="card" style="cursor:pointer" onclick="efEd()">Emergency cover<h3>${(()=>{const x=efCalc();return x.need>0?x.mo.toFixed(1)+' / '+x.d.m+' mo':'–'})()}</h3></div></div>
 <small>Savings rate = what you kept from this month's income. Emergency cover = your emergency fund accounts ÷ your average monthly spending over the last 3 months (3–6 months is a common target). Tap it to change the target or the accounts.</small>
 <div class="card"><small>Saved each month (income − spending − tax) · last 6 months</small>${lineSvg(m6.map(x=>MN[+x.slice(5)-1]),m6.map(x=>savRate(x).s),{n:'Saved',d:0})}</div>
-<div class="seg"><a class="${gf=='a'?'on':''}" onclick="gf='a';render()">Active (${act.length})</a><a class="${gf=='d'?'on':''}" onclick="gf='d';render()">Achieved (${all.length-act.length})</a><a class="${gf=='all'?'on':''}" onclick="gf='all';render()">All</a></div>
+${cplHub()}<h4>Goals</h4><div class="seg"><a class="${gf=='a'?'on':''}" onclick="gf='a';render()">Active (${act.length})</a><a class="${gf=='d'?'on':''}" onclick="gf='d';render()">Achieved (${all.length-act.length})</a><a class="${gf=='all'?'on':''}" onclick="gf='all';render()">All</a></div>
 <button onclick="gEd('')">+ New goal</button>
 ${l.map(x=>`<div class="card" onclick="GV='${x.g.id}';render();scrollTo(0,0)" style="cursor:pointer;opacity:${x.g.done?.7:1}"><div class="fl"><b>${gIco(x.g)} ${esc(x.g.name)}</b><b>${x.g.done?'✔ Achieved':Math.round(x.pct)+'%'}</b></div>${gBar(x)}
 <div class="fl"><small>${money(x.funded)} of ${money(x.target)}${x.nItems?' · ✓ '+x.nDone+'/'+x.nItems+' done':''}</small>${paceTag(x.pace)}</div>
